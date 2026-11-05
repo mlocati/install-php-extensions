@@ -19,6 +19,8 @@ IPE is distributed as a PHAR file attached to the [releases](https://github.com/
 - `install-php-extensions`: not compressed;
 - `install-php-extensions-gz`: smaller, but it requires the zlib PHP extension (which should be always available in the official Docker PHP images).
 
+Both the PHAR files are also available in the `ghcr.io/mlocati/install-php-extensions` Docker image.
+
 ### Downloading IPE with `ADD`
 
 ```Dockerfile
@@ -43,16 +45,40 @@ RUN curl -sSLf \
 
 The same commands work outside Docker too (IPE must be run as root, since it installs system packages).
 
+### Copying IPE from the Docker image
+
+```Dockerfile
+FROM php:8.4-cli
+
+COPY --from=ghcr.io/mlocati/install-php-extensions:latest /usr/bin/install-php-extensions /usr/local/bin/
+
+RUN install-php-extensions gd xdebug
+```
+
+The image is available for all the platforms of the official Docker PHP images.
+It also contains the compressed variant, `/usr/bin/install-php-extensions-gz` (which requires the zlib PHP extension):
+
+```Dockerfile
+COPY --from=ghcr.io/mlocati/install-php-extensions:latest /usr/bin/install-php-extensions-gz /usr/local/bin/install-php-extensions
+```
+
 ### Using a specific version of IPE
 
-The URLs above download the most recent release of IPE, so a new release may change what your builds do.
+The URLs and the image above provide the most recent release of IPE, so a new release may change what your builds do.
 To always use the same version, replace `latest/download` with `download/<version>`, where `<version>` is the version of a [release](https://github.com/mlocati/install-php-extensions/releases) (for example `0.0.1`):
 
 ```Dockerfile
 ADD --chmod=0755 https://github.com/mlocati/install-php-extensions/releases/download/0.0.1/install-php-extensions /usr/local/bin/
 ```
 
-Pre-releases (like `1.0.0-beta1`) are never downloaded by the `latest` URLs: you can use them only by specifying their version.
+Likewise, replace the `latest` tag of the Docker image with the version (for example `0.0.1`).
+The image is also tagged with the major and minor versions (for example `1.2` for the most recent `1.2.x` release) and, starting from version 1, with the major version (for example `1`).
+
+```Dockerfile
+COPY --from=ghcr.io/mlocati/install-php-extensions:0.0.1 /usr/bin/install-php-extensions /usr/local/bin/
+```
+
+Pre-releases (like `1.0.0-beta1`) are never provided by the `latest` URLs and tags: you can use them only by specifying their version.
 
 ### Building IPE
 
