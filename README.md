@@ -300,18 +300,19 @@ These options apply to all the extensions (the options of specific extensions ar
 
 | Option | Description | Default |
 |---|---|---|
+| `--php[=]value` | The php command (or the path of the PHP CLI binary) for which the extensions should be installed | the PHP running install-php-extensions |
 | `--from-composer-json[=value]` | Also install the extensions listed in the require and require-dev sections of a composer.json file | composer.json in the current directory |
 | `--from-composer-lock[=value]` | Also install the extensions required by the project and by its dependencies, as listed in a composer.lock file | composer.lock in the current directory |
 | `--no-dev` | Ignore the development requirements of the project in --from-composer-json and --from-composer-lock |  |
 | `--ignore-unknown-extensions` | Ignore unknown extensions instead of aborting |  |
 | `--unsupported-extensions[=]<abort\|force\|skip>` | What to do with extensions that are known not to work in the current environment. | `abort` |
 | `--build-type[=]<optimized\|with-symbols\|debug>` | How to compile the extensions: optimized (debug symbols stripped), with-symbols (optimized, keeping the debug symbols), debug (no optimizations, with debug symbols) | `optimized` |
-| `--cpus[=]value` | Number of parallel processors to be used while compiling (default or 0: all the available ones) |  |
+| `--cpus[=]value` | Number of parallel processors to be used while compiling (0: all the available ones) | all the available ones |
 | `--skip-check` | Don't check that PHP loads the extensions correctly before enabling them |  |
 | `--dont-enable` | Disable the extensions at the end of the installation (they can be enabled later with --enable) |  |
 | `--enable[=]value` | Enable the extension loaded by this ini file, by uncommenting its extension= and zend_extension= lines (can be specified multiple times) |  |
 | `--disable[=]value` | Disable the extension loaded by this ini file, by commenting out its extension= and zend_extension= lines (can be specified multiple times) |  |
-| `--ini-basename[=]value` | The name of the ini files that enable the extensions (without .ini): {priority} is replaced by the priority of the extension (10-99, 80 by default), {name} by its name; each placeholder must be used once, {priority} before {name}, and the other characters can be letters, digits, _, - and . (but the name cannot start or end with a dot). With compat (available only in the official Docker PHP images) the names are docker-php-ext-{name}, or xx-php-ext-{name} for the extensions that must be loaded after the others | compat in the official Docker PHP images, {priority}-{name} otherwise |
+| `--ini-basename[=]value` | The name of the ini files that enable the extensions (without .ini): use the {priority} and {name} placeholders, or compat for the names used by the official Docker PHP images (see https://github.com/mlocati/install-php-extensions#names-of-the-ini-files) | compat in the official Docker PHP images, {priority}-{name} otherwise |
 | `--keep-systempackager-cache` | Don't clear the system packager (APT/APK) cache after installing PHP extensions |  |
 | `--apt-debian-fix-archived[=]<yes\|no>` | Update the APT repositories for archived Debian systems | yes in the official Docker PHP images, no otherwise |
 | `--apt-debian-archiveurl-default[=]value` | The URL for APT for archived Debian systems | `http://archive.debian.org/debian` |
