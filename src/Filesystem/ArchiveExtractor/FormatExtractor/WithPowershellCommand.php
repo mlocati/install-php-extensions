@@ -41,7 +41,8 @@ final class WithPowershellCommand extends FormatExtractor
             if ($command === '') {
                 continue;
             }
-            list($rc) = $fs->run(Command::create($command, ['-Command', 'Get-Command Expand-Archive']));
+            // Not "Get-Command Expand-Archive": it may analyze all the installed modules, which is slow when there are many of them
+            list($rc) = $fs->run(Command::create($command, ['-NoProfile', '-NonInteractive', '-Command', 'Import-Module Microsoft.PowerShell.Archive -ErrorAction Stop']));
             if ($rc !== 0) {
                 continue;
             }
@@ -82,7 +83,7 @@ try {
 EOT;
             $scriptFile = $container->getPath() . $this->fs->getDirectorySeparator() . 'script.ps1';
             $this->fs->writeFile($scriptFile, $scriptContent);
-            list($rc, $output) = $this->fs->run(Command::create($this->command, ['-NoProfile', '-File', $scriptFile]));
+            list($rc, $output) = $this->fs->run(Command::create($this->command, ['-NoProfile', '-NonInteractive', '-File', $scriptFile]));
         } finally {
             if ($archiveWithZipExtension !== $archive) {
                 $this->fs->deleteFile($archiveWithZipExtension);
