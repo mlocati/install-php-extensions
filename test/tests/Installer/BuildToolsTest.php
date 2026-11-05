@@ -14,12 +14,14 @@ use Mockery as M;
 final class BuildToolsTest extends TestCase
 {
     /**
+     * @param non-empty-string $phpBin
+     *
      * @return \IPE\PHPInfo&\Mockery\MockInterface
      */
-    private static function createPHPInfo()
+    private static function createPHPInfo($phpBin = '/usr/local/bin/php')
     {
         $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
+        $php->shouldReceive('getPHPBin')->andReturn($phpBin);
         $php->shouldReceive('getVersion')->andReturn('8.4.14');
         $php->shouldReceive('getAPIVersion')->andReturn(20240924);
 
@@ -69,6 +71,52 @@ final class BuildToolsTest extends TestCase
             self::assertStringContainsString('phpize', $x->getMessage());
             self::assertStringContainsString('20240924', $x->getMessage());
         }
+    }
+
+    /**
+     * @return void
+     */
+    public function testPhpizeWithVersionSuffix()
+    {
+        // Debian: /usr/bin/phpize is managed by update-alternatives, and it may be the one of another PHP version
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/bin/phpize8.4')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/bin/phpize8.4', ['--version'])))->andReturn([0, 'PHP Api Version:         20240924']);
+        self::assertSame('/usr/bin/phpize8.4', (new BuildTools(self::createPHPInfo('/usr/bin/php8.4'), $fs, new \IPE\Logger()))->getPhpize());
+
+        // Alpine: the versioned phpize is missing, the one without suffix matches
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/bin/phpize84')->andReturn(false);
+        $fs->shouldReceive('resolveCommand')->with('phpize84')->andReturn('');
+        $fs->shouldReceive('isFile')->with('/usr/bin/phpize')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/bin/phpize', ['--version'])))->andReturn([0, 'PHP Api Version:         20240924']);
+        self::assertSame('/usr/bin/phpize', (new BuildTools(self::createPHPInfo('/usr/bin/php84'), $fs, new \IPE\Logger()))->getPhpize());
+
+        // Every candidate is checked once
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/bin/phpize8.3')->andReturn(true);
+        $fs->shouldReceive('resolveCommand')->with('phpize8.3')->andReturn('/usr/bin/phpize8.3');
+        $fs->shouldReceive('isFile')->with('/usr/bin/phpize')->andReturn(true);
+        $fs->shouldReceive('resolveCommand')->with('phpize')->andReturn('/usr/bin/phpize');
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/bin/phpize8.3', ['--version'])))->andReturn([0, 'PHP Api Version:         20230831']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/bin/phpize', ['--version'])))->andReturn([0, 'PHP Api Version:         20230831']);
+        try {
+            (new BuildTools(self::createPHPInfo('/usr/bin/php8.3'), $fs, new \IPE\Logger()))->getPhpize();
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertStringContainsString('20240924', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testPhpConfigWithVersionSuffix()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/bin/php-config8.4')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/bin/php-config8.4', ['--version'])))->andReturn([0, "8.4.14\n"]);
+        self::assertSame('/usr/bin/php-config8.4', (new BuildTools(self::createPHPInfo('/usr/bin/php8.4'), $fs, new \IPE\Logger()))->getPhpConfig());
     }
 
     /**

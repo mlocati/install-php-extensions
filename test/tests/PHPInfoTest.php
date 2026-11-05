@@ -53,6 +53,7 @@ final class PHPInfoTest extends TestCase
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
         $fs->shouldReceive('exists')->andReturn(true);
+        $fs->shouldReceive('isFile')->andReturn(true);
         $fs->shouldReceive('getRealPath')->andReturnUsing(static function ($path) {
             return $path;
         });
@@ -81,6 +82,58 @@ final class PHPInfoTest extends TestCase
         self::assertSame('', $php->getLoadedIniFile());
         self::assertSame('/usr/local/etc/php/conf.d', $php->getIniScanDir());
         self::assertSame(['Core', 'json'], $php->getInstalledExtensions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testFromPHPBinWithCommandName()
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('exists')->andReturn(true);
+        $fs->shouldReceive('isFile')->never();
+        $fs->shouldReceive('resolveCommand')->once()->with('php8.4')->andReturn('/usr/bin/php8.4');
+        $fs->shouldReceive('getRealPath')->andReturnUsing(static function ($path) {
+            return $path;
+        });
+        $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
+            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/lib/php/20240924', 'Core', ''])],
+            [0, "PHP API => 20240924\n"]
+        );
+        $php = PHPInfo::fromPHPBin('php8.4', $fs);
+        self::assertSame('/usr/bin/php8.4', $php->getPHPBin());
+    }
+
+    /**
+     * @return list<array{non-empty-string, string}>
+     */
+    public static function provideFromPHPBinNotFoundCases()
+    {
+        return [
+            ['php99', "Unable to find the PHP command 'php99'"],
+            ['/nope/php', "The PHP binary '/nope/php' does not exist"],
+            ['bin\\php', "The PHP binary 'bin\\php' does not exist"],
+        ];
+    }
+
+    /**
+     * @dataProvider provideFromPHPBinNotFoundCases
+     *
+     * @param non-empty-string $phpBin
+     * @param string $expectedMessage
+     *
+     * @return void
+     */
+    public function testFromPHPBinNotFound($phpBin, $expectedMessage)
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->andReturn('');
+        $fs->shouldReceive('isFile')->andReturn(false);
+        $fs->shouldReceive('run')->never();
+        $this->expectException(Exception\InvalidArgument::class);
+        $this->expectExceptionMessage($expectedMessage);
+        PHPInfo::fromPHPBin($phpBin, $fs);
     }
 
     /**
@@ -113,6 +166,7 @@ final class PHPInfoTest extends TestCase
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
         $fs->shouldReceive('exists')->andReturn(true);
+        $fs->shouldReceive('isFile')->andReturn(true);
         $fs->shouldReceive('getRealPath')->andReturnUsing(static function ($path) {
             return $path;
         });

@@ -197,6 +197,18 @@ try {
         ;
     }
 
+    // Configure the PHP to be used
+    if (($phpOption = $options->getString('php')) !== '') {
+        $app->singleton(IPE\PHPInfo::class, static function (Service\Container $app) use ($phpOption) {
+            $fs = $app->make(Filesystem::class);
+            try {
+                return IPE\PHPInfo::fromPHPBin($phpOption, $fs);
+            } catch (IPEException\InvalidArgument $x) {
+                throw new IPEException\InvalidOption("Invalid value of the --php option: {$x->getMessage()}");
+            }
+        });
+    }
+
     // Configure the downloader
     $app->when(Filesystem\Downloader\Factory::class)
         ->needs('$config')

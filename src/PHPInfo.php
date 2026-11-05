@@ -130,17 +130,31 @@ class PHPInfo
     }
 
     /**
-     * @param non-empty-string $phpBin $phpBin
+     * @param non-empty-string $phpBin the name of the php command (looked for in the PATH), or the path of the PHP binary
      *
-     * @throws \IPE\Exception\InvalidArgument
+     * @throws \IPE\Exception\InvalidArgument if $phpBin can't be found
      * @throws \IPE\Exception\IO
      *
      * @return static
+     *
+     * @example fromPHPBin('php8.4', $fs)
+     * @example fromPHPBin('/usr/local/bin/php', $fs)
      */
     public static function fromPHPBin($phpBin, Filesystem $fs)
     {
         $result = new static();
-        $result->phpBin = $fs->getRealPath($phpBin);
+        if (strpbrk($phpBin, '/\\') === false) {
+            $path = $fs->resolveCommand($phpBin);
+            if ($path === '') {
+                throw new Exception\InvalidArgument("Unable to find the PHP command '{$phpBin}'");
+            }
+        } else {
+            if (!$fs->isFile($phpBin)) {
+                throw new Exception\InvalidArgument("The PHP binary '{$phpBin}' does not exist");
+            }
+            $path = $phpBin;
+        }
+        $result->phpBin = $fs->getRealPath($path);
         $safeArguments = self::getSafeRunArguments($fs);
         list($rc, $output) = $fs->run(Filesystem\Command::create(
             $result->phpBin,

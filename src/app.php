@@ -42,13 +42,8 @@ function createApp()
         if ($fs->isLocal()) {
             return PHPInfo::fromCurrentPHP($fs);
         }
-        $phpBin = $fs->resolveCommand('php');
-        if ($phpBin === '') {
-            throw new Exception\IO('Unable to find the php command on the remote filesystem');
-        }
 
-        // The tools of PHP (phpize, php-config) are looked for next to the actual binary
-        return PHPInfo::fromPHPBin($fs->getRealPath($phpBin), $fs);
+        return PHPInfo::fromPHPBin('php', $fs);
     });
     // OS
     $app->singleton(OS::class, static function (Container $app) {
