@@ -20,7 +20,7 @@ final class LegacyCompatibility
     private static $flagVariables = [
         'IPE_DEBUG' => ['verbose' => null],
         'IPE_DONT_ENABLE' => ['dont-enable' => null, 'create-enable-scripts' => null],
-        'IPE_KEEP_SYSPKG_CACHE' => ['keep-systempackager-cache' => null],
+        'IPE_KEEP_SYSPKG_CACHE' => ['keep-systempackager-cache' => 'yes'],
         'IPE_INSECURE' => ['insecure' => null],
         'IPE_SKIP_CHECK' => ['skip-check' => null],
         'IPE_NOSTRIP' => ['build-type' => 'with-symbols'],
