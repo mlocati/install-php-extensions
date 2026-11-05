@@ -103,6 +103,16 @@ function printGroup(string $title, string $contents): void
 }
 
 /**
+ * Shown in red in the log, and as an annotation in the summary of the workflow run.
+ */
+function printError(string $title, string $message): void
+{
+    $escape = static fn (string $value, bool $isProperty): string => strtr($value, ['%' => '%25', "\r" => '%0D', "\n" => '%0A'] + ($isProperty ? [':' => '%3A', ',' => '%2C'] : []));
+
+    echo '::error title=', $escape($title, true), '::', $escape($message, false), "\n";
+}
+
+/**
  * @throws \RuntimeException
  */
 function getRealPath(string $path): string
@@ -121,7 +131,7 @@ function getRealPath(string $path): string
  * @throws \RuntimeException
  * @throws \JsonException
  */
-function runTest(string $image, string $phar, array $extensions): string
+function runTest(string $description, string $image, string $phar, array $extensions): string
 {
     $outputDir = sys_get_temp_dir() . '/' . uniqid('ipe-extension-test-');
     if (!mkdir($outputDir)) {
@@ -154,7 +164,8 @@ function runTest(string $image, string $phar, array $extensions): string
             $extensions,
         ));
         if ($rc !== 0) {
-            printGroup('Installation failed', $output);
+            printGroup('Installation output', $output);
+            printError('Installation failed', "{$description} ({$image})");
 
             return RESULT_FAILED;
         }
@@ -179,6 +190,8 @@ function runTest(string $image, string $phar, array $extensions): string
             [$rc, $output] = run(['docker', 'exec', '--env', 'LD_BIND_NOW=1', CONTAINER_NAME, 'php', "/ipe/test/{$handle}.php"]);
             echo '   ', rtrim($output), "\n";
             if ($rc !== 0) {
+                printError('Test failed', "{$handle} in {$description} ({$image})");
+
                 return RESULT_FAILED;
             }
         }
@@ -245,7 +258,7 @@ function main(array $argv): int
                 continue;
             }
             $start = time();
-            $result = runTest($image, $phar, $test['extensions']);
+            $result = runTest($description, $image, $phar, $test['extensions']);
             echo "   {$result} in ", time() - $start, " seconds ({$image})\n";
             $summary[$result][] = "{$description} ({$image})";
         }
