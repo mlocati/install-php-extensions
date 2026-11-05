@@ -177,15 +177,12 @@ function generateCLIOptions(array $definitions): array
         if (str_contains($definition->getName(), ':') || $definition instanceof Argv\Option\Definition\Hidden) {
             continue;
         }
-        $description = $definition->getDescription();
-        $default = getDefinitionDefault($definition);
-        $defaultIsText = false;
-        if ($default === '' && preg_match('/^(?<description>.*?)\s*\(default: (?<default>[^()]+)\)$/', $description, $match)) {
-            $description = $match['description'];
-            $default = $match['default'];
-            $defaultIsText = true;
+        $defaultDescription = $definition->getDefaultDescription();
+        if ($defaultDescription === '') {
+            $lines[] = generateOptionRow([], getDefinitionSyntax($definition), $definition->getDescription(), getDefinitionDefault($definition));
+        } else {
+            $lines[] = generateOptionRow([], getDefinitionSyntax($definition), $definition->getDescription(), $defaultDescription, true);
         }
-        $lines[] = generateOptionRow([], getDefinitionSyntax($definition), $description, $default, $defaultIsText);
     }
 
     return $lines;

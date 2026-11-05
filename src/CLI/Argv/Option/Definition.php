@@ -15,6 +15,11 @@ abstract class Definition
     private $description;
 
     /**
+     * @var string
+     */
+    private $defaultDescription = '';
+
+    /**
      * @param string $name
      * @param string $description
      */
@@ -38,5 +43,29 @@ abstract class Definition
     public function getDescription()
     {
         return $this->description;
+    }
+
+    /**
+     * Describe the default, for options whose default isn't a fixed value.
+     *
+     * @param string $value
+     *
+     * @return $this
+     *
+     * @example 'yes in the official Docker PHP images, no otherwise'
+     */
+    public function setDefaultDescription($value)
+    {
+        $this->defaultDescription = $value;
+
+        return $this;
+    }
+
+    /**
+     * @return string empty string if the default isn't described
+     */
+    public function getDefaultDescription()
+    {
+        return $this->defaultDescription;
     }
 }

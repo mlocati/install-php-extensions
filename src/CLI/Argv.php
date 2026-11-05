@@ -310,19 +310,16 @@ class Argv
             } elseif ($definition instanceof Option\Definition\OptionalValue) {
                 $headLine .= '[=value]';
             }
-            $showDefault = false;
-            if ($definition instanceof Option\Definition\Value) {
-                $default = $definition->getDefaultValue();
-                if ($default !== '' && $default !== null && $default !== []) {
-                    $showDefault = true;
-                    if (!is_string($default)) {
-                        $default = JSON::encode($default);
-                    }
+            $default = $definition->getDefaultDescription();
+            if ($default === '' && $definition instanceof Option\Definition\Value) {
+                $defaultValue = $definition->getDefaultValue();
+                if ($defaultValue !== '' && $defaultValue !== null && $defaultValue !== []) {
+                    $default = is_string($defaultValue) ? $defaultValue : JSON::encode($defaultValue);
                 }
             }
             $lines[] = $headLine;
             $lines[] = '  ' . $definition->getDescription();
-            if ($showDefault) {
+            if ($default !== '') {
                 $lines[] = "  Default: {$default}";
             }
         }
