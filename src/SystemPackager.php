@@ -186,6 +186,17 @@ abstract class SystemPackager
     public abstract function listInstalledPackages();
 
     /**
+     * Get the installed package that contains a file.
+     *
+     * @param non-empty-string $path the absolute path of the file
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\SystemPackager\InstalledPackage|null NULL if the file doesn't belong to any installed package
+     */
+    public abstract function getInstalledPackageOwningFile($path);
+
+    /**
      * Mark already installed packages as explicitly required, so that they won't be removed as unused dependencies.
      *
      * @param list<non-empty-string> $packages

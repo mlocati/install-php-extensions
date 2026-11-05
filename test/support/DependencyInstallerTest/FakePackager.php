@@ -77,6 +77,16 @@ final class FakePackager extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\SystemPackager::getInstalledPackageOwningFile()
+     */
+    public function getInstalledPackageOwningFile($path)
+    {
+        return null;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\SystemPackager::doExpandPackageList()
      */
     protected function doExpandPackageList(array $packages)

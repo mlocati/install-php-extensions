@@ -112,6 +112,54 @@ class APT extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\SystemPackager::getInstalledPackageOwningFile()
+     */
+    public function getInstalledPackageOwningFile($path)
+    {
+        $name = $this->getNameOfPackageOwningFile($path);
+        $match = null;
+        // With merged /usr, dpkg may still have registered the file in /bin, /sbin or /lib* (for example, /bin/dash in Debian 12)
+        if ($name === '' && preg_match('#^/usr(?<path>/(?:s?bin|lib[^/]*)/.+)$#D', $path, $match)) {
+            $name = $this->getNameOfPackageOwningFile($match['path']);
+        }
+        if ($name === '') {
+            return null;
+        }
+        list($rc, $output) = $this->os->getFilesystem()->run(Command::create('dpkg-query', ['--show', '--showformat=${Package}|${Version}|${source:Package}\n', $name])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0 || !preg_match('/^(?<name>[^|\s]+)\|(?<version>[^|\s]+)\|(?<source>[^|\s]+)$/m', $output, $match)) {
+            return null;
+        }
+
+        return new InstalledPackage($match['name'], $match['version'], $match['source']);
+    }
+
+    /**
+     * @param non-empty-string $path
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if the file doesn't belong to any installed package
+     */
+    private function getNameOfPackageOwningFile($path)
+    {
+        list($rc, $output) = $this->os->getFilesystem()->run(Command::create('dpkg-query', ['--search', $path])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0) {
+            return '';
+        }
+        $match = null;
+        foreach (Regex::split('/[\r\n]+/', $output, -1, true) as $line) {
+            // Like "php8.4-cli: /usr/bin/php8.4" or "pkg1:amd64, pkg2:amd64: /path" (the diversion lines don't match)
+            if (preg_match('#^(?<name>[a-z0-9][a-z0-9+\-.]+)(?::[a-z0-9\-]+)?(?:, [a-z0-9][a-z0-9+\-.]+(?::[a-z0-9\-]+)?)*: (?<path>/.*)$#D', $line, $match) && $match['path'] === $path) {
+                return $match['name'];
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\SystemPackager::doMarkAsManuallyInstalled()
      */
     protected function doMarkAsManuallyInstalled(array $packages)
