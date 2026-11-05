@@ -8,7 +8,14 @@
 
 install-php-extensions (IPE) installs PHP extensions with a single command: it chooses a version of the extensions that is compatible with your PHP, installs the system packages they need, compiles them and enables them.
 
-It works on Debian and Alpine Linux, in the official Docker PHP images as well as in other PHP installations.
+It works on:
+
+- the official [Docker PHP images](https://hub.docker.com/_/php), both the Debian and the Alpine variants;
+- Debian 9 (Stretch) or later, with PHP installed from the Debian packages or from the [repository of Ondřej Surý](https://packages.sury.org/php/);
+- Ubuntu 16.04 or later, with PHP installed from the Ubuntu packages or from the packages of Ondřej Surý (his [PPA](https://launchpad.net/~ondrej/+archive/ubuntu/php) or his [repository](https://packages.sury.org/php/));
+- Alpine Linux 3.15 or later, with PHP installed from the Alpine packages.
+
+When PHP has been installed by the system packager (APT or APK), IPE may install the extensions from its packages whenever they are available (see the `--system-packages` option).
 
     install-php-extensions gd xdebug
 
@@ -20,6 +27,11 @@ IPE is distributed as a PHAR file attached to the [releases](https://github.com/
 - `install-php-extensions-gz`: smaller, but it requires the zlib PHP extension (which should be always available in the official Docker PHP images).
 
 Both the PHAR files are also available in the `ghcr.io/mlocati/install-php-extensions` Docker image.
+
+IPE requires the phar PHP extension.
+It's always available in the official Docker PHP images and with the Debian and Ubuntu packages, but the Alpine packages provide it separately: install the package with the name of the PHP package followed by `-phar` (for example, `apk add php84-phar`).
+Also, on Alpine the `php` command is available only when PHP is installed with the default PHP package of the Alpine version (for example, `php85` for Alpine 3.24).
+With the other PHP packages, you have to run IPE with the PHP command of that package: for example, with `php84` you have to use `php84 /usr/local/bin/install-php-extensions gd xdebug`.
 
 ### Downloading IPE with `ADD`
 

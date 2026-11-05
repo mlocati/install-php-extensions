@@ -277,6 +277,7 @@ try {
             return $resolverOptions
                 ->withIgnoreUnknownExtensions($options->getFlag('ignore-unknown-extensions'))
                 ->withOnUnsupportedExtensions($options->getString('unsupported-extensions'))
+                ->withSystemPackages($options->getString('system-packages'))
             ;
         }
     );

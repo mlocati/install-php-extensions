@@ -8,11 +8,14 @@ use IPE\Option;
 use IPE\OS;
 use IPE\Service\JSON;
 use IPE\SystemDependencies\binutils;
+use IPE\SystemPackager;
 
 /**
  * @see https://support.tideways.com/documentation/setup/installation/php-extension.html
  */
-final class tideways extends Extension\PrecompiledExtension implements Extension\RequiresSystemDependencies
+final class tideways extends Extension\PrecompiledExtension implements
+    Extension\ProvidesSystemPackageNames,
+    Extension\RequiresSystemDependencies
 {
     /**
      * @public
@@ -123,5 +126,18 @@ final class tideways extends Extension\PrecompiledExtension implements Extension
         $module = "{$directory}{$separator}tideways-php" . ($this->os instanceof OS\Alpine ? '-alpine' : '') . '-' . self::getPHPMajorDotMinor($this->php) . ($this->php->isThreadSafe() ? '-zts' : '') . '.so';
 
         return $fs->isFile($module) ? $module : '';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     *
+     * @return list<non-empty-string>
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        // The phpX.Y-tideways packages of Debian and of the repositories of Ondrej Sury provide tideways_xhprof, which is another extension
+        return [];
     }
 }

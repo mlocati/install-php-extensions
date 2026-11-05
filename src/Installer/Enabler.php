@@ -180,6 +180,40 @@ class Enabler
     }
 
     /**
+     * Find the ini file that loads (or would load, if it's disabled) an installed extension.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if not found
+     */
+    public function findIniFile(Extension $extension)
+    {
+        $moduleNames = array_merge([$extension::getHandle()], $extension::getInstalledNames());
+        $match = null;
+        foreach ($this->php->getIniScanDirs() as $iniScanDir) {
+            if (!$this->fs->isDirectory($iniScanDir)) {
+                continue;
+            }
+            foreach ($this->fs->listDirectoryContents($iniScanDir) as $name) {
+                if (substr($name, -4) !== '.ini') {
+                    continue;
+                }
+                $iniFile = "{$iniScanDir}/{$name}";
+                if (!preg_match_all('/^[ \t]*;?[ \t]*(?:zend_)?extension[ \t]*=[ \t]*"?([^"\s;]+)/m', $this->fs->readFile($iniFile), $match)) {
+                    continue;
+                }
+                foreach ($match[1] as $module) {
+                    if (in_array(strtolower(basename($module, '.so')), array_map('strtolower', $moduleNames), true)) {
+                        return $iniFile;
+                    }
+                }
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * Find the ini file of an extension that's installed but disabled.
      *
      * @throws \IPE\Exception\IO

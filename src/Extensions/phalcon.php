@@ -3,13 +3,16 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
+use IPE\OS;
+use IPE\SystemPackager;
 
 final class phalcon extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\DependsOnExtensions,
-    Extension\ProvidesCompilerFlags
+    Extension\ProvidesCompilerFlags,
+    Extension\ProvidesSystemPackageNames
 {
     /**
      * @public
@@ -123,5 +126,21 @@ final class phalcon extends Extension implements
     public function getCompilerFlags(Extension\BuildContext $context)
     {
         return '-Wno-incompatible-pointer-types';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        if (!$this->os instanceof OS\Posix || !$this->os->getSystemPackager() instanceof SystemPackager\APT) {
+            return null;
+        }
+        $source = $phpPackage->getSource();
+
+        // The repositories of Ondrej Sury include the major version of Phalcon in the names of the packages (for example, php7.4-phalcon5), and phpX.Y-phalcon is a dummy package with another version
+        return ["{$source}-phalcon5", "{$source}-phalcon4", "{$source}-phalcon3", "{$source}-phalcon"];
     }
 }

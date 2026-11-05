@@ -59,6 +59,97 @@ class APT extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\SystemPackager::getPHPDevelopmentPackageName()
+     */
+    public function getPHPDevelopmentPackageName(Package $phpPackage)
+    {
+        return "{$phpPackage->getSource()}-dev";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getPHPExtensionPackageCandidates()
+     */
+    public function getPHPExtensionPackageCandidates(Package $phpPackage, $extensionName)
+    {
+        // The names of the APT packages are lower case, and they can't contain underscores
+        $name = "{$phpPackage->getSource()}-" . str_replace('_', '-', strtolower($extensionName));
+
+        return $this->validatePackageName($name, false) ? [$name] : [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::doFindAvailablePackage()
+     */
+    protected function doFindAvailablePackage($name, $version)
+    {
+        $package = $this->showAvailablePackage($name, $version);
+        if ($package !== null) {
+            return $package;
+        }
+        // A virtual package (for example, php7.4-redis is provided by php-redis)
+        list($rc, $output) = $this->os->getFilesystem()->run(Command::create('apt-cache', ['showpkg', $name])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        $match = null;
+        if ($rc !== 0 || !preg_match('/^Reverse Provides:[ \t]*\r?\n(?<lines>(?:\S.*(?:\r?\n|$))*)/m', $output, $match)) {
+            return null;
+        }
+        $providers = [];
+        foreach (Regex::split('/[\r\n]+/', $match['lines'], -1, true) as $line) {
+            // Like "php7.4-mysql 7.4.3-4ubuntu2.29 (= )"
+            $providers[strtok($line, ' ')] = true;
+        }
+        if (count($providers) !== 1) {
+            return null;
+        }
+        $provider = key($providers);
+
+        return $provider === $name ? null : $this->showAvailablePackage($provider, $version);
+    }
+
+    /**
+     * @param non-empty-string $name
+     * @param string $version
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\SystemPackager\Package|null
+     */
+    private function showAvailablePackage($name, $version)
+    {
+        list($rc, $output) = $this->os->getFilesystem()->run(Command::create('apt-cache', ['show', '--no-all-versions', $version === '' ? $name : "{$name}={$version}"])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        $versionMatch = null;
+        if ($rc !== 0 || !preg_match('/^Package: \S+\r?$/m', $output) || !preg_match('/^Version: (?<version>\S+)\r?$/m', $output, $versionMatch)) {
+            return null;
+        }
+        $sourceMatch = null;
+        // The Source field is missing when it's the name of the package, and it may be followed by the version of the source package
+        $source = preg_match('/^Source: (?<source>\S+)/m', $output, $sourceMatch) ? $sourceMatch['source'] : $name;
+
+        return new Package($name, $versionMatch['version'], $source);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getUpstreamVersion()
+     */
+    public function getUpstreamVersion($version)
+    {
+        $match = null;
+        // Without the epoch, the Debian revision, and the suffixes like +4.3.0 (Ubuntu bundles the version of the vendored library) or ~rc1
+        if (!preg_match('/^(?:\d+:)?(?<upstream>\d[A-Za-z0-9.]*)/', $version, $match)) {
+            return '';
+        }
+
+        return rtrim($match['upstream'], '.');
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\SystemPackager::refresh()
      */
     public function refresh()
@@ -138,6 +229,54 @@ class APT extends SystemPackager
         }
 
         return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getInstalledPackageOwningFile()
+     */
+    public function getInstalledPackageOwningFile($path)
+    {
+        $name = $this->getNameOfPackageOwningFile($path);
+        $match = null;
+        // With merged /usr, dpkg may still have registered the file in /bin, /sbin or /lib* (for example, /bin/dash in Debian 12)
+        if ($name === '' && preg_match('#^/usr(?<path>/(?:s?bin|lib[^/]*)/.+)$#D', $path, $match)) {
+            $name = $this->getNameOfPackageOwningFile($match['path']);
+        }
+        if ($name === '') {
+            return null;
+        }
+        list($rc, $output) = $this->os->getFilesystem()->run(Command::create('dpkg-query', ['--show', '--showformat=${Package}|${Version}|${source:Package}\n', $name])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0 || !preg_match('/^(?<name>[^|\s]+)\|(?<version>[^|\s]+)\|(?<source>[^|\s]+)$/m', $output, $match)) {
+            return null;
+        }
+
+        return new Package($match['name'], $match['version'], $match['source']);
+    }
+
+    /**
+     * @param non-empty-string $path
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if the file doesn't belong to any installed package
+     */
+    private function getNameOfPackageOwningFile($path)
+    {
+        list($rc, $output) = $this->os->getFilesystem()->run(Command::create('dpkg-query', ['--search', $path])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0) {
+            return '';
+        }
+        $match = null;
+        foreach (Regex::split('/[\r\n]+/', $output, -1, true) as $line) {
+            // Like "php8.4-cli: /usr/bin/php8.4" or "pkg1:amd64, pkg2:amd64: /path" (the diversion lines don't match)
+            if (preg_match('#^(?<name>[a-z0-9][a-z0-9+\-.]+)(?::[a-z0-9\-]+)?(?:, [a-z0-9][a-z0-9+\-.]+(?::[a-z0-9\-]+)?)*: (?<path>/.*)$#D', $line, $match) && $match['path'] === $path) {
+                return $match['name'];
+            }
+        }
+
+        return '';
     }
 
     /**

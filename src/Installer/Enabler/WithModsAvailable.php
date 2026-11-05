@@ -149,13 +149,45 @@ final class WithModsAvailable extends Enabler
      */
     public function getDisabledIniFile(Extension $extension)
     {
+        $moduleName = $this->findModuleName($extension);
+        if ($moduleName === '' || $this->modsAvailable->isEnabled($moduleName)) {
+            return '';
+        }
+
+        return $this->modsAvailable->getIniFile($moduleName);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Installer\Enabler::findIniFile()
+     */
+    public function findIniFile(Extension $extension)
+    {
+        $moduleName = $this->findModuleName($extension);
+        if ($moduleName === '') {
+            return parent::findIniFile($extension);
+        }
+
+        return $this->modsAvailable->getIniFile($moduleName);
+    }
+
+    /**
+     * Find the module of an installed extension that has an ini file in the mods-available directory.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if not found
+     */
+    private function findModuleName(Extension $extension)
+    {
         foreach (array_unique(array_merge([$extension::getHandle()], $extension::getInstalledNames())) as $moduleName) {
             if (!preg_match('/^[\w-]+$/D', $moduleName)) {
                 continue;
             }
             $iniFile = $this->modsAvailable->getIniFile($moduleName);
-            if ($this->fs->isFile($iniFile) && $this->hasModuleFiles($this->fs->readFile($iniFile)) && !$this->modsAvailable->isEnabled($moduleName)) {
-                return $iniFile;
+            if ($this->fs->isFile($iniFile) && $this->hasModuleFiles($this->fs->readFile($iniFile))) {
+                return $moduleName;
             }
         }
 

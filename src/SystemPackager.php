@@ -71,6 +71,50 @@ abstract class SystemPackager
     protected abstract function doExpandPackageList(array $packages);
 
     /**
+     * Find a package in the repositories.
+     *
+     * @param non-empty-string $name the name of a package, or of a virtual package provided by a single package
+     * @param string $version empty string for the version that would be installed
+     *
+     * @throws \IPE\Exception\InvalidArgument
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\SystemPackager\Package|null NULL if it's not available
+     */
+    public final function findAvailablePackage($name, $version = '')
+    {
+        if (!$this->validatePackageName($name, false)) {
+            throw new Exception\InvalidArgument("Invalid package name: {$name}");
+        }
+        $this->ensureInitialized();
+
+        return $this->doFindAvailablePackage($name, $version);
+    }
+
+    /**
+     * @param non-empty-string $name
+     * @param string $version
+     *
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\SystemPackager\Package|null
+     */
+    protected abstract function doFindAvailablePackage($name, $version);
+
+    /**
+     * Get the version of the packaged software, without the revision of the package.
+     *
+     * @param non-empty-string $version
+     *
+     * @return string empty string if it's not recognized
+     *
+     * @example '6.2.0' for '6.2.0-1' (Debian), '5.3.7' for '5.3.7+4.3.0-3ubuntu1' (Ubuntu), '6.3.0' for '6.3.0-r0' (Alpine)
+     */
+    public abstract function getUpstreamVersion($version);
+
+    /**
      * Refresh the list of the available packages.
      *
      * @throws \IPE\Exception\SystemPackager
@@ -111,6 +155,31 @@ abstract class SystemPackager
      * @return non-empty-string
      */
     public abstract function formatPackageNameWithVersion($name, $version);
+
+    /**
+     * Get the name of the package that provides phpize and php-config for PHP installed by a system package.
+     *
+     * @param \IPE\SystemPackager\Package $phpPackage the package that installed PHP
+     *
+     * @return non-empty-string
+     *
+     * @example 'php8.4-dev' (APT)
+     * @example 'php84-dev' (APK)
+     */
+    public abstract function getPHPDevelopmentPackageName(SystemPackager\Package $phpPackage);
+
+    /**
+     * Get the names of the packages that may provide an extension for PHP installed by a system package: they may not exist, or they may be virtual packages.
+     *
+     * @param \IPE\SystemPackager\Package $phpPackage the package that installed PHP
+     * @param non-empty-string $extensionName the handle of the extension, or one of the names it's installed with
+     *
+     * @return list<non-empty-string> empty array if $extensionName can't be part of the name of a package
+     *
+     * @example ['php8.4-pdo-mysql'] (APT)
+     * @example ['php84-redis', 'php84-pecl-redis'] (APK)
+     */
+    public abstract function getPHPExtensionPackageCandidates(SystemPackager\Package $phpPackage, $extensionName);
 
     /**
      * @param list<non-empty-string> $packages
@@ -194,6 +263,17 @@ abstract class SystemPackager
      * @return list<non-empty-string>
      */
     public abstract function listInstalledPackages();
+
+    /**
+     * Get the installed package that contains a file.
+     *
+     * @param non-empty-string $path the absolute path of the file
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\SystemPackager\Package|null NULL if the file doesn't belong to any installed package
+     */
+    public abstract function getInstalledPackageOwningFile($path);
 
     /**
      * Mark already installed packages as explicitly required, so that they won't be removed as unused dependencies.

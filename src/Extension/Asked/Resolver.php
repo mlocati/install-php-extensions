@@ -22,6 +22,7 @@ use IPE\Installer\VendorArchivePreparer;
 use IPE\Option;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\Service\PHPSystemPackage;
 
 /**
  * Turns the asked extensions into resolved ones: a local directory with the source code of a specific version.
@@ -103,6 +104,11 @@ abstract class Resolver
      */
     protected $enabler;
 
+    /**
+     * @var \IPE\Service\PHPSystemPackage
+     */
+    protected $phpSystemPackage;
+
     public function __construct(
         PHPInfo $php,
         OS $os,
@@ -118,6 +124,7 @@ abstract class Resolver
         Option\Validator $optionValidator,
         Extension\UnsupportedEnvironment $unsupportedEnvironment,
         Enabler $enabler,
+        PHPSystemPackage $phpSystemPackage,
         \IPE\Logger $logger
     ) {
         $this->logger = $logger;
@@ -135,6 +142,7 @@ abstract class Resolver
         $this->optionValidator = $optionValidator;
         $this->unsupportedEnvironment = $unsupportedEnvironment;
         $this->enabler = $enabler;
+        $this->phpSystemPackage = $phpSystemPackage;
     }
 
     /**
@@ -145,6 +153,7 @@ abstract class Resolver
      * @throws \IPE\Exception\InvalidOptionValues
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\UnsupportedArchiveFormat
+     * @throws \IPE\Exception\SystemPackager
      *
      * @return list<\IPE\Extension\Resolved> the asked extensions and the ones they require, ordered so that every extension comes after the ones it depends on (the skipped ones are stored in $state)
      */
@@ -152,6 +161,9 @@ abstract class Resolver
     {
         if ($this->os instanceof OS\Alpine && $this->php->getMajorMinorVersion() <= 505) {
             throw new Exception\UnsupportedOS('PHP 5.5 is not supported on Alpine');
+        }
+        if ($this->options->getSystemPackages() === Options::SYSTEMPACKAGES_ONLY && $this->phpSystemPackage->getPackage() === null) {
+            throw new Exception\UnsupportedOS("The extensions must be installed only from the system packages, but PHP hasn't been installed by the system packager");
         }
         $state->setSkippedExtensions([]);
         $resolved = [];
@@ -303,6 +315,7 @@ abstract class Resolver
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\UnsupportedOS
      * @throws \IPE\Exception\UnsupportedArchiveFormat
+     * @throws \IPE\Exception\SystemPackager
      *
      * @return \IPE\Extension\Resolved|null a version that satisfies all the requirements (NULL if $dependency can be kept)
      */
@@ -415,6 +428,10 @@ abstract class Resolver
      */
     private function getRequiredExtensions(Resolved $resolved)
     {
+        // The system packages depend on the packages of the extensions they need
+        if ($resolved->getOrigin() === Resolved::ORIGIN_SYSTEM_PACKAGE) {
+            return [];
+        }
         $manifest = $resolved->getManifest();
         $result = $manifest === null ? [] : $manifest->getRequiredExtensions();
         $known = $resolved->getKnownExtension();
@@ -553,11 +570,18 @@ abstract class Resolver
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\UnsupportedArchiveFormat
      * @throws \IPE\Exception\UnsupportedOS
+     * @throws \IPE\Exception\SystemPackager
      *
      * @return \IPE\Extension\Resolved|null
      */
     public function resolveAskedExtension(Asked $asked, State $state)
     {
+        if (!$asked instanceof Asked\FromHandle && $this->options->getSystemPackages() === Options::SYSTEMPACKAGES_ONLY) {
+            $name = self::describeAskedSource($asked);
+            if (!$this->handleUnsupported("The extension from {$name} would be compiled, but the extensions must be installed only from the system packages", $name, $state)) {
+                return null;
+            }
+        }
         if ($asked instanceof Asked\FromDirectory) {
             return $this->resolveAskedExtensionFromDirectory($asked, $state, Resolved::ORIGIN_DIRECTORY);
         }
@@ -571,6 +595,24 @@ abstract class Resolver
             return $this->resolveAskedExtensionFromURL($asked, $state);
         }
         throw new Exception\UnsupportedExtension('Unrecognized wanted extension class: ' . get_class($asked));
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private static function describeAskedSource(Asked $asked)
+    {
+        if ($asked instanceof Asked\FromDirectory) {
+            return $asked->getPath();
+        }
+        if ($asked instanceof Asked\FromComposer) {
+            return $asked->getFullName();
+        }
+        if ($asked instanceof Asked\FromURL) {
+            return $asked->getURL();
+        }
+
+        return get_class($asked);
     }
 
     /**
@@ -618,6 +660,7 @@ abstract class Resolver
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\UnsupportedOS
      * @throws \IPE\Exception\UnsupportedArchiveFormat
+     * @throws \IPE\Exception\SystemPackager
      *
      * @return \IPE\Extension\Resolved|null
      */
@@ -639,6 +682,7 @@ abstract class Resolver
         }
 
         return $this->resolveKnownExtension($known, $asked->getVersionRequirements(), $asked->getOptions(), $state, [
+            Resolved::ORIGIN_SYSTEM_PACKAGE,
             Resolved::ORIGIN_BUNDLED,
             Resolved::ORIGIN_COMPOSER,
             Resolved::ORIGIN_PECL,
@@ -653,6 +697,7 @@ abstract class Resolver
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\UnsupportedOS
      * @throws \IPE\Exception\UnsupportedArchiveFormat
+     * @throws \IPE\Exception\SystemPackager
      *
      * @return \IPE\Extension\Resolved|null
      */
@@ -744,6 +789,7 @@ abstract class Resolver
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\UnsupportedOS
      * @throws \IPE\Exception\UnsupportedArchiveFormat
+     * @throws \IPE\Exception\SystemPackager
      *
      * @return \IPE\Extension\Resolved|null
      */
@@ -756,6 +802,20 @@ abstract class Resolver
         $disabled = $this->resolveDisabled($extension);
         if ($disabled !== null) {
             return $disabled;
+        }
+        $notes = [];
+        // The packages are built for the system: what IPE knows about compiling the extensions doesn't apply to them
+        if (in_array(Resolved::ORIGIN_SYSTEM_PACKAGE, $origins, true)) {
+            $fromPackage = $this->resolveFromSystemPackage($extension, $versionRequirements, $userOptions, $notes);
+            if ($fromPackage !== null) {
+                return $fromPackage;
+            }
+            if ($this->options->getSystemPackages() === Options::SYSTEMPACKAGES_ONLY) {
+                return $this->failResolution($handle, $versionRequirements, $notes, $state);
+            }
+            if (isset($notes[Resolved::ORIGIN_SYSTEM_PACKAGE])) {
+                $this->logger->info("Not using a system package for {$handle}: {$notes[Resolved::ORIGIN_SYSTEM_PACKAGE]}");
+            }
         }
         if (!$this->checkEnvironment($extension, $state)) {
             return null;
@@ -772,9 +832,10 @@ abstract class Resolver
         $forcedVersion = $this->isExactVersion($versionRequirements);
         $phpToBeChecked = $forcedVersion ? null : $this->getPHPToBeChecked();
         $this->logger->info("Resolving extension {$handle}" . $this->describeRequirements($versionRequirements));
-        $notes = [];
         foreach ($origins as $origin) {
             switch ($origin) {
+                case Resolved::ORIGIN_SYSTEM_PACKAGE:
+                    break;
                 case Resolved::ORIGIN_BUNDLED:
                     if (!($extension instanceof Extension\BundledInPHPSource) || !$this->bundledSource->isAvailable($extension, $this->php)) {
                         break;
@@ -856,6 +917,60 @@ abstract class Resolver
                     throw new Exception\InvalidArgument("Invalid origin: {$origin}");
             }
         }
+
+        return $this->failResolution($handle, $versionRequirements, $notes, $state);
+    }
+
+    /**
+     * @param string $versionRequirements
+     * @param array<string, string|true> $userOptions
+     * @param array<string, non-empty-string> $notes the keys are the origins, the values explain why they can't be used
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return \IPE\Extension\Resolved|null
+     */
+    private function resolveFromSystemPackage(Extension $extension, $versionRequirements, array $userOptions, array &$notes)
+    {
+        if ($this->options->getSystemPackages() === Options::SYSTEMPACKAGES_NEVER || $this->phpSystemPackage->getPackage() === null) {
+            return null;
+        }
+        $handle = $extension::getHandle();
+        $package = $this->phpSystemPackage->findExtensionPackage($extension);
+        if ($package === null) {
+            $notes[Resolved::ORIGIN_SYSTEM_PACKAGE] = 'no package is available for the installed PHP';
+
+            return null;
+        }
+        $description = "the package {$package->getName()} {$package->getVersion()}";
+        if ($userOptions !== []) {
+            $notes[Resolved::ORIGIN_SYSTEM_PACKAGE] = "{$description} can't be used with options";
+
+            return null;
+        }
+        $version = $this->phpSystemPackage->getUpstreamVersion($package);
+        if ($versionRequirements !== '' && ($version === '' || !$this->isVersionAccepted($version, $versionRequirements))) {
+            $notes[Resolved::ORIGIN_SYSTEM_PACKAGE] = "{$description} doesn't satisfy the version requirements";
+
+            return null;
+        }
+        $this->logger->info("Using {$description} for {$handle}");
+
+        return new Resolved($extension, $this->phpSystemPackage->getInstallArgument($package), $version, Resolved::ORIGIN_SYSTEM_PACKAGE);
+    }
+
+    /**
+     * @param non-empty-string $handle
+     * @param string $versionRequirements
+     * @param array<string, non-empty-string> $notes the keys are the origins, the values explain why they can't be used
+     *
+     * @throws \IPE\Exception\UnsupportedExtension
+     *
+     * @return null
+     */
+    private function failResolution($handle, $versionRequirements, array $notes, State $state)
+    {
         $message = "Unable to find a way to install the extension {$handle}" . $this->describeRequirements($versionRequirements) . " for PHP {$this->php->getVersion()}";
         if ($notes !== []) {
             $lines = [];

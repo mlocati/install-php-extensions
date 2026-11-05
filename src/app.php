@@ -45,6 +45,7 @@ function createApp()
 
         return PHPInfo::fromPHPBin('php', $fs);
     });
+    $app->singleton(Service\PHPSystemPackage::class);
     // OS
     $app->singleton(OS::class, static function (Container $app) {
         return $app->make(OS\Factory::class)->detectOS();

@@ -61,6 +61,8 @@ $ipe->extend(
             ->withIgnoreUnknownExtensions(true)
             // Skip extensions that IPE is pretty sure can't be installed
             ->withOnUnsupportedExtensions(\IPE\Extension\Asked\Resolver\Options::ONUNSUPPORTED_SKIP)
+            // When PHP has been installed by the system packager, never install the extensions from its packages
+            ->withSystemPackages(\IPE\Extension\Asked\Resolver\Options::SYSTEMPACKAGES_NEVER)
         ;
     }
 );

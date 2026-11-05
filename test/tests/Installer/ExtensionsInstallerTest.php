@@ -21,7 +21,9 @@ use IPE\Option\Validator;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\Service\PHPSystemPackage;
 use IPE\SystemDependency\Registry;
+use IPE\SystemPackager\Package;
 use IPE\Test\Support\DependencyInstallerTest\FakePackager;
 use IPE\Test\Support\ResolverTest\FakeBinaryExtension;
 use IPE\Test\Support\SystemDependencyTest\FakeLibrary;
@@ -78,15 +80,19 @@ final class ExtensionsInstallerTest extends TestCase
     }
 
     /**
+     * @param \IPE\SystemPackager\Package|null $phpPackage the system package that installed PHP
+     *
      * @return \IPE\Installer\ExtensionsInstaller
      */
-    private function createInstaller(Filesystem $fs)
+    private function createInstaller(Filesystem $fs, $phpPackage = null)
     {
         $expansions = [];
         foreach (['libfake', 'libfake-dev', 'fake-tool-pkg', 'autoconf', 'gcc'] as $package) {
             $expansions[$package] = [$package];
         }
+        $expansions['php8.4-dev=8.4.27-1~deb13u1'] = ['php8.4-dev'];
         $this->packager = new FakePackager(M::mock(OS::class), [], $expansions);
+        $this->packager->owningPackage = $phpPackage;
         $this->php = M::mock(PHPInfo::class)->shouldIgnoreMissing();
         $this->php->shouldReceive('getExtensionDir')->andReturn('/ext');
         $this->php->shouldReceive('getIniScanDir')->andReturn('/ini');
@@ -113,6 +119,7 @@ final class ExtensionsInstallerTest extends TestCase
             new VendorArchivePreparer(M::mock(Filesystem\ArchiveExtractor::class), $fs),
             new Enabler($this->php, $fs, new \IPE\Logger(), new Enabler\Options()),
             $this->resolver,
+            new PHPSystemPackage($this->php, $os),
             new \IPE\Logger()
         );
     }
@@ -199,6 +206,26 @@ final class ExtensionsInstallerTest extends TestCase
         }
         self::assertEqualsCanonicalizing(['libfake', 'libfake-dev', 'fake-tool-pkg', 'autoconf', 'gcc'], $this->packager->installed);
         self::assertContains('remove fake-tool-pkg libfake-dev autoconf gcc', $this->packager->log);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompilingWithSystemPHPNeedsItsDevelopmentPackage()
+    {
+        $fs = $this->createFilesystem();
+        $fs->shouldReceive('isFile')->andReturn(false);
+        $fs->shouldReceive('listDirectoryContents')->andReturn([]);
+        $installer = $this->createInstaller($fs, new Package('php8.4-cli', '8.4.27-1~deb13u1', 'php8.4'));
+        $resolved = new Resolved(null, '/src', '', Resolved::ORIGIN_URL, new Manifest(Manifest::TYPE_PECL, 'foo', 'foo'));
+        try {
+            $installer->install([$resolved], new State($this->php, $fs));
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertStringContainsString('config.m4', $x->getMessage());
+        }
+        self::assertContains('install autoconf=1.0 gcc=1.0 php8.4-dev=1.0', $this->packager->log);
+        self::assertContains('remove autoconf gcc php8.4-dev', $this->packager->log);
     }
 
     /**
@@ -341,6 +368,42 @@ final class ExtensionsInstallerTest extends TestCase
         self::assertSame($expectedIniContent, $this->writtenFiles[$iniFile]);
         $installed = $report->getExtensions()[0];
         self::assertSame(InstalledExtension::METHOD_ENABLED, $installed->getMethod());
+        self::assertSame([$iniFile => $enable], $installed->getIniFiles());
+        self::assertSame(['fake'], $installed->getLoadedModules());
+    }
+
+    /**
+     * @dataProvider provideReenableCases
+     *
+     * @param bool $enable
+     * @param string $expectedIniContent
+     *
+     * @return void
+     */
+    public function testSystemPackage($enable, $expectedIniContent)
+    {
+        $iniFile = '/ini/20-fake.ini';
+        $this->writtenFiles[$iniFile] = "extension=fake.so\n";
+        $fs = $this->createFilesystem();
+        $fs->shouldReceive('isFile')->andReturn(true);
+        $fs->shouldReceive('isDirectory')->andReturn(true);
+        $fs->shouldReceive('listDirectoryContents')->andReturnUsing(static function ($path) {
+            return $path === '/ini' ? ['20-fake.ini'] : [];
+        });
+        $fs->shouldReceive('run')->andReturn([0, "[PHP Modules]\nCore\nfake\n"]);
+        $installer = $this->createInstaller($fs, new Package('php8.4-cli', '8.4.27-1~deb13u1', 'php8.4'));
+        $this->packager->expansions['php8.4-fake=8.4.27-1~deb13u1'] = ['php8.4-fake'];
+        $extension = M::mock(Extension::class . ', ' . Extension\RequiresSystemDependencies::class);
+        $extension->shouldReceive('getHandle')->andReturn('fake');
+        $extension->shouldReceive('getInstalledNames')->andReturn(['fake']);
+        $extension->shouldNotReceive('getRequiredSystemDependencies');
+        $report = $installer->install([new Resolved($extension, 'php8.4-fake=8.4.27-1~deb13u1', '8.4.27', Resolved::ORIGIN_SYSTEM_PACKAGE)], new State($this->php, $fs), $enable);
+        // Without phpize and the development package
+        self::assertSame(['php8.4-fake'], $this->packager->installed);
+        self::assertNotContains('remove php8.4-fake', $this->packager->log);
+        self::assertSame($expectedIniContent, $this->writtenFiles[$iniFile]);
+        $installed = $report->getExtensions()[0];
+        self::assertSame(InstalledExtension::METHOD_SYSTEM_PACKAGE, $installed->getMethod());
         self::assertSame([$iniFile => $enable], $installed->getIniFiles());
         self::assertSame(['fake'], $installed->getLoadedModules());
     }
