@@ -254,10 +254,10 @@ jobs:
           name: phar
       -
         name: Run install-php-extensions
-        run: php install-php-extensions --version
+        run: php install-php-extensions --help
       -
         name: Run install-php-extensions-gz
-        run: php install-php-extensions-gz --version
+        run: php install-php-extensions-gz --help
 
   plan-extension-tests:
     name: Plan the extension tests
