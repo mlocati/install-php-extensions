@@ -335,6 +335,7 @@ final class BuildTools
 
     /**
      * Look for a tool next to the PHP binary first, then in the PATH.
+     * If the name of the PHP binary has a version suffix (like php8.4 or php84), we first look for the tool with the same suffix (like phpize8.4 or phpize84).
      *
      * @param non-empty-string $name
      * @param \Closure(non-empty-string): bool $isValid
@@ -345,21 +346,52 @@ final class BuildTools
      */
     private function findTool($name, \Closure $isValid)
     {
-        $nextToPHP = dirname($this->php->getPHPBin()) . $this->fs->getDirectorySeparator() . $name;
-        if ($this->fs->isFile($nextToPHP)) {
-            if ($isValid($nextToPHP)) {
-                return $nextToPHP;
-            }
-            $this->logger->debug("Skipping {$nextToPHP} since it does not match PHP {$this->php->getVersion()} (API {$this->php->getAPIVersion()})");
+        $phpDir = dirname($this->php->getPHPBin());
+        $candidateNames = [];
+        $suffix = $this->getPHPBinSuffix();
+        if ($suffix !== '') {
+            $candidateNames[] = $name . $suffix;
         }
-        $inPath = $this->fs->resolveCommand($name);
-        if ($inPath !== '' && $inPath !== $nextToPHP) {
-            if ($isValid($inPath)) {
-                return $inPath;
+        $candidateNames[] = $name;
+        $checked = [];
+        foreach ($candidateNames as $candidateName) {
+            foreach ([true, false] as $nextToPHP) {
+                if ($nextToPHP) {
+                    $candidate = $phpDir . $this->fs->getDirectorySeparator() . $candidateName;
+                    if (!$this->fs->isFile($candidate)) {
+                        continue;
+                    }
+                } else {
+                    $candidate = $this->fs->resolveCommand($candidateName);
+                    if ($candidate === '') {
+                        continue;
+                    }
+                }
+                if (isset($checked[$candidate])) {
+                    continue;
+                }
+                $checked[$candidate] = true;
+                if ($isValid($candidate)) {
+                    return $candidate;
+                }
+                $this->logger->debug("Skipping {$candidate} since it does not match PHP {$this->php->getVersion()} (API {$this->php->getAPIVersion()})");
             }
-            $this->logger->debug("Skipping {$inPath} since it does not match PHP {$this->php->getVersion()} (API {$this->php->getAPIVersion()})");
         }
 
         return '';
+    }
+
+    /**
+     * @return string
+     *
+     * @example '8.4' for /usr/bin/php8.4 (Debian, Ubuntu)
+     * @example '84' for /usr/bin/php84 (Alpine)
+     * @example '' for /usr/local/bin/php
+     */
+    private function getPHPBinSuffix()
+    {
+        $matches = null;
+
+        return preg_match('/^php(?<suffix>\d[\w.-]*)$/D', basename($this->php->getPHPBin()), $matches) ? $matches['suffix'] : '';
     }
 }

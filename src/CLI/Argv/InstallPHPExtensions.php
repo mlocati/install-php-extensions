@@ -30,6 +30,7 @@ final class InstallPHPExtensions extends Argv
     public function __construct(Extension\Registry $extensions, SystemDependency\Registry $systemDependencies)
     {
         $this->addDefinitions([
+            new Option\Definition\StringValue('php', 'The php command (or the path of the PHP CLI binary) for which the extensions should be installed (default: the PHP running install-php-extensions)'),
             new Option\Definition\OptionalValue('from-composer-json', 'Also install the extensions listed in the require and require-dev sections of a composer.json file (default: composer.json in the current directory)'),
             new Option\Definition\OptionalValue('from-composer-lock', 'Also install the extensions required by the project and by its dependencies, as listed in a composer.lock file (default: composer.lock in the current directory)'),
             new Option\Definition\Flag('no-dev', 'Ignore the development requirements of the project in --from-composer-json and --from-composer-lock'),
