@@ -11,7 +11,7 @@ declare(strict_types=1);
  *   For pushes and manual runs: install one extension in a few Docker images (if the commits are specified, only if relevant files changed)
  * Writes to the file specified by the GITHUB_OUTPUT environment variable (if set):
  * - distros: the JSON array of the operating systems of the Docker images to be used (empty if there's nothing to test)
- * - tests: the JSON array of the tests, each one with the space-separated extensions, the PHP version, and whether PHP is thread-safe
+ * - tests: the JSON array of the tests, each one with the space-separated extensions, the PHP version, whether PHP is thread-safe, and the options of install-php-extensions (if any)
  */
 
 namespace IPE\Scripts\CI\PlanExtensionTests;
@@ -58,6 +58,18 @@ const PATHS_REQUIRING_TESTS_REGEX = [
 const QUICK_TEST_EXTENSION = 'calendar';
 
 const QUICK_TEST_PHP_VERSION = '8.5';
+
+/**
+ * The extensions to be tested more times, each time with different install-php-extensions options (an empty list means the default options).
+ */
+const OPTION_VARIANTS = [
+    'saxon' => [
+        [],
+        ['--saxon:edition=EE'],
+        ['--saxon:edition=PE'],
+        ['--saxon:edition=HE'],
+    ],
+];
 
 final class RequestedTest
 {
@@ -287,11 +299,35 @@ function supportsThreadSafety(string $class, string $phpVersion, bool $zts): boo
 }
 
 /**
+ * The combinations of the option variants of the extensions.
+ *
+ * @param list<class-string<Extension>> $classes
+ *
+ * @return non-empty-list<list<string>>
+ */
+function getOptionVariants(array $classes): array
+{
+    $result = [[]];
+    foreach ($classes as $class) {
+        $variants = OPTION_VARIANTS[$class::getHandle()] ?? [[]];
+        $combinations = [];
+        foreach ($result as $options) {
+            foreach ($variants as $variant) {
+                $combinations[] = array_merge($options, $variant);
+            }
+        }
+        $result = $combinations;
+    }
+
+    return $result;
+}
+
+/**
  * @param array<string, class-string<Extension>> $extensionClasses
  * @param list<string> $allPHPVersions sorted from the most recent
  * @param list<string> $operatingSystems
  *
- * @return list<array{extensions: string, php: string, zts: bool, os: non-empty-list<string>}> os: the operating systems of the Docker images to be used
+ * @return list<array{extensions: string, options: list<string>, php: string, zts: bool, os: non-empty-list<string>}> os: the operating systems of the Docker images to be used
  */
 function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVersions, array $operatingSystems): array
 {
@@ -312,6 +348,13 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
             $phpVersions = array_values(array_intersect($phpVersions, $class::getSupportedPHPVersions()));
         }
     }
+    $optionVariants = getOptionVariants($classes);
+    if (count($optionVariants) > 1) {
+        echo "  - Tested with these options:\n";
+        foreach ($optionVariants as $options) {
+            echo '     - ', $options === [] ? '(default)' : implode(' ', $options), "\n";
+        }
+    }
     $result = [];
     foreach ($phpVersions as $phpVersion) {
         $zts = array_find([false, true], static fn (bool $zts): bool => array_all($classes, static fn (string $class): bool => supportsThreadSafety($class, $phpVersion, $zts)));
@@ -324,14 +367,16 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
             echo "  - PHP {$phpVersion}" . ($zts ? ' (ZTS)' : '') . ": skipped (no Docker image)\n";
             continue;
         }
-        $result[] = ['extensions' => implode(' ', $test->extensions), 'php' => $phpVersion, 'zts' => $zts, 'os' => $imageOperatingSystems];
+        foreach ($optionVariants as $options) {
+            $result[] = ['extensions' => implode(' ', $test->extensions), 'options' => $options, 'php' => $phpVersion, 'zts' => $zts, 'os' => $imageOperatingSystems];
+        }
     }
     if ($result === []) {
         echo "  => no PHP version to be tested\n";
     } else {
         echo "  => to be tested on:\n";
         foreach ($result as $item) {
-            echo "     - PHP {$item['php']}" . ($item['zts'] ? ' (ZTS)' : '') . ': ' . implode(', ', $item['os']) . "\n";
+            echo "     - PHP {$item['php']}" . ($item['zts'] ? ' (ZTS)' : '') . ($item['options'] === [] ? '' : ' with ' . implode(' ', $item['options'])) . ': ' . implode(', ', $item['os']) . "\n";
         }
     }
 
@@ -441,7 +486,7 @@ function main(array $argv): int
         usort($tests, static fn (array $a, array $b): int => strcmp($a['extensions'], $b['extensions']) ?: version_compare($a['php'], $b['php']));
         $usedOperatingSystems = array_merge([], ...array_map(static fn (array $test): array => $test['os'], $tests));
         // Not the operating systems: they may be many, and the size of an environment variable is limited
-        writeOutput('tests', array_map(static fn (array $test): array => ['extensions' => $test['extensions'], 'php' => $test['php'], 'zts' => $test['zts']], $tests));
+        writeOutput('tests', array_map(static fn (array $test): array => ['extensions' => $test['extensions'], 'php' => $test['php'], 'zts' => $test['zts']] + ($test['options'] === [] ? [] : ['options' => $test['options']]), $tests));
         writeOutput('distros', array_values(array_intersect($operatingSystems, $usedOperatingSystems)));
     } catch (\Throwable $x) {
         fwrite(STDERR, rtrim((string) $x) . "\n");
