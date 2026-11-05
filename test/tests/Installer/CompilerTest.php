@@ -11,6 +11,7 @@ use IPE\Filesystem\Command;
 use IPE\Installer\BuildOptions;
 use IPE\Installer\BuildTools;
 use IPE\Installer\Compiler;
+use IPE\Installer\ZendExtensionDetector;
 use IPE\Option;
 use IPE\PHPInfo;
 use IPE\Test\Support\TestCase;
@@ -68,6 +69,7 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
         $fs->shouldReceive('resolveCommand')->with('make')->andReturn('/usr/bin/make');
         $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('/usr/bin/nproc');
+        $fs->shouldReceive('resolveCommand')->with('readelf')->andReturn('');
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('nproc', [])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "4\n"]);
 
         return $fs;
@@ -95,7 +97,7 @@ final class CompilerTest extends TestCase
         $php = self::createPHPInfo();
         $resolved = new Resolved(null, self::SOURCE_DIR, '5.1.24', Resolved::ORIGIN_DIRECTORY, null, new Option\Values(['--enable-apcu-debug']));
 
-        $compiled = (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+        $compiled = (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile($resolved);
 
         self::assertSame($resolved, $compiled->getResolved());
         self::assertSame('apcu', $compiled->getModuleName());
@@ -127,7 +129,7 @@ final class CompilerTest extends TestCase
         $manifest->setZendExtension(true);
         $resolved = new Resolved(null, self::SOURCE_DIR, '8.4.14', Resolved::ORIGIN_DIRECTORY, $manifest, new Option\Values(['--with-php-config=/opt/php/bin/php-config', '--with-libdir=lib']));
 
-        $compiled = (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), (new BuildOptions())->withParallelJobs(2)->withType(BuildOptions::TYPE_WITH_SYMBOLS), $php, $fs, new \IPE\Logger()))->compile($resolved);
+        $compiled = (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), (new BuildOptions())->withParallelJobs(2)->withType(BuildOptions::TYPE_WITH_SYMBOLS), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile($resolved);
 
         self::assertSame('opcache', $compiled->getModuleName());
         self::assertTrue($compiled->isZendExtension());
@@ -150,7 +152,7 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-qux=no', '--with-php-config=/usr/local/bin/php-config', '--enable-foo=alt', '--with-libdir=lib', '--without-baz'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
         $resolved = new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED, null, new Option\Values(['--without-baz'], ['variant' => 'alt'], ['--enable-foo=no', '--with-qux=no']));
         $this->expectException(Exception\IO::class);
-        (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+        (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile($resolved);
     }
 
     /**
@@ -171,7 +173,7 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
         $resolved = new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED);
         try {
-            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile($resolved);
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('configure failed', $x->getMessage());
@@ -198,7 +200,7 @@ final class CompilerTest extends TestCase
         $php = self::createPHPInfo();
         $resolved = new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY);
 
-        $compiled = (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), (new BuildOptions())->withType(BuildOptions::TYPE_DEBUG), $php, $fs, new \IPE\Logger()))->compile($resolved);
+        $compiled = (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), (new BuildOptions())->withType(BuildOptions::TYPE_DEBUG), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile($resolved);
 
         self::assertSame('lzf', $compiled->getModuleName());
     }
@@ -216,7 +218,7 @@ final class CompilerTest extends TestCase
         $php = self::createPHPInfo();
         $resolved = new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY);
         try {
-            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile($resolved);
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertSame('configure failed with exit code 1', $x->getMessage());
@@ -236,7 +238,7 @@ final class CompilerTest extends TestCase
         $php = self::createPHPInfo();
         putenv('CFLAGS=-DFOO');
         try {
-            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertSame('configure failed with exit code 1', $x->getMessage());
@@ -259,7 +261,7 @@ final class CompilerTest extends TestCase
         $php = self::createPHPInfo();
         putenv('EXTRA_CFLAGS=-Wno-error=implicit-function-declaration');
         try {
-            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertSame('make failed with exit code 2', $x->getMessage());
@@ -282,7 +284,7 @@ final class CompilerTest extends TestCase
         $php = self::createPHPInfo();
         $resolved = new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY);
         try {
-            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile($resolved);
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('config.m4', $x->getMessage());
@@ -308,6 +310,6 @@ final class CompilerTest extends TestCase
         $php = self::createPHPInfo();
         $resolved = new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY);
         $this->expectExceptionMessage('stop here');
-        (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+        (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile($resolved);
     }
 }

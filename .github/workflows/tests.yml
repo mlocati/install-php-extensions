@@ -8,6 +8,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
 
 permissions:
   contents: read
@@ -178,12 +180,15 @@ jobs:
         name: Run PHPUnit
         env:
           IPE_TEST_PULL_REQUEST_BASE: ${{ matrix.check-pull-request && github.event_name == 'pull_request' && 'HEAD^1' || '' }}
-        run: composer --no-interaction --ansi run-script phpunit
+        # Pull requests shouldn't fail because of changes elsewhere (the weekly run checks them)
+        run: composer --no-interaction --ansi run-script phpunit ${{ github.event_name == 'pull_request' && '-- --exclude-group online' || '' }}
 
   build-phar:
     name: Build PHAR
     needs:
-      - phpunit
+      - php-syntax
+      - php-coding-style
+      - phpstan
     runs-on: ubuntu-latest
     steps:
       -
@@ -249,10 +254,10 @@ jobs:
           name: phar
       -
         name: Run install-php-extensions
-        run: php install-php-extensions --version
+        run: php install-php-extensions --help
       -
         name: Run install-php-extensions-gz
-        run: php install-php-extensions-gz --version
+        run: php install-php-extensions-gz --help
 
   plan-extension-tests:
     name: Plan the extension tests
@@ -299,6 +304,7 @@ jobs:
   test-extensions:
     name: Test extensions on ${{ matrix.distro }}
     needs:
+      - phpunit
       - build-phar
       - plan-extension-tests
     if: needs.plan-extension-tests.outputs.distros != '[]'
