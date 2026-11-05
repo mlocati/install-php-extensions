@@ -19,14 +19,12 @@ IPE is distributed as a PHAR file attached to the [releases](https://github.com/
 - `install-php-extensions`: not compressed;
 - `install-php-extensions-gz`: smaller, but it requires the zlib PHP extension (which should be always available in the official Docker PHP images).
 
-Since IPE is still in alpha, there are only pre-releases: in the examples below, replace `<version>` with the version of a release (for example `1.0.0-alpha1`).
-
 ### Downloading IPE with `ADD`
 
 ```Dockerfile
 FROM php:8.4-cli
 
-ADD --chmod=0755 https://github.com/mlocati/install-php-extensions/releases/download/<version>/install-php-extensions /usr/local/bin/
+ADD --chmod=0755 https://github.com/mlocati/install-php-extensions/releases/latest/download/install-php-extensions /usr/local/bin/
 
 RUN install-php-extensions gd xdebug
 ```
@@ -38,12 +36,23 @@ FROM php:8.4-cli
 
 RUN curl -sSLf \
         -o /usr/local/bin/install-php-extensions \
-        https://github.com/mlocati/install-php-extensions/releases/download/<version>/install-php-extensions-gz && \
+        https://github.com/mlocati/install-php-extensions/releases/latest/download/install-php-extensions-gz && \
     chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions gd xdebug
 ```
 
 The same commands work outside Docker too (IPE must be run as root, since it installs system packages).
+
+### Using a specific version of IPE
+
+The URLs above download the most recent release of IPE, so a new release may change what your builds do.
+To always use the same version, replace `latest/download` with `download/<version>`, where `<version>` is the version of a [release](https://github.com/mlocati/install-php-extensions/releases) (for example `0.0.1`):
+
+```Dockerfile
+ADD --chmod=0755 https://github.com/mlocati/install-php-extensions/releases/download/0.0.1/install-php-extensions /usr/local/bin/
+```
+
+Pre-releases (like `1.0.0-beta1`) are never downloaded by the `latest` URLs: you can use them only by specifying their version.
 
 ### Building IPE
 
