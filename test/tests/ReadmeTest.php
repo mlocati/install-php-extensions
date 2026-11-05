@@ -63,7 +63,7 @@ final class ReadmeTest extends TestCase
     {
         $base = (string) getenv('IPE_TEST_PULL_REQUEST_BASE');
         if ($base === '') {
-            self::markTestSkipped('IPE_TEST_PULL_REQUEST_BASE is not set: this is not a pull request');
+            self::markTestSkipped('IPE_TEST_PULL_REQUEST_BASE is not set (in pull requests, only one CI job sets it)');
         }
         $result = Git::run(['show', "{$base}:README.md"]);
         self::assertNotNull($result, 'git is not available');
