@@ -163,6 +163,17 @@ final class LegacyCompatibilityTest extends TestCase
     /**
      * @return void
      */
+    public function testKeepSystemPackagerCache()
+    {
+        self::assertSame(
+            [['ipe', '--keep-systempackager-cache=yes', 'apcu'], ['The IPE_KEEP_SYSPKG_CACHE environment variable is deprecated: use --keep-systempackager-cache=yes instead']],
+            self::process(['apcu'], ['IPE_KEEP_SYSPKG_CACHE' => '1'])
+        );
+    }
+
+    /**
+     * @return void
+     */
     public function testEnvironmentVariables()
     {
         self::assertSame(

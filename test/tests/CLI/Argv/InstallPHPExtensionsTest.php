@@ -49,6 +49,17 @@ final class InstallPHPExtensionsTest extends TestCase
     /**
      * @return void
      */
+    public function testKeepSystemPackagerCache()
+    {
+        // When it's not specified, the default depends on the environment
+        self::assertNull(self::createArgv()->addArgv(['ipe'])->get('keep-systempackager-cache'));
+        self::assertTrue(self::createArgv()->addArgv(['ipe', '--keep-systempackager-cache=yes'])->getBool('keep-systempackager-cache', false));
+        self::assertFalse(self::createArgv()->addArgv(['ipe', '--keep-systempackager-cache', 'no'])->getBool('keep-systempackager-cache', true));
+    }
+
+    /**
+     * @return void
+     */
     public function testSystemDependencyOptions()
     {
         $argv = self::createArgv()->addArgv(['install-php-extensions', '--lib-icu:en-only', '--saxon:edition=HE', 'oci8']);

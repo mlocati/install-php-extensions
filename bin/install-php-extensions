@@ -320,7 +320,7 @@ try {
         if ($os instanceof OS\Windows) {
             $logger->warning('Installing extensions on Windows is not implemented yet');
         } else {
-            $report = $app->make(Installer\ExtensionsInstaller::class)->install($resolvedExtensions, $state, !$options->get('dont-enable'), !$options->get('keep-systempackager-cache'));
+            $report = $app->make(Installer\ExtensionsInstaller::class)->install($resolvedExtensions, $state, !$options->get('dont-enable'), !$options->getBool('keep-systempackager-cache', !$inDockerPHPImage));
             if (!$options->getFlag('create-enable-scripts')) {
                 showHowToEnable($fs, $report, $logger);
             }
