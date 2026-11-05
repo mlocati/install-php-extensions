@@ -1,0 +1,16 @@
+{
+    "minified": "composer/2.0",
+    "packages": {
+        "foo/bar": [
+            {
+                "name": "foo/bar",
+                "version": "v1.2.3",
+                "version_normalized": "1.2.3.0",
+                "type": "php-ext",
+                "require": {"php": ">=5.5"},
+                "dist": {"type": "zip", "url": "https://example.com/dist/foo-bar-1.2.3.zip"},
+                "php-ext": {"extension-name": "bar", "build-path": "ext"}
+            }
+        ]
+    }
+}

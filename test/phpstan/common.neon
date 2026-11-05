@@ -1,0 +1,28 @@
+# The settings shared by phpstan.php55.neon.dist (files compatible with PHP 5.5) and phpstan.php85.neon.dist (files that require PHP 8.5)
+parameters:
+    level: 10
+    scanFiles:
+        - stubs.php
+        - stubs-php-constants.php
+    bootstrapFiles:
+        - bootstrap.php
+    strictRules:
+        # Too noisy: for example, they would require "=== 1" after every preg_match()
+        booleansInConditions: false
+        booleansInLoopConditions: false
+        disallowedShortTernary: false
+        # The tests call the methods named in the data providers
+        noVariableVariables: false
+    dynamicConstantNames:
+        - IPE_VERSION
+        - IPE_CLI_ROOT_DIR
+    exceptions:
+        # Every exception must be listed in @throws, except the ones caused by programming errors
+        uncheckedExceptionRegexes: []
+        uncheckedExceptionClasses:
+            - IPE\Exception\InvalidArgument
+            - IPE\Exception\Regex
+            - ReflectionException
+        check:
+            missingCheckedExceptionInThrows: true
+            tooWideThrowType: true

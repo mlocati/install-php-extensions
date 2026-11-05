@@ -1,0 +1,4 @@
+article.section: Body
+article: Intro text
+    
+    Footer text

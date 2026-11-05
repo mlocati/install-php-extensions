@@ -1,0 +1,9 @@
+{
+    "name": "foo/no-zts",
+    "type": "php-ext",
+    "version": "1.0.0",
+    "php-ext": {
+        "extension-name": "fakethreadsafety",
+        "support-zts": false
+    }
+}

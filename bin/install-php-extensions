@@ -1,0 +1,338 @@
+#!/usr/bin/env php
+<?php
+
+use IPE\CLI;
+use IPE\CLI\Argv;
+use IPE\Exception as IPEException;
+use IPE\Extension;
+use IPE\Filesystem;
+use IPE\Installer;
+use IPE\Logger;
+use IPE\OS;
+use IPE\Service;
+use IPE\SystemPackager;
+
+if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed', 'micro'], true)) {
+    fwrite(STDERR, "This script may only be invoked from a command line.\n");
+    exit(1);
+}
+
+const IPE_VERSION = '';
+
+// @phpstan-ignore identical.alwaysTrue (the release workflow sets the version when building the PHAR files)
+echo 'install-php-extensions ', IPE_VERSION === '' ? '(development version)' : ('v' . IPE_VERSION), "\nhttps://github.com/mlocati/install-php-extensions\n\n";
+
+// Not defined when IPE is used as a library (it starts with phar:// when running from the phar)
+define('IPE_CLI_ROOT_DIR', dirname(__DIR__));
+
+if (function_exists('ob_get_level')) {
+    while (ob_get_level()) {
+        ob_end_flush();
+    }
+}
+
+if (function_exists('ob_implicit_flush')) {
+    ob_implicit_flush();
+}
+
+require_once __DIR__ . '/../src/autoload.php';
+require_once __DIR__ . '/../src/app.php';
+
+/**
+ * @param string[] $options
+ * @param string[] $argv
+ *
+ * @return bool
+ */
+function isAnyOptionPresent(array $options, array $argv)
+{
+    $before = array_search('--', $argv, true);
+    foreach ($options as $option) {
+        $foundAt = array_search($option, $argv, true);
+        if ($foundAt !== false && ($before === false || $foundAt < $before)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @param non-empty-list<string> $argv
+ *
+ * @throws \IPE\Exception\JSON
+ *
+ * @return void
+ */
+function showSyntax(array $argv, Argv $options)
+{
+    echo <<<EOT
+Syntax: {$argv[0]} [options] [--] [extensions]
+
+Every extension can be specified with:
+- its handle (example: xdebug)
+- the name of its Composer package (example: vendor/name)
+- a GitHub shortcut (example: gh:organization/repository@ref)
+- the URL of an archive containing its source code (example: https://example.com/extension.tar.gz)
+- the path of a local directory containing its source code (example: ./path/to/extension)
+You can choose the version of the extensions specified with their handle or with their Composer package (example: 'xdebug:^3.3').
+You can pass options to the extensions with --<handle>:<option>[=<value>] or --<vendor>/<name>:<option>[=<value>].
+
+For the details, the list of the supported extensions and their options, see
+https://github.com/mlocati/install-php-extensions#readme
+
+Options:
+-h|--help
+  Show this help text
+-v|--version
+  Show the program version
+{$options->buildCLIHelpString()}
+
+EOT;
+}
+
+/**
+ * @param string $file
+ * @param list<non-empty-string> $packages
+ *
+ * @throws \IPE\Exception\IO
+ *
+ * @return void
+ */
+function savePackageList(Filesystem $fs, $file, array $packages)
+{
+    if ($file !== '') {
+        $fs->writeFile($file, implode(' ', $packages) . "\n");
+    }
+}
+
+/**
+ * @param string $file
+ *
+ * @throws \IPE\Exception\IO
+ * @throws \IPE\Exception\JSON
+ *
+ * @return void
+ */
+function saveReport(Filesystem $fs, $file, Installer\Report $report)
+{
+    if ($file !== '') {
+        $fs->writeFile($file, Service\JSON::encode($report, true) . "\n");
+    }
+}
+
+/**
+ * @throws \IPE\Exception\IO
+ *
+ * @return void
+ */
+function showHowToEnable(Filesystem $fs, Installer\Report $report, Logger $logger)
+{
+    $names = [];
+    $command = 'install-php-extensions';
+    foreach ($report->getExtensions() as $extension) {
+        $disabled = false;
+        foreach ($extension->getIniFiles() as $iniFile => $active) {
+            if (!$active) {
+                $disabled = true;
+                $command .= ' --enable=' . (preg_match('_^[\w./+-]+$_', $iniFile) ? $iniFile : $fs->escapeShellArg($iniFile));
+            }
+        }
+        if ($disabled) {
+            $names[] = $extension->getResolved()->getName();
+        }
+    }
+    if ($names !== []) {
+        $logger->notice((count($names) === 1 ? "In order to enable the extension {$names[0]}" : 'In order to enable the extensions ' . implode(', ', $names)) . ", simply run\n{$command}");
+    }
+}
+
+$app = IPE\createApp();
+$argv = Argv::getScriptArgv();
+if (count($argv) === 1) {
+    echo "No arguments received.\nUse {$argv[0]} --help for help.\n";
+    exit(0);
+}
+
+$options = $app->build(Argv\InstallPHPExtensions::class);
+
+try {
+    // Not the Filesystem singleton, which must be created after reading the --temp-dir option
+    $inDockerPHPImage = (new Service\DockerPHPImage(new Filesystem\Local($app->make(Logger::class))))->isInUse();
+} catch (IPEException $x) {
+    fwrite(STDERR, "{$x->getMessage()}\n");
+    exit(1);
+}
+$legacyWarnings = [];
+if ($inDockerPHPImage) {
+    list($argv, $legacyWarnings) = $app->build(CLI\LegacyCompatibility::class, ['options' => $options])->process($argv, CLI\LegacyCompatibility::getEnvironment());
+}
+
+// Create the console logger
+$logger = $app->make(Logger::class)->setTarget($app->build(Logger\Console::class, ['verbose' => isAnyOptionPresent(['--verbose'], $argv)]));
+foreach ($legacyWarnings as $legacyWarning) {
+    $logger->warning($legacyWarning);
+}
+
+if (isAnyOptionPresent(['-h', '--help'], $argv)) {
+    showSyntax($argv, $options);
+    exit(0);
+}
+if (isAnyOptionPresent(['-v', '--version'], $argv)) {
+    // We already displayed the version
+    exit(0);
+}
+
+try {
+    // Parse the CLI arguments
+    $options->addArgv($argv);
+
+    // Configure the filesystem
+    if (($tempDir = $options->get('temp-dir')) !== '') {
+        $app->when(Filesystem\Local::class)
+            ->needs('$temporaryDirectory')
+            ->give(static function () use ($tempDir) {
+                return $tempDir;
+            })
+        ;
+    }
+
+    // Configure the downloader
+    $app->when(Filesystem\Downloader\Factory::class)
+        ->needs('$config')
+        ->give(static function () use ($options) {
+            return [
+                'cacheDir' => $options->get('cache-dir'),
+                'cacheMaxAge' => $options->get('cache-maxage'),
+                'proxy' => $options->get('no-proxy') ? '' : (getenv('HTTP_PROXY') ?: getenv('http_proxy') ?: ''),
+                'insecure' => $options->getFlag('insecure'),
+            ];
+        })
+    ;
+
+    // Configure the activation of the extensions
+    if ($options->getFlag('create-enable-scripts') && !$inDockerPHPImage) {
+        throw new IPEException\InvalidOption('The --create-enable-scripts option is available only in the official Docker PHP images');
+    }
+    $app->when(Installer\Enabler::class)
+        ->needs('$skipCheck')
+        ->give(static function () use ($options) {
+            return $options->getFlag('skip-check');
+        })
+    ;
+    $app->when(Installer\Enabler::class)
+        ->needs('$createEnableScripts')
+        ->give(static function () use ($options) {
+            return $options->getFlag('create-enable-scripts');
+        })
+    ;
+    $iniBasename = $options->getString('ini-basename');
+    if ($iniBasename === '') {
+        $iniBasename = $inDockerPHPImage ? Installer\Enabler::INI_BASENAME_COMPAT : Installer\Enabler::INI_BASENAME_DEFAULT;
+    } elseif ($iniBasename === Installer\Enabler::INI_BASENAME_COMPAT && !$inDockerPHPImage) {
+        throw new IPEException\InvalidOption('The --ini-basename=' . Installer\Enabler::INI_BASENAME_COMPAT . ' option is available only in the official Docker PHP images');
+    } elseif ($iniBasename !== Installer\Enabler::INI_BASENAME_COMPAT && !preg_match(Installer\Enabler::RX_VALID_INI_BASENAME, $iniBasename)) {
+        throw new IPEException\InvalidOption("Invalid value of the --ini-basename option ('{$iniBasename}'): it must contain {priority} followed by {name} (once each), and only letters, digits, _, - and . (but it can't start or end with a dot)");
+    }
+    $app->when(Installer\Enabler::class)
+        ->needs('$iniBasename')
+        ->give(static function () use ($iniBasename) {
+            return $iniBasename;
+        })
+    ;
+
+    // Configure the system packagers
+    $app->when(SystemPackager\APT\OnDebian::class)
+        ->needs('$config')
+        ->give(static function () use ($options, $inDockerPHPImage) {
+            return [
+                'fixArchived' => $options->getBool('apt-debian-fix-archived', $inDockerPHPImage),
+                'archiveUrls' => [
+                    'default' => $options->get('apt-debian-archiveurl-default'),
+                    'security' => $options->get('apt-debian-archiveurl-security'),
+                    'updates' => $options->get('apt-debian-archiveurl-updates'),
+                ],
+            ];
+        })
+    ;
+
+    // Configure the compilation
+    $app->singleton(Installer\BuildOptions::class, static function () use ($options) {
+        return (new Installer\BuildOptions())
+            ->withParallelJobs($options->getInt('cpus') ?: 0)
+            ->withType($options->getString('build-type'))
+        ;
+    });
+
+    // Configure resolvers
+    $app->extend(
+        Extension\Asked\Resolver\Options::class,
+        static function (Extension\Asked\Resolver\Options $resolverOptions, Service\Container $app) use ($options) {
+            return $resolverOptions
+                ->withIgnoreUnknownExtensions($options->getFlag('ignore-unknown-extensions'))
+                ->withOnUnsupportedExtensions($options->getString('unsupported-extensions'))
+            ;
+        }
+    );
+
+    // Detect OS
+    $os = $app->make(OS::class);
+    $fs = $app->make(Filesystem::class);
+
+    // Collect the extensions we want to install
+    $askedExtensions = $app->build(CLI\ArgumentsParser::class)->parseArguments($options->getArguments(), $options->getOptionsByExtension());
+    $composerJson = $options->get('from-composer-json');
+    $composerLock = $options->get('from-composer-lock');
+    if ($composerJson !== null || $composerLock !== null) {
+        $askedExtensions = array_merge($askedExtensions, $app->make(CLI\ComposerRequirements::class)->getAskedExtensions(
+            $composerJson === null ? '' : (is_string($composerJson) && $composerJson !== '' ? $composerJson : 'composer.json'),
+            $composerLock === null ? '' : (is_string($composerLock) && $composerLock !== '' ? $composerLock : 'composer.lock'),
+            !$options->get('no-dev'),
+            $askedExtensions,
+            $options->getOptionsByExtension()
+        ));
+    }
+
+    if ($options->getBool('fix-letsencrypt', $inDockerPHPImage)) {
+        $app->make(Service\LetsEncryptFixer::class)->fix($os);
+    }
+    $report = new Installer\Report();
+    if ($askedExtensions !== []) {
+        $state = $app->make(Installer\State::class)
+            ->withSystemDependencyOptions($options->getSystemDependencyOptions())
+        ;
+        $resolvedExtensions = $app->make(Extension\Asked\Resolver::class)->resolveAskedExtensions($askedExtensions, $state);
+        foreach ($resolvedExtensions as $resolvedExtension) {
+            $logger->info("Resolved extension: {$resolvedExtension}");
+        }
+        if ($os instanceof OS\Windows) {
+            $logger->warning('Installing extensions on Windows is not implemented yet');
+        } else {
+            $report = $app->make(Installer\ExtensionsInstaller::class)->install($resolvedExtensions, $state, !$options->get('dont-enable'), !$options->get('keep-systempackager-cache'));
+            if (!$options->getFlag('create-enable-scripts')) {
+                showHowToEnable($fs, $report, $logger);
+            }
+        }
+    }
+    if ($options->getStringList('enable') !== [] || $options->getStringList('disable') !== []) {
+        $enabler = $app->make(Installer\Enabler::class);
+        foreach ($options->getStringList('disable') as $iniFile) {
+            $logger->info($enabler->disableIniFile($iniFile) ? "Disabled {$iniFile}" : "{$iniFile} was already disabled");
+        }
+        foreach ($options->getStringList('enable') as $iniFile) {
+            $logger->info($enabler->enableIniFile($iniFile) ? "Enabled {$iniFile}" : "{$iniFile} was already enabled");
+        }
+    }
+    savePackageList($fs, $options->getString('save-persistent-packages-to'), $report->getSystemPackages()->getPersistent());
+    savePackageList($fs, $options->getString('save-volatile-packages-to'), $report->getSystemPackages()->getVolatile());
+    saveReport($fs, $options->getString('save-report-to'), $report);
+    if ($options->get('install-composer')) {
+        $app->make(Service\ComposerInstaller::class)->install(
+            $options->getString('composer-path'),
+            $options->getString('composer-version')
+        );
+    }
+} catch (IPEException $x) {
+    $logger->emergency($x);
+    exit(1);
+}

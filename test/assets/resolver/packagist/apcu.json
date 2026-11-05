@@ -1,0 +1,28 @@
+{
+    "minified": "composer/2.0",
+    "packages": {
+        "apcu/apcu": [
+            {
+                "name": "apcu/apcu",
+                "version": "5.1.24",
+                "version_normalized": "5.1.24.0",
+                "type": "php-ext",
+                "require": {"php": ">=7.0"},
+                "dist": {"type": "zip", "url": "https://example.com/dist/apcu-5.1.24.zip"},
+                "php-ext": {"extension-name": "apcu"}
+            },
+            {
+                "version": "5.1.0",
+                "version_normalized": "5.1.0.0",
+                "require": {"php": ">=7.0"},
+                "dist": {"type": "zip", "url": "https://example.com/dist/apcu-5.1.0.zip"}
+            },
+            {
+                "version": "4.0.11",
+                "version_normalized": "4.0.11.0",
+                "require": {"php": ">=5.3.0 <7"},
+                "dist": {"type": "zip", "url": "https://example.com/dist/apcu-4.0.11.zip"}
+            }
+        ]
+    }
+}

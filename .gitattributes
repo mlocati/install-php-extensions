@@ -1,0 +1,13 @@
+* text=auto eol=lf
+*.bat text eol=crlf
+
+/bin/ export-ignore
+/src/CLI/ export-ignore
+/src/Dev/ export-ignore
+/src/autoload.php export-ignore
+/scripts/ export-ignore
+/test/ export-ignore
+/.* export-ignore
+/*.md export-ignore
+/phpstan.*.neon.dist export-ignore
+/phpunit.xml.dist export-ignore

@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<root>
+    <value>12</value>
+    <?php echo "ignored"; ?>
+    <value>34</value>
+</root>

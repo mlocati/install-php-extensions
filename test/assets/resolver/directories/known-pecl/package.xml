@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.10.13" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0">
+ <name>lzf</name>
+ <channel>pecl.php.net</channel>
+ <summary>Handles LZF de/compression</summary>
+ <description>Fixture for the IPE tests</description>
+ <date>2024-01-01</date>
+ <version>
+  <release>1.7.0</release>
+  <api>1.7.0</api>
+ </version>
+ <stability>
+  <release>stable</release>
+  <api>stable</api>
+ </stability>
+ <license uri="http://www.php.net/license">PHP License</license>
+ <notes>Fixture</notes>
+ <contents>
+  <dir name="/">
+   <file name="config.m4" role="src" />
+  </dir>
+ </contents>
+ <dependencies>
+  <required>
+   <php>
+    <min>7.0.0</min>
+    <max>8.99.99</max>
+    <exclude>8.0.0</exclude>
+   </php>
+   <pearinstaller>
+    <min>1.4.0</min>
+   </pearinstaller>
+   <extension>
+    <name>spl</name>
+   </extension>
+   <extension>
+    <name>json</name>
+    <min>1.2.0</min>
+   </extension>
+   <extension>
+    <name>evil</name>
+    <conflicts />
+   </extension>
+   <os>
+    <name>windows</name>
+    <conflicts />
+   </os>
+  </required>
+  <optional>
+   <extension>
+    <name>zlib</name>
+   </extension>
+  </optional>
+ </dependencies>
+ <providesextension>LZF</providesextension>
+ <extsrcrelease>
+  <configureoption default="no" name="enable-lzf-better-compression" prompt="Sacrifice speed in favour of compression ratio?" />
+  <configureoption name="with-lzf-dir" prompt="Path to the &quot;lzf&quot; library" />
+ </extsrcrelease>
+</package>

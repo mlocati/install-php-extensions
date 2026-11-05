@@ -1,0 +1,8 @@
+<package>
+    <name>my-package</name>
+    <version>1.2.3</version>
+    <authors>
+        <author>Mario</author>
+        <author>Luigi</author>
+    </authors>
+</package>

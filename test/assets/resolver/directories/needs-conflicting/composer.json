@@ -1,0 +1,8 @@
+{
+    "name": "foo/needs-conflicting",
+    "type": "php-ext",
+    "version": "1.0.0",
+    "require": {
+        "ext-conflicting": "*"
+    }
+}

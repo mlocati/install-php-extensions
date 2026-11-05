@@ -1,0 +1,5 @@
+<root>
+    <a><![CDATA[ _SAMPLE_CDATA_ ]]></a>
+    <b><![CDATA[ different ]]></b>
+    <c><![CDATA[ _SAMPLE_CDATA_ ]]></c>
+</root>

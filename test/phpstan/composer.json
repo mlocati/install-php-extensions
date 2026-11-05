@@ -1,0 +1,18 @@
+{
+    "description": "Static analysis tools for install-php-extensions (kept apart from the main composer.json, which must be installable on PHP 5.5)",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.4",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-mockery": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        },
+        "sort-packages": true
+    }
+}

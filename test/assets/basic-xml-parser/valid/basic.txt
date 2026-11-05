@@ -1,0 +1,2 @@
+root.name: John
+root.age: 30

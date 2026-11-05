@@ -1,0 +1,61 @@
+#!/usr/bin/env php
+<?php
+
+use IPE\OS;
+use IPE\SystemPackager\APT;
+use IPE\Exception as IPEException;
+use IPE\Test\Support\IPETestHelpers;
+use IPE\SystemPackager;
+
+require_once __DIR__ . '/../../bootstrap.php';
+require_once IPE_ROOT_DIR . '/src/app.php';
+
+IPETestHelpers::writeStartSection('Testing that APT works');
+
+$rc = 1;
+try {
+    echo 'Determining the current OS... ';
+    $app = IPE\createApp();
+    $os = $app->make(OS::class);
+    echo $os->getDisplayName(), "\n";
+    if (!$os instanceof OS\Posix) {
+        throw new IPEException\UserMessage('Not an OS with a system packager');
+    }
+    $app->when(SystemPackager\APT\OnDebian::class)
+        ->needs('$config')
+        ->give(static function () {
+            return [
+                'fixArchived' => true,
+            ];
+        })
+    ;
+        
+    echo 'Retrieving the system packager... ';
+    $packager = $os->getSystemPackager();
+    echo get_class($packager), "\n";
+    if (!$packager instanceof APT) {
+        throw new IPEException\UserMessage('System packager is not APT');
+    }
+    echo "\n\n### REFRESHING APT\n";
+    $packager->refresh();
+    echo "\n\n### SIMULATING UPGRADE OF INSTALLED PACKAGES\n";
+    $packager->upgradeInstalledPackages(true);
+    echo "\n\n### DELETING CACHE\n";
+    $packager->deleteCache();
+    echo "\n\n### REFRESHING CACHE\n";
+    $packager->refresh();
+    $rc = 0;
+} catch (IPEException\UnsupportedOS $x) {
+    IPETestHelpers::writeErrorMessage($x->getMessage());
+} catch (IPEException\UserMessage $x) {
+    IPETestHelpers::writeErrorMessage($x->getMessage());
+} catch (IPEException\SystemPackager $x) {
+    IPETestHelpers::writeErrorMessage($x->getMessage());
+}
+if ($rc === 0) {
+    echo "\n\nPASSED.\n";
+}
+
+IPETestHelpers::writeEndSection();
+
+exit($rc);

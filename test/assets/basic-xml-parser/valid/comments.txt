@@ -1,0 +1,3 @@
+root.x: 123
+root.y: 456
+root.z: 789

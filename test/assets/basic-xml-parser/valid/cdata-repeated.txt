@@ -1,0 +1,3 @@
+root.a: _SAMPLE_CDATA_
+root.b: different
+root.c: _SAMPLE_CDATA_

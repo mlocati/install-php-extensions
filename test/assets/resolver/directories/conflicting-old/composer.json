@@ -1,0 +1,11 @@
+{
+    "name": "foo/conflicting-old",
+    "type": "php-ext",
+    "version": "1.0.0",
+    "php-ext": {
+        "extension-name": "conflicting"
+    },
+    "conflict": {
+        "ext-lzf": "<1.0"
+    }
+}

@@ -1,0 +1,10 @@
+<root>
+    <!-- This is a comment -->
+    <x>123</x>
+    <!-- multi
+         line -->
+    <y>456</y>
+    <!-- <![CDATA -->
+    <z>789</z>
+    <!-- ]]> -->
+</root>

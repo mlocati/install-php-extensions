@@ -1,0 +1,2 @@
+root.x:child: value1
+root.y-child: value2

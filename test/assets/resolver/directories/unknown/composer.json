@@ -1,0 +1,5 @@
+{
+    "name": "foo/bar",
+    "type": "php-ext",
+    "version": "9.9.9"
+}

@@ -1,0 +1,29 @@
+{
+    "name": "apcu/apcu",
+    "type": "php-ext",
+    "license": "PHP-3.01",
+    "require": {
+        "php": ">=7.0",
+        "ext-json": "*",
+        "ext-spl": "^8",
+        "lib-curl": ">=7.50",
+        "lib-zlib": "*",
+        "some/package": "^1.0"
+    },
+    "suggest": {
+        "ext-igbinary": "Serialize with igbinary",
+        "some/library": "Not an extension"
+    },
+    "php-ext": {
+        "extension-name": "ext-apcu",
+        "priority": 40,
+        "support-zts": false,
+        "build-path": "/src/",
+        "os-families-exclude": ["Windows"],
+        "configure-options": [
+            {"name": "enable-apcu-debug", "description": "Enable internal debugging", "needs-value": false},
+            {"name": "--with-apcu-dir", "description": "Path to something", "needs-value": true},
+            {"name": "enable-apcu-clear-signal", "description": "Install a signal handler for SIGUSR1"}
+        ]
+    }
+}

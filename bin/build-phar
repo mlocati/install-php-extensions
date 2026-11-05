@@ -1,0 +1,153 @@
+#!/usr/bin/env php
+<?php
+
+use IPE\CLI;
+use IPE\CLI\Argv;
+use IPE\CLI\Argv\Option;
+use IPE\Exception as IPEException;
+
+if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed', 'micro'], true)) {
+    fwrite(STDERR, "This script may only be invoked from a command line.\n");
+    exit(1);
+}
+
+require_once __DIR__ . '/../src/autoload.php';
+require_once __DIR__ . '/../src/app.php';
+
+set_error_handler(static function ($errno, $errstr, $errfile = '', $errline = 0) {
+    $errstr = trim($errstr);
+    if ($errstr === '') {
+        $errstr = "Error code {$errno}";
+    }
+    if ($errfile !== '') {
+        $errstr .= "\nFile: {$errfile}";
+        if ($errline !== 0) {
+            $errstr .= "\nLine: {$errline}";
+        }
+    }
+    throw new IPEException\IO($errstr);
+}, -1);
+
+/**
+ * @param string[] $argv
+ *
+ * @return bool
+ */
+function isHelpRequested(array $argv)
+{
+    $e = array_search('--', $argv, true);
+    foreach (['-h', '--help'] as $o) {
+        $i = array_search($o, $argv, true);
+        if ($i !== false && ($e === false || $i < $e)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * @param non-empty-list<string> $argv
+ *
+ * @throws \IPE\Exception\JSON
+ *
+ * @return void
+ */
+function showSyntax(array $argv, Argv $options)
+{
+    echo <<<EOT
+Syntax: {$argv[0]} [options] [--] [phar-file]...
+
+Options:
+-h|--help
+  Show this help text
+{$options->buildCLIHelpString()}
+EOT;
+}
+
+$argv = Argv::getScriptArgv();
+
+try {
+    $options = new Argv();
+    $options->addDefinitions([
+        new Option\Definition\Flag('verbose', 'Print debug information'),
+        new Option\Definition\Flag('overwrite', 'Overwrite existing files'),
+        new Option\Definition\ValueInList('compress', 'Compress the PHAR file with bz2 (bzip2) or gz (zlib)', ['bz2', 'gz']),
+        new Option\Definition\Flag('no-strip', "Don't strip (trim) the PHP source code"),
+        new Option\Definition\Flag('no-check', "Don't check for syntax errors in PHP files added to the PHAR"),
+        new Option\Definition\StringValue('version', 'The version tag (example: 1.2.3)', '', CLI\PharBuilder::VERSION_REGEX),
+    ]);
+
+    if (isHelpRequested($argv)) {
+        showSyntax($argv, $options);
+        exit(0);
+    }
+
+    if (!extension_loaded('Phar')) {
+        throw new IPEException\UserMessage('The Phar PHP extension must be enabled');
+    }
+
+    if (filter_var(ini_get('phar.readonly'), FILTER_VALIDATE_BOOLEAN)) {
+        throw new IPEException\UserMessage("Please run this script with phar.readonly=0 (eg 'php -d phar.readonly=0 {$argv[0]}')");
+    }
+    try {
+        $arguments = $options->addArgv($argv)->getArguments();
+    } catch (IPEException\InvalidOption $x) {
+        throw $x->asUserMessage();
+    }
+    switch (count($arguments)) {
+        case 0:
+            $outputFilename = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'install-php-extensions';
+            break;
+        case 1:
+            $outputFilename = $arguments[0];
+            break;
+        default:
+            throw new IPEException\UserMessage('Too many arguments');
+    }
+    if (trim($outputFilename) === '') {
+        throw new IPEException\UserMessage('Empty output filename');
+    }
+    if (file_exists($outputFilename)) {
+        $real = realpath($outputFilename);
+        if ($real === false) {
+            throw new IPEException\UserMessage("{$outputFilename} couldn't be resolved");
+        }
+        $outputFilename = $real;
+        if (!is_file($outputFilename)) {
+            throw new IPEException\UserMessage("{$outputFilename} already exists and it's not a file");
+        }
+        if (!$options->get('overwrite')) {
+            throw new IPEException\UserMessage("{$outputFilename} already exists (use --overwrite to overwrite it)");
+        }
+        if (!@unlink($outputFilename)) {
+            throw new IPEException\UserMessage("Failed to delete {$outputFilename}");
+        }
+    }
+    $builder = new CLI\PharBuilder();
+    $builder
+        ->setCompressPHPFiles(!$options->get('no-strip'))
+        ->setVerifyPHPFiles(!$options->get('no-check'))
+        ->setVerbose($options->getFlag('verbose'))
+        ->setVersion($options->getString('version'))
+    ;
+    switch ($options->get('compress')) {
+        case 'bz2':
+            $builder->setCompressionAlgorithm(Phar::BZ2);
+            break;
+        case 'gz':
+            $builder->setCompressionAlgorithm(Phar::GZ);
+            break;
+    }
+    echo "Building PHAR. Please wait...\n";
+    $actualOutputFilename = $builder->build($outputFilename);
+    echo "PHAR created: {$actualOutputFilename}\n";
+} catch (IPEException\UserMessage $x) {
+    flush();
+    fwrite(STDERR, $x->getMessage() . "\n");
+    exit(1);
+} catch (IPEException $x) {
+    flush();
+    fwrite(STDERR, (string) $x . "\n");
+    exit(1);
+}

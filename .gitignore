@@ -1,0 +1,7 @@
+/.vscode/
+/test/tmp/
+/test/phpstan/vendor/
+/vendor/
+/composer.lock
+/*.cache
+/install-php-extensions

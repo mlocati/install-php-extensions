@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE package SYSTEM "http://pear.php.net/dtd/package-1.0">
+<package version="1.0" packagerversion="1.4.11">
+  <name>oldext</name>
+  <summary>An old extension</summary>
+  <description>Fixture for the IPE tests</description>
+  <maintainers>
+    <maintainer>
+      <user>someone</user>
+      <name>Some One</name>
+      <email>someone@example.com</email>
+      <role>lead</role>
+    </maintainer>
+  </maintainers>
+  <release>
+    <version>0.5.1</version>
+    <date>2005-01-01</date>
+    <license>PHP License</license>
+    <state>stable</state>
+    <notes>Fixture</notes>
+    <provides type="ext" name="old_ext" />
+    <deps>
+      <dep type="php" rel="ge" version="4.3.0" />
+      <dep type="php" rel="lt" version="6.0.0" />
+      <dep type="ext" rel="has">pcre</dep>
+      <dep type="ext" rel="ge" version="1.2" optional="yes">json</dep>
+      <dep type="os" rel="has">linux</dep>
+      <dep type="ldlib" rel="ge" version="1.2.3">z</dep>
+      <dep type="ltlib" rel="has">ltdl</dep>
+      <dep type="pkg" rel="has">PEAR</dep>
+    </deps>
+    <configureoptions>
+      <configureoption name="with-oldext-dir" default="/usr" prompt="Where is the oldext library installed?" />
+    </configureoptions>
+    <filelist>
+      <file role="src" name="config.m4" />
+    </filelist>
+  </release>
+</package>

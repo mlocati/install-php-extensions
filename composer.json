@@ -1,0 +1,71 @@
+{
+    "name": "mlocati/install-php-extensions",
+    "description": "Easily install PHP extensions",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Michele Locati",
+            "email": "michele@locati.it"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "IPE\\": "src/"
+        },
+        "files": [
+            "src/app.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "IPE\\Test\\Support\\": "test/support/",
+            "IPE\\Test\\": "test/tests/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "policy": {
+            "advisories": {
+                "ignore-id": {
+                    "CVE-2026-24765": "phpunit/phpunit: only affects PHPT tests with code coverage, which we don't use; PHPUnit 4.8 and 6.5 (for PHP < 7.3) won't receive a fix",
+                    "CVE-2026-45133": "symfony/yaml: required by PHPUnit 4.8 (for PHP < 7), which doesn't parse untrusted YAML documents",
+                    "CVE-2026-45304": "symfony/yaml: required by PHPUnit 4.8 (for PHP < 7), which doesn't parse untrusted YAML documents",
+                    "CVE-2026-45305": "symfony/yaml: required by PHPUnit 4.8 (for PHP < 7), which doesn't parse untrusted YAML documents",
+                    "CVE-2026-109413": "symfony/yaml: required by PHPUnit 4.8 (for PHP < 7), which doesn't parse untrusted YAML documents"
+                }
+            }
+        },
+        "sort-packages": true
+    },
+    "require": {
+        "php": ">=5.5 <8.7",
+        "ext-json": "*",
+        "composer/semver": "^3.4"
+    },
+    "suggest": {
+        "psr/log": "Allows custom logging"
+    },
+    "require-dev": {
+        "ext-phar": "*",
+        "ext-zip": "*",
+        "mockery/mockery": "^0.9.11 | ^1.6.15",
+        "phpunit/phpunit": "^4.8.36 | ^6.5.14 | ^9.6.38",
+        "psr/log": "^1 | ^2 | ^3"
+    },
+    "scripts": {
+        "build-phar": "@php -d phar.readonly=0 ./bin/build-phar",
+        "lint:check": "php-cs-fixer fix --dry-run --diff",
+        "lint:fix": "php-cs-fixer fix",
+        "phpstan": [
+            "@php test/phpstan/vendor/phpstan/phpstan/phpstan.phar analyse --configuration=phpstan.php55.neon.dist",
+            "@php test/phpstan/vendor/phpstan/phpstan/phpstan.phar analyse --configuration=phpstan.php85.neon.dist"
+        ],
+        "phpunit": "phpunit --verbose",
+        "test": [
+            "@lint:check",
+            "@phpunit",
+            "@phpstan"
+        ]
+    }
+}

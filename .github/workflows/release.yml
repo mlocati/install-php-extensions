@@ -1,0 +1,107 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "The tag to be created (examples: 1.2.3, 1.2.3-alpha, 1.2.3-beta2, 1.2.3-RC1)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+
+jobs:
+  release:
+    name: Release ${{ inputs.tag }}
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag }}
+      EXPECTED_VERSION_OUTPUT: |-
+        install-php-extensions v${{ inputs.tag }}
+        https://github.com/mlocati/install-php-extensions
+    steps:
+      -
+        name: Check the branch
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::Releases can only be created from the main branch (not from $GITHUB_REF)"
+            exit 1
+          fi
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer:v2
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Check the tag
+        id: check-tag
+        run: php scripts/check-release-tag.php "$TAG"
+      -
+        name: Install Composer dependencies
+        run: composer --no-interaction --ansi --no-progress update --no-dev
+      -
+        name: Build install-php-extensions
+        run: composer --no-interaction --ansi run-script build-phar -- --verbose "--version=$TAG" install-php-extensions
+      -
+        name: Check the version of install-php-extensions
+        run: |
+          actual="$(php -d error_reporting=-1 -d display_errors=stdout -d display_startup_errors=1 install-php-extensions --version)"
+          if [ "$actual" != "$EXPECTED_VERSION_OUTPUT" ]; then
+            echo "::error::Wrong version: $actual"
+            exit 1
+          fi
+      -
+        name: Build install-php-extensions-gz
+        run: composer --no-interaction --ansi run-script build-phar -- --verbose --compress=gz "--version=$TAG" install-php-extensions-gz
+      -
+        name: Check the version of install-php-extensions-gz
+        run: |
+          actual="$(php -d error_reporting=-1 -d display_errors=stdout -d display_startup_errors=1 install-php-extensions-gz --version)"
+          if [ "$actual" != "$EXPECTED_VERSION_OUTPUT" ]; then
+            echo "::error::Wrong version: $actual"
+            exit 1
+          fi
+      -
+        name: Update README.md
+        id: update-readme
+        run: |
+          php scripts/update-readme.php
+          if git diff --quiet -- README.md; then
+            echo "README.md didn't change: the release will be created from the commit $GITHUB_SHA"
+            echo "target=$GITHUB_SHA" >>"$GITHUB_OUTPUT"
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m "Update README.md for $TAG" -- README.md
+            git push origin HEAD:main
+            TARGET="$(git rev-parse HEAD)"
+            echo "README.md has been updated and pushed to main: the release will be created from the commit $TARGET"
+            echo "target=$TARGET" >>"$GITHUB_OUTPUT"
+          fi
+      -
+        name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ steps.check-tag.outputs.prerelease }}
+          TARGET: ${{ steps.update-readme.outputs.target }}
+        run: |
+          if [ "$PRERELEASE" = true ]; then
+            CREATE_OPTIONS='--prerelease'
+            UPDATE_OPTIONS='--latest=false'
+          else
+            CREATE_OPTIONS=''
+            UPDATE_OPTIONS='--latest'
+          fi
+          # With release immutability the files must be attached before publishing the release
+          # (stdout discarded: it's the URL of the draft, not the final one)
+          gh release create "$TAG" --draft --target "$TARGET" --title "v$TAG" --generate-notes $CREATE_OPTIONS install-php-extensions install-php-extensions-gz >/dev/null
+          gh release edit "$TAG" --draft=false $UPDATE_OPTIONS

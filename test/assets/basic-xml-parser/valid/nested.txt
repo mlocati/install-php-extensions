@@ -1,0 +1,4 @@
+package.name: my-package
+package.version: 1.2.3
+package.authors.author: Mario
+package.authors.author: Luigi

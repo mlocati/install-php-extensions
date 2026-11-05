@@ -1,0 +1,9 @@
+{
+    "name": "foo/conflicting",
+    "type": "php-ext",
+    "version": "1.0.0",
+    "conflict": {
+        "ext-lzf": "*",
+        "foo/not-an-extension": "*"
+    }
+}

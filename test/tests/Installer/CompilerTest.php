@@ -1,0 +1,313 @@
+<?php
+
+namespace IPE\Test\Installer;
+
+use IPE\Exception;
+use IPE\Extension;
+use IPE\Extension\Manifest;
+use IPE\Extension\Resolved;
+use IPE\Filesystem;
+use IPE\Filesystem\Command;
+use IPE\Installer\BuildOptions;
+use IPE\Installer\BuildTools;
+use IPE\Installer\Compiler;
+use IPE\Option;
+use IPE\PHPInfo;
+use IPE\Test\Support\TestCase;
+use Mockery as M;
+
+final class CompilerTest extends TestCase
+{
+    const SOURCE_DIR = '/tmp/ipe/apcu-src';
+
+    const EXTENSION_DIR = '/usr/local/lib/php/extensions/no-debug-non-zts-20240924';
+
+    /**
+     * @return \IPE\PHPInfo&\Mockery\MockInterface
+     */
+    private static function createPHPInfo()
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
+        $php->shouldReceive('getVersion')->andReturn('8.4.14');
+        $php->shouldReceive('getAPIVersion')->andReturn(20240924);
+        $php->shouldReceive('getExtensionDir')->andReturn(self::EXTENSION_DIR);
+        $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--with-libdir=lib64'");
+
+        return $php;
+    }
+
+    /**
+     * @return array<non-empty-string, string>
+     */
+    private static function createConfigureEnvironment()
+    {
+        return ['CFLAGS' => '-g -O2 -fstack-protector-strong', 'CXXFLAGS' => '-g -O2 -fstack-protector-strong'];
+    }
+
+    /**
+     * @return array<non-empty-string, string>
+     */
+    private static function createMakeEnvironment()
+    {
+        return ['EXTRA_CFLAGS' => '-Werror=implicit-function-declaration'];
+    }
+
+    /**
+     * A filesystem where phpize, php-config, make and nproc are available.
+     *
+     * @return \IPE\Filesystem&\Mockery\MockInterface
+     */
+    private static function createFilesystem()
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/phpize')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/phpize', ['--version'])))->andReturn([0, "PHP Api Version: 20240924\n"]);
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
+        $fs->shouldReceive('resolveCommand')->with('make')->andReturn('/usr/bin/make');
+        $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('/usr/bin/nproc');
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('nproc', [])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "4\n"]);
+
+        return $fs;
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompileUnknownExtension()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64', '--enable-apcu-debug'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/bin/make', ['-j4'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createMakeEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('isDirectory')->with(self::SOURCE_DIR . '/modules')->andReturn(true);
+        $fs->shouldReceive('listDirectoryContents')->with(self::SOURCE_DIR . '/modules')->andReturn(['apcu.la', 'apcu.so']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/bin/make', ['-j4', 'install'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createMakeEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('isFile')->with(self::EXTENSION_DIR . '/apcu.so')->andReturn(true);
+        $fs->shouldReceive('readFile')->with(self::EXTENSION_DIR . '/apcu.so')->andReturn("\x7fELF...get_module...");
+        $fs->shouldReceive('resolveCommand')->with('strip')->andReturn('/usr/bin/strip');
+        $fs->shouldReceive('getFileSize')->with(self::EXTENSION_DIR . '/apcu.so')->andReturn(300000, 100000);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/bin/strip', ['--strip-all', self::EXTENSION_DIR . '/apcu.so'])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $php = self::createPHPInfo();
+        $resolved = new Resolved(null, self::SOURCE_DIR, '5.1.24', Resolved::ORIGIN_DIRECTORY, null, new Option\Values(['--enable-apcu-debug']));
+
+        $compiled = (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+
+        self::assertSame($resolved, $compiled->getResolved());
+        self::assertSame('apcu', $compiled->getModuleName());
+        self::assertSame(self::EXTENSION_DIR . '/apcu.so', $compiled->getModulePath());
+        self::assertFalse($compiled->isZendExtension());
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompileWithManifestAndPreviousBuild()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(false);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config0.m4')->andReturn(true);
+        $fs->shouldReceive('rename')->once()->with(self::SOURCE_DIR . '/config0.m4', self::SOURCE_DIR . '/config.m4');
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(true);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', ['--clean'])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        // The user options win over the detected php-config and libdir
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/opt/php/bin/php-config', '--with-libdir=lib'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/bin/make', ['-j2'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createMakeEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('isDirectory')->with(self::SOURCE_DIR . '/modules')->andReturn(true);
+        $fs->shouldReceive('listDirectoryContents')->with(self::SOURCE_DIR . '/modules')->andReturn(['helper.so', 'opcache.so']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/bin/make', ['-j2', 'install'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createMakeEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('isFile')->with(self::EXTENSION_DIR . '/opcache.so')->andReturn(true);
+        $php = self::createPHPInfo();
+        $manifest = new Manifest(Manifest::TYPE_COMPOSER, 'php/opcache', 'opcache');
+        $manifest->setZendExtension(true);
+        $resolved = new Resolved(null, self::SOURCE_DIR, '8.4.14', Resolved::ORIGIN_DIRECTORY, $manifest, new Option\Values(['--with-php-config=/opt/php/bin/php-config', '--with-libdir=lib']));
+
+        $compiled = (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), (new BuildOptions())->withParallelJobs(2)->withType(BuildOptions::TYPE_WITH_SYMBOLS), $php, $fs, new \IPE\Logger()))->compile($resolved);
+
+        self::assertSame('opcache', $compiled->getModuleName());
+        self::assertTrue($compiled->isZendExtension());
+    }
+
+    /**
+     * @return void
+     */
+    public function testConfigureArgumentsProvidedByTheExtension()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $php = self::createPHPInfo();
+        $extension = M::mock(Extension::class . ', ' . Extension\ProvidesConfigureArguments::class);
+        $extension->shouldReceive('getConfigureArguments')->once()->with('1.0.0', M::type(Option\Values::class))->andReturnUsing(static function ($version, Option\Values $options) {
+            return ['--enable-foo=' . $options->getCustomValue('variant'), '--with-baz', '--with-libdir=lib'];
+        });
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-qux=no', '--with-php-config=/usr/local/bin/php-config', '--enable-foo=alt', '--with-libdir=lib', '--without-baz'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $resolved = new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED, null, new Option\Values(['--without-baz'], ['variant' => 'alt'], ['--enable-foo=no', '--with-qux=no']));
+        $this->expectException(Exception\IO::class);
+        (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+    }
+
+    /**
+     * @return void
+     */
+    public function testExtensionHooks()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $php = self::createPHPInfo();
+        $extension = M::mock(Extension::class . ', ' . Extension\PatchesSourceCode::class . ', ' . Extension\PatchesConfigureScript::class);
+        $extension->shouldReceive('getHandle')->andReturn('foo');
+        $extension->shouldReceive('getInstalledNames')->andReturn(['foo']);
+        $extension->shouldReceive('patchSourceCode')->once()->ordered()->with(self::SOURCE_DIR);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $extension->shouldReceive('patchConfigureScript')->once()->ordered()->with(self::SOURCE_DIR);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $resolved = new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED);
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertStringContainsString('configure failed', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testDebugBuild()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['CFLAGS' => '-O0 -g -fstack-protector-strong', 'CXXFLAGS' => '-O0 -g -fstack-protector-strong'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/bin/make', ['-j4'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createMakeEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('isDirectory')->with(self::SOURCE_DIR . '/modules')->andReturn(true);
+        $fs->shouldReceive('listDirectoryContents')->with(self::SOURCE_DIR . '/modules')->andReturn(['lzf.so']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/bin/make', ['-j4', 'install'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createMakeEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('isFile')->with(self::EXTENSION_DIR . '/lzf.so')->andReturn(true);
+        $fs->shouldReceive('readFile')->with(self::EXTENSION_DIR . '/lzf.so')->andReturn('ELF');
+        $fs->shouldNotReceive('resolveCommand')->with('strip');
+        $php = self::createPHPInfo();
+        $resolved = new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY);
+
+        $compiled = (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), (new BuildOptions())->withType(BuildOptions::TYPE_DEBUG), $php, $fs, new \IPE\Logger()))->compile($resolved);
+
+        self::assertSame('lzf', $compiled->getModuleName());
+    }
+
+    /**
+     * @return void
+     */
+    public function testFailingStep()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $php = self::createPHPInfo();
+        $resolved = new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY);
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertSame('configure failed with exit code 1', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testUserFlagsComeLast()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['CFLAGS' => '-g -O2 -fstack-protector-strong -DFOO', 'CXXFLAGS' => '-g -O2 -fstack-protector-strong'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $php = self::createPHPInfo();
+        putenv('CFLAGS=-DFOO');
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertSame('configure failed with exit code 1', $x->getMessage());
+        } finally {
+            putenv('CFLAGS');
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testUserExtraFlagsComeLast()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/bin/make', ['-j4'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['EXTRA_CFLAGS' => '-Werror=implicit-function-declaration -Wno-error=implicit-function-declaration'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([2, '']);
+        $php = self::createPHPInfo();
+        putenv('EXTRA_CFLAGS=-Wno-error=implicit-function-declaration');
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertSame('make failed with exit code 2', $x->getMessage());
+        } finally {
+            putenv('EXTRA_CFLAGS');
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testNotAnExtension()
+    {
+        $fs = self::createFilesystem();
+        foreach (['config.m4', 'config0.m4', 'config9.m4'] as $file) {
+            $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/' . $file)->andReturn(false);
+        }
+        $fs->shouldReceive('listDirectoryContents')->with(self::SOURCE_DIR)->andReturn(['README.md']);
+        $fs->shouldReceive('isDirectory')->with(self::SOURCE_DIR . '/README.md')->andReturn(false);
+        $php = self::createPHPInfo();
+        $resolved = new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY);
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertStringContainsString('config.m4', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testSourceInSubdirectory()
+    {
+        $subdirectory = self::SOURCE_DIR . '/ext';
+        $fs = self::createFilesystem();
+        foreach (['config.m4', 'config0.m4', 'config9.m4'] as $file) {
+            $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/' . $file)->andReturn(false);
+        }
+        $fs->shouldReceive('listDirectoryContents')->with(self::SOURCE_DIR)->andReturn(['README.md', 'ext']);
+        $fs->shouldReceive('isDirectory')->with(self::SOURCE_DIR . '/README.md')->andReturn(false);
+        $fs->shouldReceive('isDirectory')->with($subdirectory)->andReturn(true);
+        $fs->shouldReceive('isFile')->with($subdirectory . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with($subdirectory . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory($subdirectory)->withOutput(Command::OUTPUT_SHOW)))->andThrow(new Exception\IO('stop here'));
+        $php = self::createPHPInfo();
+        $resolved = new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY);
+        $this->expectExceptionMessage('stop here');
+        (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new \IPE\Logger()))->compile($resolved);
+    }
+}

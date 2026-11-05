@@ -1,0 +1,31 @@
+# The files that must be compatible with PHP 5.5 (the ones that require PHP 8.5 are analysed with phpstan.php85.neon.dist)
+includes:
+    - test/phpstan/common.neon
+parameters:
+    paths:
+        - bin/build-phar
+        - bin/install-php-extensions
+        - src
+        - test
+    excludePaths:
+        - test/phpstan
+        - test/assets
+        - test/extensions
+        - test/tmp (?)
+        # Compatibility layers for PHP/PHPUnit/psr-log versions that PHPStan can't model
+        - test/support/TestCase4.php
+        - test/support/TestCase6.php
+        - test/support/Log/PSRLogger1.php
+        - test/support/Log/PSRLogger23.php
+    ignoreErrors:
+        # PHPUnit reports the exceptions thrown by the tests: no need to list them
+        -
+            identifier: missingType.checkedException
+            path: test/*
+        # InvalidArgument is unchecked, so a @throws list without it doesn't mean that it can't be thrown
+        -
+            identifier: catch.neverThrown
+            message: '#^Dead catch - IPE\\Exception\\InvalidArgument is never thrown in the try block\.$#'
+        -
+            identifier: throws.unusedType
+            message: '#^Method \S+ has IPE\\Exception\\InvalidArgument in PHPDoc @throws tag but it''s not thrown\.$#'

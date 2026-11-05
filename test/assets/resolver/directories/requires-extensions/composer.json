@@ -1,0 +1,12 @@
+{
+    "name": "foo/needs-apcu",
+    "type": "php-ext",
+    "version": "1.0.0",
+    "require": {
+        "ext-apcu": "^5",
+        "ext-json": "*"
+    },
+    "suggest": {
+        "ext-mcrypt": "Used if available"
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "minified": "composer/2.0",
+    "packages": {
+        "foo/prepackaged": [
+            {
+                "name": "foo/prepackaged",
+                "version": "1.0.7",
+                "version_normalized": "1.0.7.0",
+                "type": "php-ext",
+                "require": {"php": ">=5.5"},
+                "dist": {"type": "zip", "url": "https://api.github.com/repos/foo/prepackaged/zipball/0123456789abcdef0123456789abcdef01234567"},
+                "php-ext": {"extension-name": "prepackaged", "download-url-method": ["pre-packaged-binary", "pre-packaged-source"]}
+            }
+        ]
+    }
+}

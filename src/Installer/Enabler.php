@@ -1,0 +1,475 @@
+<?php
+
+namespace IPE\Installer;
+
+use IPE\Exception;
+use IPE\Extension;
+use IPE\Extension\Manifest;
+use IPE\Filesystem;
+use IPE\Filesystem\Command;
+use IPE\PHPInfo;
+use IPE\Service\Regex;
+
+/**
+ * Enables a compiled extension by creating an ini file in the directory scanned by PHP.
+ */
+final class Enabler
+{
+    /**
+     * @var \IPE\Logger
+     */
+    private $logger;
+
+    /**
+     * The extension= and zend_extension= lines (with \s the ^ could match the empty lines before them).
+     *
+     * @var non-empty-string
+     */
+    const RX_ACTIVE_LINE = '/^([ \t]*)((?:zend_)?extension[ \t]*=[ \t]*\S)/m';
+
+    /**
+     * The commented out extension= and zend_extension= lines.
+     *
+     * @var non-empty-string
+     */
+    const RX_INACTIVE_LINE = '/^([ \t]*);[ \t]*((?:zend_)?extension[ \t]*=[ \t]*\S)/m';
+
+    /**
+     * The names of the ini files used by docker-php-ext-enable (xx-php-ext-<name> for the extensions loaded after the others).
+     *
+     * @var non-empty-string
+     */
+    const INI_BASENAME_COMPAT = 'compat';
+
+    /**
+     * The names of the ini files used by pie.
+     *
+     * @var non-empty-string
+     */
+    const INI_BASENAME_DEFAULT = '{priority}-{name}';
+
+    /**
+     * {priority} must come before {name}, so that the files are sorted by priority.
+     * No leading dot (hidden files), no trailing dot (it would be followed by .ini).
+     *
+     * @var non-empty-string
+     */
+    const RX_VALID_INI_BASENAME = '/^(?:[\w-][\w.-]*)?\{priority\}[\w.-]*\{name\}(?:[\w.-]*[\w-])?$/D';
+
+    /**
+     * @var \IPE\PHPInfo
+     */
+    private $php;
+
+    /**
+     * @var \IPE\Filesystem
+     */
+    private $fs;
+
+    /**
+     * @var array<non-empty-string, array{non-empty-string, non-empty-string}> the keys are the module names, the values are the path and the content of the ini files
+     */
+    private $enabledIniFiles = [];
+
+    /**
+     * @var bool
+     */
+    private $skipCheck;
+
+    /**
+     * @var bool
+     */
+    private $createEnableScripts;
+
+    /**
+     * @var non-empty-string
+     */
+    private $iniBasename;
+
+    /**
+     * @param bool $skipCheck true to enable the extensions without checking that PHP loads them correctly
+     * @param bool $createEnableScripts true to create the docker-php-ext-enable-<module> scripts when disabling the extensions
+     * @param string $iniBasename INI_BASENAME_COMPAT, or the name of the ini files (without .ini) with the {priority} and {name} placeholders
+     *
+     * @throws \IPE\Exception\InvalidArgument
+     */
+    public function __construct(PHPInfo $php, Filesystem $fs, \IPE\Logger $logger, $skipCheck = false, $createEnableScripts = false, $iniBasename = self::INI_BASENAME_DEFAULT)
+    {
+        if ($iniBasename !== self::INI_BASENAME_COMPAT && !preg_match(self::RX_VALID_INI_BASENAME, $iniBasename)) {
+            throw new Exception\InvalidArgument("Invalid name of the ini files: '{$iniBasename}'");
+        }
+        $this->logger = $logger;
+        $this->php = $php;
+        $this->fs = $fs;
+        $this->skipCheck = $skipCheck;
+        $this->createEnableScripts = $createEnableScripts;
+        $this->iniBasename = $iniBasename;
+    }
+
+    /**
+     * Check that the module loads, then create the ini file that enables it.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-list<non-empty-string> the names of the modules provided by the extension, as seen by PHP
+     */
+    public function enable(CompiledExtension $compiled)
+    {
+        $iniScanDir = $this->php->getIniScanDir();
+        if ($iniScanDir === '') {
+            throw new Exception\IO('PHP is not configured to scan a directory for additional ini files');
+        }
+        $iniBasename = $this->buildIniBasename($compiled);
+        $iniContent = $this->buildIniContent($compiled);
+        if ($this->skipCheck) {
+            return $this->enableWithoutCheck($compiled, "{$iniScanDir}/{$iniBasename}.ini", $iniContent);
+        }
+        $this->logger->debug("Checking if the module {$compiled->getModuleName()} can be loaded");
+        list($loadedBefore) = $this->listLoadedModules();
+        list(, $outputBefore) = $this->runEmptyScript();
+        $temporaryIniFile = "{$iniScanDir}/{$iniBasename}--temp.ini";
+        $this->fs->writeFile($temporaryIniFile, $iniContent);
+        try {
+            list($loadedAfter, $errors) = $this->listLoadedModules();
+            list($rcAfter, $outputAfter) = $this->runEmptyScript();
+        } finally {
+            $this->fs->deleteFile($temporaryIniFile);
+        }
+        $newModules = array_values(array_udiff($loadedAfter, $loadedBefore, 'strcasecmp'));
+        if ($newModules === []) {
+            // The official ZTS Docker images are compiled with --disable-zend-signals
+            $hint = strpos($errors, 'zend_signal_globals_offset') === false ? '' : "\nThis module requires a PHP compiled with --enable-zend-signals.";
+
+            throw new Exception\IO("The module {$compiled->getModuleName()} does not load" . ($errors === '' ? '' : ":\n{$errors}") . $hint);
+        }
+        if (substr_count($outputAfter, 'undefined symbol') > substr_count($outputBefore, 'undefined symbol')) {
+            throw new Exception\IO("The module {$compiled->getModuleName()} uses functions that are not available, so PHP would crash when calling them:\n{$outputAfter}");
+        }
+        if ($rcAfter !== 0) {
+            throw new Exception\IO("The module {$compiled->getModuleName()} loads, but PHP exits with the code {$rcAfter}" . ($outputAfter === '' ? '' : ":\n{$outputAfter}"));
+        }
+        if (self::withoutNumbers($outputAfter) !== self::withoutNumbers($outputBefore)) {
+            throw new Exception\IO("The module {$compiled->getModuleName()} loads, but it changes the output of PHP:\n{$outputAfter}");
+        }
+        $iniFile = "{$iniScanDir}/{$iniBasename}.ini";
+        $this->logger->debug("Creating {$iniFile}", ['content' => $iniContent]);
+        $this->fs->writeFile($iniFile, $iniContent);
+        $this->php->addInstalledExtensions($newModules);
+        $this->enabledIniFiles[$compiled->getModuleName()] = [$iniFile, $iniContent];
+
+        return $newModules;
+    }
+
+    /**
+     * @param non-empty-string $iniFile
+     * @param non-empty-string $iniContent
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-list<non-empty-string>
+     */
+    private function enableWithoutCheck(CompiledExtension $compiled, $iniFile, $iniContent)
+    {
+        list($loadedBefore) = $this->listLoadedModules();
+        $this->logger->debug("Creating {$iniFile} without checking if the module {$compiled->getModuleName()} can be loaded", ['content' => $iniContent]);
+        $this->fs->writeFile($iniFile, $iniContent);
+        list($loadedAfter) = $this->listLoadedModules();
+        $newModules = array_values(array_udiff($loadedAfter, $loadedBefore, 'strcasecmp'));
+        if ($newModules === []) {
+            // The module may not load in this environment
+            $newModules = [$compiled->getModuleName()];
+        }
+        $this->php->addInstalledExtensions($newModules);
+        $this->enabledIniFiles[$compiled->getModuleName()] = [$iniFile, $iniContent];
+
+        return $newModules;
+    }
+
+    /**
+     * Get the full path of the ini file that enable() creates.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string
+     */
+    public function getIniFile(CompiledExtension $compiled)
+    {
+        return "{$this->php->getIniScanDir()}/{$this->buildIniBasename($compiled)}.ini";
+    }
+
+    /**
+     * Comment out the extensions enabled so far, and create the scripts that enable them again (if requested in the constructor).
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return array<string, non-empty-string> the keys are the module names, the values are the full paths of the scripts that enable them
+     */
+    public function disableEnabledExtensions()
+    {
+        $result = [];
+        foreach ($this->enabledIniFiles as $moduleName => list($iniFile, $iniContent)) {
+            $this->fs->writeFile($iniFile, Regex::replace(self::RX_ACTIVE_LINE, '\1;\2', $iniContent));
+            if ($this->createEnableScripts) {
+                $result[$moduleName] = $this->createEnableScript($moduleName, $iniFile);
+            }
+        }
+        $this->enabledIniFiles = [];
+
+        return $result;
+    }
+
+    /**
+     * Is the ini file loading a module (that is, are the extension= or zend_extension= lines not commented out)?
+     *
+     * @param non-empty-string $iniFile
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return bool
+     */
+    public function isIniFileActive($iniFile)
+    {
+        return preg_match(self::RX_ACTIVE_LINE, $this->fs->readFile($iniFile)) === 1;
+    }
+
+    /**
+     * Uncomment the extension= and zend_extension= lines of an ini file.
+     *
+     * @param non-empty-string $iniFile
+     *
+     * @throws \IPE\Exception\IO if the file doesn't load any module
+     *
+     * @return bool false if the ini file was already active
+     */
+    public function enableIniFile($iniFile)
+    {
+        $content = $this->readModuleIniFile($iniFile);
+        if (!preg_match(self::RX_INACTIVE_LINE, $content)) {
+            return false;
+        }
+        $this->logger->debug("Uncommenting the extension lines of {$iniFile}");
+        $this->fs->writeFile($iniFile, Regex::replace(self::RX_INACTIVE_LINE, '\1\2', $content));
+
+        return true;
+    }
+
+    /**
+     * Comment out the extension= and zend_extension= lines of an ini file.
+     *
+     * @param non-empty-string $iniFile
+     *
+     * @throws \IPE\Exception\IO if the file doesn't load any module
+     *
+     * @return bool false if the ini file was already inactive
+     */
+    public function disableIniFile($iniFile)
+    {
+        $content = $this->readModuleIniFile($iniFile);
+        if (!preg_match(self::RX_ACTIVE_LINE, $content)) {
+            return false;
+        }
+        $this->logger->debug("Commenting out the extension lines of {$iniFile}");
+        $this->fs->writeFile($iniFile, Regex::replace(self::RX_ACTIVE_LINE, '\1;\2', $content));
+
+        return true;
+    }
+
+    /**
+     * @param non-empty-string $iniFile
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string
+     */
+    private function readModuleIniFile($iniFile)
+    {
+        if (!$this->fs->isFile($iniFile)) {
+            throw new Exception\IO("The file {$iniFile} does not exist");
+        }
+        $content = $this->fs->readFile($iniFile);
+        if (!preg_match(self::RX_ACTIVE_LINE, $content) && !preg_match(self::RX_INACTIVE_LINE, $content)) {
+            throw new Exception\IO("The file {$iniFile} does not contain extension= or zend_extension= lines");
+        }
+
+        return $content;
+    }
+
+    /**
+     * Check that an extension enabled by the installer of its vendor is actually loaded.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-list<non-empty-string> the names of the modules provided by the extension, as seen by PHP
+     */
+    public function checkEnabled(Extension $extension)
+    {
+        list($loaded, $errors) = $this->listLoadedModules();
+        $names = array_values(array_uintersect($loaded, $extension::getInstalledNames(), 'strcasecmp'));
+        if ($names === [] && $this->skipCheck) {
+            $names = array_values($extension::getInstalledNames());
+        }
+        if ($names === []) {
+            throw new Exception\IO('The extension ' . $extension::getHandle() . ' does not load' . ($errors === '' ? '' : ":\n{$errors}"));
+        }
+        $this->php->addInstalledExtensions($names);
+
+        return $names;
+    }
+
+    /**
+     * Write a shell script (next to the php binary) that removes the ; from the ini file.
+     *
+     * @param non-empty-string $moduleName
+     * @param non-empty-string $iniFile
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string the full path of the script
+     */
+    private function createEnableScript($moduleName, $iniFile)
+    {
+        $scriptName = "docker-php-ext-enable-{$moduleName}";
+        $script = dirname($this->php->getPHPBin()) . "/{$scriptName}";
+        $quotedIniFile = $this->fs->escapeShellArg($iniFile);
+        $this->fs->writeFile(
+            $script,
+            "#!/bin/sh\n\nif grep -q -e '^;extension=' -e '^;zend_extension=' {$quotedIniFile}; then\n\techo 'Enabling the extension {$moduleName}'\n\tsed -i -e 's/^;extension=/extension=/' -e 's/^;zend_extension=/zend_extension=/' {$quotedIniFile}\nelse\n\techo 'The extension {$moduleName} has already been enabled'\nfi\n"
+        );
+        list($rc, $output) = $this->fs->run(Command::create('chmod', ['+x', $script]));
+        if ($rc !== 0) {
+            throw new Exception\IO("Failed to make {$script} executable:\n{$output}");
+        }
+        $this->logger->notice("The extension {$moduleName} has not been enabled: you can enable it later by running {$scriptName}");
+
+        return $script;
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function buildIniBasename(CompiledExtension $compiled)
+    {
+        $moduleName = $compiled->getModuleName();
+        $priority = self::getPriority($compiled->getResolved());
+        if ($this->iniBasename === self::INI_BASENAME_COMPAT) {
+            return ($priority > Manifest::DEFAULT_PRIORITY ? 'xx-php-ext-' : 'docker-php-ext-') . $moduleName;
+        }
+
+        return strtr($this->iniBasename, [
+            '{priority}' => (string) $priority,
+            '{name}' => $moduleName,
+        ]);
+    }
+
+    /**
+     * The priority declared by the maintainers of the extension wins over the one of the known extension.
+     *
+     * @return int
+     */
+    private static function getPriority(Extension\Resolved $resolved)
+    {
+        $manifest = $resolved->getManifest();
+        $priority = $manifest === null ? null : $manifest->getPriority();
+        if ($priority !== null) {
+            return $priority;
+        }
+        $known = $resolved->getKnownExtension();
+        if ($known instanceof Extension\DeclaresPriority) {
+            return $known::getPriority();
+        }
+
+        return Manifest::DEFAULT_PRIORITY;
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function buildIniContent(CompiledExtension $compiled)
+    {
+        if ($compiled->isZendExtension()) {
+            // zend_extension accepts paths relative to extension_dir only since PHP 7.2
+            $value = $this->php->getMajorMinorVersion() < 702 ? $compiled->getModulePath() : basename($compiled->getModulePath());
+
+            return "zend_extension={$value}\n{$compiled->getIniSettings()}";
+        }
+
+        return 'extension=' . basename($compiled->getModulePath()) . "\n{$compiled->getIniSettings()}";
+    }
+
+    /**
+     * Some modules print values that change at every run (ddtrace prints the PID, for example).
+     *
+     * @param string $output
+     *
+     * @throws \IPE\Exception\Regex
+     *
+     * @return string
+     */
+    private static function withoutNumbers($output)
+    {
+        return Regex::replace('/\d+(?:\.\d+)*/', '<number>', $output);
+    }
+
+    /**
+     * Get how PHP behaves when it has nothing to do.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return array{int, string} the exit code, and the output (stdout and stderr)
+     */
+    private function runEmptyScript()
+    {
+        // With lazy binding (the default), missing symbols are detected only when they are used
+        return $this->runPHP(['-r', 'return;'], ['LD_BIND_NOW' => '1']);
+    }
+
+    /**
+     * Run php -m and split the output into the loaded module names and the startup errors.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return array{list<non-empty-string>, string}
+     */
+    private function listLoadedModules()
+    {
+        list(, $output) = $this->runPHP(['-m']);
+        $modules = [];
+        $errors = [];
+        $inList = false;
+        foreach (preg_split('/[\r\n]+/', $output) ?: [] as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            if (preg_match('/^\[.+\]$/', $line)) {
+                $inList = true;
+            } elseif ($inList) {
+                $modules[] = $line;
+            } else {
+                $errors[] = $line;
+            }
+        }
+
+        // Some modules are listed both in [PHP Modules] and in [Zend Modules]
+        return [array_values(array_unique($modules)), implode("\n", $errors)];
+    }
+
+    /**
+     * @param non-empty-list<non-empty-string> $arguments
+     * @param array<non-empty-string, string> $environment
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return array{int, string} the exit code, and the output (stdout and stderr)
+     */
+    private function runPHP(array $arguments, array $environment = [])
+    {
+        $options = ['-d', 'display_startup_errors=1', '-d', 'display_errors=1', '-d', 'error_reporting=-1'];
+        if ($this->php->getMajorMinorVersion() < 700) {
+            // PHP 5 warns about the missing timezone when a module (for example seaslog) uses the date functions at startup
+            $options = array_merge($options, ['-d', 'date.timezone=UTC']);
+        }
+
+        return $this->fs->run(Command::create($this->php->getPHPBin(), array_merge($options, $arguments))->withEnvironment($environment));
+    }
+}

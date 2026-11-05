@@ -1,0 +1,9 @@
+# The files that require PHP 8.5 or later (the other ones are analysed with phpstan.php55.neon.dist)
+includes:
+    - test/phpstan/common.neon
+parameters:
+    phpVersion:
+        min: 80500
+        max: 80699
+    paths:
+        - scripts

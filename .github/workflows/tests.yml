@@ -1,0 +1,339 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  php-syntax:
+    name: PHP ${{ matrix.php-version }} syntax
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          -
+            php-version: "5.5"
+            # Development files that require newer PHP versions
+            exclude: |
+              .php-cs-fixer.dist.php
+              scripts/check-release-tag.php
+              scripts/ci-plan-extension-tests.php
+              scripts/ci-run-extension-tests.php
+              scripts/update-readme.php
+              test/phpstan
+              test/support/Log/PSRLogger23.php
+              test/support/TestCase9.php
+          -
+            php-version: "8.6"
+            exclude: ""
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: none
+          coverage: none
+          extensions: opcache
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Check syntax
+        uses: mlocati/check-php-syntax@v1
+        with:
+          include: |
+            bin/build-phar
+            bin/install-php-extensions
+          exclude: ${{ matrix.exclude }}
+          fail-on-warnings: true
+          support-duplicated-names: true
+
+  php-coding-style:
+    name: PHP coding style
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: php-cs-fixer:v3
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Check coding style
+        run: composer --no-interaction --ansi run-script lint:check -- --ansi --using-cache=no --show-progress=dots
+
+  phpstan:
+    name: PHPStan
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Validate composer.json
+        run: composer --no-interaction --ansi validate --strict
+      -
+        name: Validate test/phpstan/composer.json
+        run: composer --no-interaction --ansi validate --strict --no-check-publish --working-dir=test/phpstan
+      -
+        name: Install Composer dependencies
+        run: composer --no-interaction --ansi --no-progress update
+      -
+        name: Install PHPStan
+        run: composer --no-interaction --ansi --no-progress install --working-dir=test/phpstan
+      -
+        name: Run PHPStan
+        run: composer --no-interaction --ansi run-script phpstan -- --no-progress
+
+  phpunit:
+    name: PHPUnit (PHP ${{ matrix.php-version }} on ${{ matrix.os }})
+    needs:
+      - php-syntax
+      - php-coding-style
+      - phpstan
+      - plan-extension-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        php-version:
+          - "5.5"
+          - "5.6"
+          - "7.0"
+          - "7.1"
+          - "7.2"
+          - "7.3"
+          - "7.4"
+          - "8.0"
+          - "8.1"
+          - "8.2"
+          - "8.3"
+          - "8.4"
+          - "8.5"
+          - "8.6"
+        include:
+          -
+            os: ubuntu-latest
+            php-version: "8.5"
+            check-pull-request: true
+          -
+            os: windows-latest
+            php-version: "5.5"
+          -
+            os: windows-latest
+            php-version: "7.4"
+          -
+            os: windows-latest
+            php-version: "8.5"
+    runs-on: ${{ matrix.os }}
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: zip
+          tools: composer:v2
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Pull requests: the merge commit and its first parent (the base branch)
+          fetch-depth: ${{ matrix.check-pull-request && 2 || 1 }}
+      -
+        name: Check the base of the pull request
+        if: matrix.check-pull-request && github.event_name == 'pull_request'
+        run: git rev-parse --verify HEAD^1
+      -
+        name: Validate composer.json
+        run: composer --no-interaction --ansi validate --strict
+      -
+        name: Install Composer dependencies
+        run: composer --no-interaction --ansi --no-progress update
+      -
+        name: Run PHPUnit
+        env:
+          IPE_TEST_PULL_REQUEST_BASE: ${{ matrix.check-pull-request && github.event_name == 'pull_request' && 'HEAD^1' || '' }}
+        run: composer --no-interaction --ansi run-script phpunit
+
+  build-phar:
+    name: Build PHAR
+    needs:
+      - phpunit
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer:v2
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Install Composer dependencies
+        run: composer --no-interaction --ansi --no-progress update --no-dev
+      -
+        name: Build install-php-extensions
+        run: composer --no-interaction --ansi run-script build-phar -- --verbose install-php-extensions
+      -
+        name: Build install-php-extensions-gz
+        run: composer --no-interaction --ansi run-script build-phar -- --verbose --compress=gz install-php-extensions-gz
+      -
+        name: Run install-php-extensions
+        run: php install-php-extensions --version
+      -
+        name: Run install-php-extensions-gz
+        run: php install-php-extensions-gz --version
+      -
+        name: Upload PHAR files
+        uses: actions/upload-artifact@v7
+        with:
+          name: phar
+          path: |
+            install-php-extensions
+            install-php-extensions-gz
+          if-no-files-found: error
+          retention-days: 7
+
+  test-phar:
+    name: Run PHAR (PHP ${{ matrix.php-version }})
+    needs:
+      - build-phar
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version:
+          - "5.5"
+          - "7.4"
+          - "8.6"
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: none
+          coverage: none
+      -
+        name: Download PHAR files
+        uses: actions/download-artifact@v8
+        with:
+          name: phar
+      -
+        name: Run install-php-extensions
+        run: php install-php-extensions --version
+      -
+        name: Run install-php-extensions-gz
+        run: php install-php-extensions-gz --version
+
+  plan-extension-tests:
+    name: Plan the extension tests
+    runs-on: ubuntu-latest
+    outputs:
+      distros: ${{ steps.plan.outputs.distros }}
+      tests: ${{ steps.plan.outputs.tests }}
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer:v2
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # All the commits of the pull request or of the push
+          fetch-depth: 0
+      -
+        name: Install Composer dependencies
+        run: composer --no-interaction --ansi --no-progress update --no-dev
+      -
+        name: Plan the tests
+        id: plan
+        env:
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              # HEAD is the merge commit: HEAD^1 is the base branch, HEAD^2 is the pull request
+              php scripts/ci-plan-extension-tests.php HEAD^1 HEAD^2
+              ;;
+            push)
+              php scripts/ci-plan-extension-tests.php --quick "$PUSH_BEFORE" "$GITHUB_SHA"
+              ;;
+            *)
+              php scripts/ci-plan-extension-tests.php --quick
+              ;;
+          esac
+
+  test-extensions:
+    name: Test extensions on ${{ matrix.distro }}
+    needs:
+      - build-phar
+      - plan-extension-tests
+    if: needs.plan-extension-tests.outputs.distros != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: ${{ fromJSON(needs.plan-extension-tests.outputs.distros) }}
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Disable the containerd image store
+        if: matrix.distro == 'jessie'
+        # The containerd image store can't pull images with an old manifest (like php:5.5-cli)
+        run: |
+          daemonConfig="$(sudo cat /etc/docker/daemon.json 2>/dev/null || echo '{}')"
+          printf '%s' "$daemonConfig" | jq '.features["containerd-snapshotter"] = false' | sudo tee /etc/docker/daemon.json >/dev/null
+          sudo systemctl restart docker
+          printf 'Docker storage driver: %s\n' "$(docker info --format '{{.Driver}}')"
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: none
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Download PHAR files
+        uses: actions/download-artifact@v8
+        with:
+          name: phar
+      -
+        name: Test extensions
+        env:
+          IPE_EXTENSION_TESTS: ${{ needs.plan-extension-tests.outputs.tests }}
+        run: php scripts/ci-run-extension-tests.php "${{ matrix.distro }}" install-php-extensions
