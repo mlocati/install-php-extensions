@@ -438,6 +438,7 @@ function main(array $argv): int
         if ($tests === []) {
             echo "No extensions to be tested\n";
         }
+        usort($tests, static fn (array $a, array $b): int => strcmp($a['extensions'], $b['extensions']) ?: version_compare($a['php'], $b['php']));
         $usedOperatingSystems = array_merge([], ...array_map(static fn (array $test): array => $test['os'], $tests));
         // Not the operating systems: they may be many, and the size of an environment variable is limited
         writeOutput('tests', array_map(static fn (array $test): array => ['extensions' => $test['extensions'], 'php' => $test['php'], 'zts' => $test['zts']], $tests));
