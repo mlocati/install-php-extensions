@@ -180,10 +180,8 @@ jobs:
         name: Run PHPUnit
         env:
           IPE_TEST_PULL_REQUEST_BASE: ${{ matrix.check-pull-request && github.event_name == 'pull_request' && 'HEAD^1' || '' }}
-          # Pull requests shouldn't fail because of changes elsewhere (the weekly run checks them)
-          PHPUNIT_ARGS: ${{ github.event_name == 'pull_request' && '--exclude-group online' || '' }}
-        shell: bash
-        run: composer --no-interaction --ansi run-script phpunit -- $PHPUNIT_ARGS
+        # Pull requests shouldn't fail because of changes elsewhere (the weekly run checks them)
+        run: composer --no-interaction --ansi run-script phpunit ${{ github.event_name == 'pull_request' && '-- --exclude-group online' || '' }}
 
   build-phar:
     name: Build PHAR
