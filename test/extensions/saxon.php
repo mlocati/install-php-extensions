@@ -4,7 +4,8 @@ require_once __DIR__ . '/_bootstrap.php';
 
 echo 'Checking saxon... ';
 
-$version = (new Saxon\SaxonProcessor())->version();
+// Without the license flag, the recent EE and PE editions behave like HE (and their version says HE)
+$version = (new Saxon\SaxonProcessor(true))->version();
 if (!preg_match('/SaxonC-(?<edition>\w+) \d[.\d]*/', $version, $matches)) {
     throw new TestFailedException("Failed to parse the SaxonC version: {$version}");
 }
