@@ -3,14 +3,15 @@
 declare(strict_types=1);
 
 /*
- * Run the extension tests planned by scripts/ci-plan-extension-tests.php in the official Docker PHP images of a distribution.
- * Syntax: php scripts/ci-run-extension-tests.php <distro> <path to install-php-extensions>
+ * Run the extension tests planned by scripts/ci-plan-extension-tests.php in the Docker images of an operating system.
+ * Syntax: php scripts/ci-run-extension-tests.php <operating system> <path to install-php-extensions>
  * The tests are read from the IPE_EXTENSION_TESTS environment variable.
  */
 
 namespace IPE\Scripts\CI\RunExtensionTests;
 
 use IPE\CLI\Argv;
+use IPE\Dev\DockerImages;
 
 set_error_handler(
     static function (int $errno, string $errstr, string $errfile = '', int $errline = 0): never {
@@ -60,41 +61,6 @@ function run(array $arguments): array
     }
 
     return [$rc, $output === false ? '' : rtrim($output)];
-}
-
-/**
- * @return list<string>
- */
-function getImageCandidates(string $distro, string $phpVersion, string $variant): array
-{
-    if ($distro === 'jessie' && $phpVersion === '5.5') {
-        return ["php:5.5-{$variant}"];
-    }
-
-    // The images of PHP versions not released yet have a "-rc" suffix
-    return ["php:{$phpVersion}-{$variant}-{$distro}", "php:{$phpVersion}-rc-{$variant}-{$distro}"];
-}
-
-/**
- * @param list<string> $candidates
- *
- * @throws \RuntimeException if pulling an image failed for other reasons
- *
- * @return string empty string if none of the images exist
- */
-function pullImage(array $candidates): string
-{
-    foreach ($candidates as $image) {
-        [$rc, $output] = run(['docker', 'pull', '--quiet', $image]);
-        if ($rc === 0) {
-            return $image;
-        }
-        if (!preg_match('/manifest unknown|not found/i', $output)) {
-            throw new \RuntimeException("Failed to pull the Docker image {$image}:\n{$output}");
-        }
-    }
-
-    return '';
 }
 
 function printGroup(string $title, string $contents): void
@@ -212,9 +178,9 @@ function runTest(string $description, string $image, string $phar, array $extens
 /**
  * @throws \JsonException
  * @throws \RuntimeException
- * @return list<array{extensions: non-empty-list<non-empty-string>, php: string, variant: string}>
+ * @return list<array{extensions: non-empty-list<non-empty-string>, php: string, zts: bool, image: string}> the tests to be run on the operating system
  */
-function getTests(): array
+function getTests(string $os): array
 {
     $json = getenv('IPE_EXTENSION_TESTS');
     $data = json_decode(is_string($json) ? $json : '', true, 512, JSON_THROW_ON_ERROR);
@@ -223,14 +189,18 @@ function getTests(): array
     }
     $result = [];
     foreach ($data as $test) {
-        if (!is_array($test) || !is_string($test['extensions'] ?? null) || !is_string($test['php'] ?? null) || !is_string($test['variant'] ?? null) || !in_array($test['variant'], ['cli', 'zts'], true)) {
+        if (!is_array($test) || !is_string($test['extensions'] ?? null) || !is_string($test['php'] ?? null) || !is_bool($test['zts'] ?? null)) {
             throw new \RuntimeException('Invalid test in IPE_EXTENSION_TESTS: ' . json_encode($test, JSON_THROW_ON_ERROR));
         }
         $extensions = array_values(array_filter(explode(' ', $test['extensions']), static fn (string $extension): bool => $extension !== ''));
         if ($extensions === []) {
             throw new \RuntimeException('Invalid test in IPE_EXTENSION_TESTS: ' . json_encode($test, JSON_THROW_ON_ERROR));
         }
-        $result[] = ['extensions' => $extensions, 'php' => $test['php'], 'variant' => $test['variant']];
+        foreach (DockerImages::find($test['php'], $test['zts']) as $image) {
+            if ($image->getOS() === $os) {
+                $result[] = ['extensions' => $extensions, 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image->getName()];
+            }
+        }
     }
 
     return $result;
@@ -242,19 +212,22 @@ function getTests(): array
 function main(array $argv): int
 {
     if (count($argv) !== 3 || $argv[1] === '' || !is_file($argv[2])) {
-        fwrite(STDERR, "Syntax: {$argv[0]} <distro> <path to install-php-extensions>\n");
+        fwrite(STDERR, "Syntax: {$argv[0]} <operating system> <path to install-php-extensions>\n");
 
         return 1;
     }
-    [, $distro, $phar] = $argv;
+    [, $os, $phar] = $argv;
     $summary = [RESULT_PASSED => [], RESULT_FAILED => [], RESULT_SKIPPED => []];
     try {
-        foreach (getTests() as $test) {
-            $description = implode(' ', $test['extensions']) . " on PHP {$test['php']}" . ($test['variant'] === 'zts' ? ' (ZTS)' : '');
+        foreach (getTests($os) as $test) {
+            $description = implode(' ', $test['extensions']) . " on PHP {$test['php']}" . ($test['zts'] ? ' (ZTS)' : '');
+            $image = $test['image'];
             echo "### {$description}\n";
-            $image = pullImage(getImageCandidates($distro, $test['php'], $test['variant']));
-            if ($image === '') {
-                echo "   Docker image not available\n";
+            [$rc, $output] = run(['docker', 'pull', '--quiet', $image]);
+            if ($rc !== 0) {
+                printGroup('docker pull output', $output);
+                printError('Failed to pull the Docker image', "{$description} ({$image})");
+                $summary[RESULT_FAILED][] = "{$description} ({$image})";
                 continue;
             }
             $start = time();

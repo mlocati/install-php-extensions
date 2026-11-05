@@ -10,13 +10,15 @@ declare(strict_types=1);
  * - php scripts/ci-plan-extension-tests.php --quick [<commit before> <commit after>]
  *   For pushes and manual runs: install one extension in a few Docker images (if the commits are specified, only if relevant files changed)
  * Writes to the file specified by the GITHUB_OUTPUT environment variable (if set):
- * - distros: the JSON array of the distributions of the Docker images to be used (empty if there's nothing to test)
- * - tests: the JSON array of the tests, each one with the space-separated extensions, the PHP version and the variant of the Docker image (cli or zts)
+ * - distros: the JSON array of the operating systems of the Docker images to be used (empty if there's nothing to test)
+ * - tests: the JSON array of the tests, each one with the space-separated extensions, the PHP version, and whether PHP is thread-safe
  */
 
 namespace IPE\Scripts\CI\PlanExtensionTests;
 
 use IPE\CLI\Argv;
+use IPE\Dev\DockerImage;
+use IPE\Dev\DockerImages;
 use IPE\Dev\ExtensionFactory;
 use IPE\Dev\Git;
 use IPE\Extension;
@@ -34,34 +36,6 @@ require_once IPE_CLI_ROOT_DIR . '/src/autoload.php';
 require_once IPE_CLI_ROOT_DIR . '/src/app.php';
 
 /**
- * From the oldest to the most recent.
- */
-const DISTROS = [
-    'alpine3.9',
-    'alpine3.10',
-    'alpine3.11',
-    'alpine3.12',
-    'alpine3.13',
-    'alpine3.14',
-    'alpine3.15',
-    'alpine3.16',
-    'alpine3.17',
-    'alpine3.18',
-    'alpine3.19',
-    'alpine3.20',
-    'alpine3.21',
-    'alpine3.22',
-    'alpine3.23',
-    'alpine3.24',
-    'jessie',
-    'stretch',
-    'buster',
-    'bullseye',
-    'bookworm',
-    'trixie',
-];
-
-/**
  * When one of these files changes, at least one extension must be tested.
  */
 const PATHS_REQUIRING_TESTS_REGEX = [
@@ -75,6 +49,7 @@ const PATHS_REQUIRING_TESTS_REGEX = [
     '{^scripts/ci-(?:plan|run)-extension-tests\.php$}',
     '{^\.github/workflows/tests\.yml$}',
     '{^test/extensions/_bootstrap\.php$}',
+    '{^src/Dev/DockerImages?\.php$}',
 ];
 
 /**
@@ -277,10 +252,11 @@ function isQuickTestNeeded(?array $commits): bool
  *
  * @return list<string>
  */
-function getQuickTestDistros(): array
+function getQuickTestOperatingSystems(): array
 {
-    $alpine = array_values(array_filter(DISTROS, static fn (string $distro): bool => str_starts_with($distro, 'alpine')));
-    $debian = array_values(array_diff(DISTROS, $alpine));
+    $all = DockerImages::getOperatingSystems();
+    $alpine = array_values(array_filter($all, static fn (string $os): bool => str_starts_with($os, 'alpine')));
+    $debian = array_values(array_diff($all, $alpine));
 
     return [$alpine[count($alpine) - 1], $debian[count($debian) - 1]];
 }
@@ -313,10 +289,11 @@ function supportsThreadSafety(string $class, string $phpVersion, bool $zts): boo
 /**
  * @param array<string, class-string<Extension>> $extensionClasses
  * @param list<string> $allPHPVersions sorted from the most recent
+ * @param list<string> $operatingSystems
  *
- * @return list<array{extensions: string, php: string, variant: string}>
+ * @return list<array{extensions: string, php: string, zts: bool, os: non-empty-list<string>}> os: the operating systems of the Docker images to be used
  */
-function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVersions): array
+function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVersions, array $operatingSystems): array
 {
     if ($test->phpVersions === null) {
         $phpVersions = $allPHPVersions;
@@ -337,23 +314,25 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
     }
     $result = [];
     foreach ($phpVersions as $phpVersion) {
-        $variant = null;
-        foreach (['cli' => false, 'zts' => true] as $candidate => $zts) {
-            if (array_all($classes, static fn (string $class): bool => supportsThreadSafety($class, $phpVersion, $zts))) {
-                $variant = $candidate;
-                break;
-            }
-        }
-        if ($variant === null) {
+        $zts = array_find([false, true], static fn (bool $zts): bool => array_all($classes, static fn (string $class): bool => supportsThreadSafety($class, $phpVersion, $zts)));
+        if ($zts === null) {
             echo "  - PHP {$phpVersion}: skipped (no build of PHP supports all the extensions)\n";
             continue;
         }
-        $result[] = ['extensions' => implode(' ', $test->extensions), 'php' => $phpVersion, 'variant' => $variant];
+        $imageOperatingSystems = array_values(array_intersect(array_map(static fn (DockerImage $image): string => $image->getOS(), DockerImages::find($phpVersion, $zts)), $operatingSystems));
+        if ($imageOperatingSystems === []) {
+            echo "  - PHP {$phpVersion}" . ($zts ? ' (ZTS)' : '') . ": skipped (no Docker image)\n";
+            continue;
+        }
+        $result[] = ['extensions' => implode(' ', $test->extensions), 'php' => $phpVersion, 'zts' => $zts, 'os' => $imageOperatingSystems];
     }
     if ($result === []) {
         echo "  => no PHP version to be tested\n";
     } else {
-        echo '  => PHP versions to be tested: ' . implode(', ', array_map(static fn (array $item): string => $item['php'] . ($item['variant'] === 'zts' ? ' (ZTS)' : ''), $result)), "\n";
+        echo "  => to be tested on:\n";
+        foreach ($result as $item) {
+            echo "     - PHP {$item['php']}" . ($item['zts'] ? ' (ZTS)' : '') . ': ' . implode(', ', $item['os']) . "\n";
+        }
     }
 
     return $result;
@@ -438,10 +417,10 @@ function main(array $argv): int
             if ($requestedTests === null) {
                 return 1;
             }
-            $distros = DISTROS;
+            $operatingSystems = DockerImages::getOperatingSystems();
         } else {
             $requestedTests = isQuickTestNeeded($commits) ? [new RequestedTest([QUICK_TEST_EXTENSION], [QUICK_TEST_PHP_VERSION], 'quick test')] : [];
-            $distros = getQuickTestDistros();
+            $operatingSystems = getQuickTestOperatingSystems();
         }
         $tests = [];
         $planned = [];
@@ -454,13 +433,15 @@ function main(array $argv): int
             }
             $planned[$key] = $requestedTest->source;
             echo "### {$key} (from {$requestedTest->source})\n";
-            $tests = array_merge($tests, planTest($requestedTest, $extensionClasses, $allPHPVersions));
+            $tests = array_merge($tests, planTest($requestedTest, $extensionClasses, $allPHPVersions, $operatingSystems));
         }
         if ($tests === []) {
             echo "No extensions to be tested\n";
         }
-        writeOutput('tests', $tests);
-        writeOutput('distros', $tests === [] ? [] : $distros);
+        $usedOperatingSystems = array_merge([], ...array_map(static fn (array $test): array => $test['os'], $tests));
+        // Not the operating systems: they may be many, and the size of an environment variable is limited
+        writeOutput('tests', array_map(static fn (array $test): array => ['extensions' => $test['extensions'], 'php' => $test['php'], 'zts' => $test['zts']], $tests));
+        writeOutput('distros', array_values(array_intersect($operatingSystems, $usedOperatingSystems)));
     } catch (\Throwable $x) {
         fwrite(STDERR, rtrim((string) $x) . "\n");
 

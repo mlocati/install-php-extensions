@@ -8,6 +8,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
 
 permissions:
   contents: read
@@ -178,7 +180,10 @@ jobs:
         name: Run PHPUnit
         env:
           IPE_TEST_PULL_REQUEST_BASE: ${{ matrix.check-pull-request && github.event_name == 'pull_request' && 'HEAD^1' || '' }}
-        run: composer --no-interaction --ansi run-script phpunit
+          # Pull requests shouldn't fail because of changes elsewhere (the weekly run checks them)
+          PHPUNIT_ARGS: ${{ github.event_name == 'pull_request' && '--exclude-group online' || '' }}
+        shell: bash
+        run: composer --no-interaction --ansi run-script phpunit -- $PHPUNIT_ARGS
 
   build-phar:
     name: Build PHAR
