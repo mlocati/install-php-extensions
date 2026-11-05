@@ -74,6 +74,9 @@ final class DockerImagesTest extends TestCase
             }
             $actual[$image->getPHPVersion()]['os'][] = $image->getOS();
         }
+        foreach (DockerImages::getAbandonedOfficialImages() as $phpVersion => $osList) {
+            $actual[$phpVersion]['os'] = array_merge($actual[$phpVersion]['os'], $osList);
+        }
         foreach (array_keys($actual) as $phpVersion) {
             sort($actual[$phpVersion]['os']);
         }

@@ -83,13 +83,31 @@ final class DockerImages
     }
 
     /**
+     * Not tested: they stopped at one of the first releases of the PHP version.
+     *
+     * @return array<non-empty-string, non-empty-list<non-empty-string>> the keys are the PHP versions (major.minor), the values are the operating systems
+     */
+    public static function getAbandonedOfficialImages()
+    {
+        $result = [];
+        foreach (self::getOfficialImageDefinitions() as $phpVersion => $definition) {
+            if (isset($definition['abandoned'])) {
+                $result[$phpVersion] = $definition['abandoned'];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * The official Docker PHP images (php:<version>[-rc]-<cli|zts>-<os>) of the operating systems supported by IPE.
      * Keys:
      * - rc: true if the PHP version has not been released yet
      * - os: the operating systems
-     * - withoutZTS: the operating systems without the zts images.
+     * - withoutZTS: the operating systems without the zts images
+     * - abandoned: the operating systems whose images stopped at one of the first releases of the PHP version (not included in os).
      *
-     * @return array<non-empty-string, array{rc?: bool, os: non-empty-list<non-empty-string>, withoutZTS?: list<non-empty-string>}>
+     * @return array<non-empty-string, array{rc?: bool, os: non-empty-list<non-empty-string>, withoutZTS?: list<non-empty-string>, abandoned?: non-empty-list<non-empty-string>}>
      */
     private static function getOfficialImageDefinitions()
     {
@@ -123,13 +141,16 @@ final class DockerImages
                 'os' => ['alpine3.16', 'alpine3.17', 'alpine3.18', 'alpine3.19', 'alpine3.20', 'alpine3.21', 'alpine3.22', 'alpine3.23', 'alpine3.24', 'buster', 'bullseye', 'bookworm', 'trixie'],
             ],
             '8.3' => [
-                'os' => ['alpine3.17', 'alpine3.18', 'alpine3.19', 'alpine3.20', 'alpine3.21', 'alpine3.22', 'alpine3.23', 'alpine3.24', 'bullseye', 'bookworm', 'trixie'],
+                'os' => ['alpine3.18', 'alpine3.19', 'alpine3.20', 'alpine3.21', 'alpine3.22', 'alpine3.23', 'alpine3.24', 'bullseye', 'bookworm', 'trixie'],
+                'abandoned' => ['alpine3.17'],
             ],
             '8.4' => [
-                'os' => ['alpine3.19', 'alpine3.20', 'alpine3.21', 'alpine3.22', 'alpine3.23', 'alpine3.24', 'bullseye', 'bookworm', 'trixie'],
+                'os' => ['alpine3.20', 'alpine3.21', 'alpine3.22', 'alpine3.23', 'alpine3.24', 'bullseye', 'bookworm', 'trixie'],
+                'abandoned' => ['alpine3.19'],
             ],
             '8.5' => [
-                'os' => ['alpine3.21', 'alpine3.22', 'alpine3.23', 'alpine3.24', 'bookworm', 'trixie'],
+                'os' => ['alpine3.22', 'alpine3.23', 'alpine3.24', 'bookworm', 'trixie'],
+                'abandoned' => ['alpine3.21'],
             ],
             '8.6' => [
                 'rc' => true,
