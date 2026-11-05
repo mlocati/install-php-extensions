@@ -33,6 +33,9 @@ final class InstallPHPExtensionsTest extends TestCase
         self::assertStringContainsString("--oracle-instantclient:basic\n", $help);
         self::assertStringContainsString("--enable[=]value\n", $help);
         self::assertStringNotContainsString('--create-enable-scripts', $help);
+        self::assertStringContainsString("--fix-letsencrypt[=]<yes|no>\n  Fix the root CA certificate of Let's Encrypt on old systems\n  Default: yes in the official Docker PHP images, no otherwise\n", $help);
+        self::assertStringContainsString("--from-composer-json[=value]\n  Also install the extensions listed in the require and require-dev sections of a composer.json file\n  Default: composer.json in the current directory\n", $help);
+        self::assertStringNotContainsString('(default', $help);
     }
 
     /**
