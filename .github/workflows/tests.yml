@@ -188,7 +188,9 @@ jobs:
   build-phar:
     name: Build PHAR
     needs:
-      - phpunit
+      - php-syntax
+      - php-coding-style
+      - phpstan
     runs-on: ubuntu-latest
     steps:
       -
@@ -304,6 +306,7 @@ jobs:
   test-extensions:
     name: Test extensions on ${{ matrix.distro }}
     needs:
+      - phpunit
       - build-phar
       - plan-extension-tests
     if: needs.plan-extension-tests.outputs.distros != '[]'
