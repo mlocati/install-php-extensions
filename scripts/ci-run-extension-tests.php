@@ -93,11 +93,12 @@ function getRealPath(string $path): string
 
 /**
  * @param non-empty-list<non-empty-string> $extensions
+ * @param list<string> $options
  *
  * @throws \RuntimeException
  * @throws \JsonException
  */
-function runTest(string $description, string $image, string $phar, array $extensions): string
+function runTest(string $description, string $image, string $phar, array $extensions, array $options): string
 {
     $outputDir = sys_get_temp_dir() . '/' . uniqid('ipe-extension-test-');
     if (!mkdir($outputDir)) {
@@ -127,6 +128,7 @@ function runTest(string $description, string $image, string $phar, array $extens
                 '--unsupported-extensions=skip',
                 '--save-report-to=/ipe/output/report.json',
             ],
+            $options,
             $extensions,
         ));
         if ($rc !== 0) {
@@ -153,7 +155,7 @@ function runTest(string $description, string $image, string $phar, array $extens
                 continue;
             }
             // LD_BIND_NOW: with lazy binding, missing symbols are detected only when they are used
-            [$rc, $output] = run(['docker', 'exec', '--env', 'LD_BIND_NOW=1', CONTAINER_NAME, 'php', "/ipe/test/{$handle}.php"]);
+            [$rc, $output] = run(['docker', 'exec', '--env', 'LD_BIND_NOW=1', '--env', 'TEST_IPE_OPTIONS=' . json_encode($options, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), CONTAINER_NAME, 'php', "/ipe/test/{$handle}.php"]);
             echo '   ', rtrim($output), "\n";
             if ($rc !== 0) {
                 printError('Test failed', "{$handle} in {$description} ({$image})");
@@ -178,7 +180,7 @@ function runTest(string $description, string $image, string $phar, array $extens
 /**
  * @throws \JsonException
  * @throws \RuntimeException
- * @return list<array{extensions: non-empty-list<non-empty-string>, php: string, zts: bool, image: string}> the tests to be run on the operating system
+ * @return list<array{extensions: non-empty-list<non-empty-string>, options: list<string>, php: string, zts: bool, image: string}> the tests to be run on the operating system
  */
 function getTests(string $os): array
 {
@@ -193,12 +195,14 @@ function getTests(string $os): array
             throw new \RuntimeException('Invalid test in IPE_EXTENSION_TESTS: ' . json_encode($test, JSON_THROW_ON_ERROR));
         }
         $extensions = array_values(array_filter(explode(' ', $test['extensions']), static fn (string $extension): bool => $extension !== ''));
-        if ($extensions === []) {
+        $rawOptions = $test['options'] ?? [];
+        $options = is_array($rawOptions) ? array_values(array_filter($rawOptions, is_string(...))) : [];
+        if ($extensions === [] || $options !== $rawOptions) {
             throw new \RuntimeException('Invalid test in IPE_EXTENSION_TESTS: ' . json_encode($test, JSON_THROW_ON_ERROR));
         }
         foreach (DockerImages::find($test['php'], $test['zts']) as $image) {
             if ($image->getOS() === $os) {
-                $result[] = ['extensions' => $extensions, 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image->getName()];
+                $result[] = ['extensions' => $extensions, 'options' => $options, 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image->getName()];
             }
         }
     }
@@ -220,7 +224,7 @@ function main(array $argv): int
     $summary = [RESULT_PASSED => [], RESULT_FAILED => [], RESULT_SKIPPED => []];
     try {
         foreach (getTests($os) as $test) {
-            $description = implode(' ', $test['extensions']) . " on PHP {$test['php']}" . ($test['zts'] ? ' (ZTS)' : '');
+            $description = implode(' ', $test['extensions']) . ($test['options'] === [] ? '' : ' (' . implode(' ', $test['options']) . ')') . " on PHP {$test['php']}" . ($test['zts'] ? ' (ZTS)' : '');
             $image = $test['image'];
             echo "### {$description}\n";
             [$rc, $output] = run(['docker', 'pull', '--quiet', $image]);
@@ -231,7 +235,7 @@ function main(array $argv): int
                 continue;
             }
             $start = time();
-            $result = runTest($description, $image, $phar, $test['extensions']);
+            $result = runTest($description, $image, $phar, $test['extensions'], $test['options']);
             echo "   {$result} in ", time() - $start, " seconds ({$image})\n";
             $summary[$result][] = "{$description} ({$image})";
         }

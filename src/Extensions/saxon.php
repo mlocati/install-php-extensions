@@ -46,10 +46,12 @@ final class saxon extends Extension implements
     const OPTION_EDITION = 'edition';
 
     /**
+     * The source of the download page (which is rendered with JavaScript).
+     *
      * @public
      * @var string
      */
-    const DOWNLOAD_PAGE = 'https://www.saxonica.com/download/c.xml';
+    const DOWNLOAD_PAGE = 'https://www.saxonica.com/src/download/c.xml';
 
     /**
      * {@inheritdoc}

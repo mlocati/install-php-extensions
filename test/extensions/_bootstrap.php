@@ -33,3 +33,23 @@ register_shutdown_function(
         }
     }
 );
+
+/**
+ * Get the value of an option passed to install-php-extensions (for example 'saxon:edition').
+ *
+ * @param string $name
+ *
+ * @return string|null NULL if the option has not been specified
+ */
+function getInstallOption($name)
+{
+    $options = json_decode((string) getenv('TEST_IPE_OPTIONS'), true);
+    foreach (is_array($options) ? $options : [] as $option) {
+        $chunks = explode('=', (string) $option, 2);
+        if ($chunks[0] === "--{$name}") {
+            return isset($chunks[1]) ? $chunks[1] : '';
+        }
+    }
+
+    return null;
+}
