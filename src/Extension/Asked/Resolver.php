@@ -587,7 +587,7 @@ abstract class Resolver
                 return null;
             }
             $this->logger->info("The directory {$path} contains an unknown extension");
-            if ($manifest !== null && $this->isUnknownExtensionAlreadyInstalled($manifest, $state)) {
+            if ($manifest !== null && $this->isUnknownExtensionAlreadyInstalled($manifest->getExtensionName(), $state)) {
                 return null;
             }
         } else {
@@ -614,6 +614,10 @@ abstract class Resolver
         $handle = $asked->getHandle();
         $known = $this->registry->getExtensionByHandle($handle);
         if ($known === null) {
+            // Like the extensions compiled into PHP (xmlwriter, tokenizer, ...)
+            if ($this->isUnknownExtensionAlreadyInstalled($handle, $state)) {
+                return null;
+            }
             if ($this->options->isIgnoreUnknownExtensions()) {
                 $this->skip($handle, Extension\Skipped::REASON_UNKNOWN, "Skipping unknown extension with handle {$handle}", $state);
 
@@ -672,7 +676,7 @@ abstract class Resolver
         // For example, a fork of a known extension
         $known = $manifest === null ? null : $this->registry->getExtensionByManifest($manifest);
         if ($known === null) {
-            if ($manifest !== null && $this->isUnknownExtensionAlreadyInstalled($manifest, $state)) {
+            if ($manifest !== null && $this->isUnknownExtensionAlreadyInstalled($manifest->getExtensionName(), $state)) {
                 return null;
             }
         } else {
@@ -914,16 +918,18 @@ abstract class Resolver
     }
 
     /**
-     * The name of an unknown extension is available only in its manifest, so we can check this only after fetching its source code.
+     * The name of an unknown extension is the handle asked by the user, or the one in its manifest (available only after fetching its source code).
+     *
+     * @param string $name
      *
      * @return bool
      */
-    private function isUnknownExtensionAlreadyInstalled(Manifest $manifest, State $state)
+    private function isUnknownExtensionAlreadyInstalled($name, State $state)
     {
-        if (!$this->isInstalledName($manifest->getExtensionName())) {
+        if (!$this->isInstalledName($name)) {
             return false;
         }
-        $this->skip($manifest->getExtensionName(), Extension\Skipped::REASON_ALREADY_INSTALLED, "The extension {$manifest->getExtensionName()} is already installed - skipping", $state);
+        $this->skip($name, Extension\Skipped::REASON_ALREADY_INSTALLED, "The extension {$name} is already installed - skipping", $state);
 
         return true;
     }
