@@ -16,6 +16,7 @@ use IPE\Installer\ExtensionsInstaller;
 use IPE\Installer\Report\InstalledExtension;
 use IPE\Installer\State;
 use IPE\Installer\VendorArchivePreparer;
+use IPE\Installer\ZendExtensionDetector;
 use IPE\Option\Validator;
 use IPE\Option\Values;
 use IPE\OS;
@@ -106,7 +107,7 @@ final class ExtensionsInstallerTest extends TestCase
             $os,
             $this->php,
             $registry,
-            new Compiler($buildTools, $buildOptions, $this->php, $fs, new \IPE\Logger()),
+            new Compiler($buildTools, $buildOptions, $this->php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()),
             new BinaryInstaller($this->php, $fs, $buildTools, $buildOptions),
             new VendorArchivePreparer(M::mock(Filesystem\ArchiveExtractor::class), $fs),
             new Enabler($this->php, $fs, new \IPE\Logger()),

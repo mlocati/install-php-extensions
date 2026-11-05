@@ -39,13 +39,19 @@ final class Compiler
      */
     private $fs;
 
-    public function __construct(BuildTools $buildTools, BuildOptions $buildOptions, PHPInfo $php, Filesystem $fs, \IPE\Logger $logger)
+    /**
+     * @var \IPE\Installer\ZendExtensionDetector
+     */
+    private $zendExtensionDetector;
+
+    public function __construct(BuildTools $buildTools, BuildOptions $buildOptions, PHPInfo $php, Filesystem $fs, ZendExtensionDetector $zendExtensionDetector, \IPE\Logger $logger)
     {
         $this->logger = $logger;
         $this->buildTools = $buildTools;
         $this->buildOptions = $buildOptions;
         $this->php = $php;
         $this->fs = $fs;
+        $this->zendExtensionDetector = $zendExtensionDetector;
     }
 
     /**
@@ -93,7 +99,7 @@ final class Compiler
             throw new Exception\IO("make install did not create the module file {$modulePath}");
         }
         $manifest = $resolved->getManifest();
-        $zendExtension = $manifest === null ? $this->looksLikeZendExtension($modulePath) : $manifest->isZendExtension();
+        $zendExtension = $manifest === null ? $this->zendExtensionDetector->isZendExtension($modulePath) : $manifest->isZendExtension();
         if ($this->buildOptions->getType() === BuildOptions::TYPE_OPTIMIZED) {
             $this->stripSymbols($modulePath, $sourceDir);
         }
@@ -295,19 +301,5 @@ final class Compiler
             }
         }
         throw new Exception\IO('Unable to determine which module to install among: ' . implode(', ', $moduleNames));
-    }
-
-    /**
-     * Zend extensions export the zend_extension_entry symbol (the same check that readelf would do).
-     *
-     * @param non-empty-string $modulePath
-     *
-     * @throws \IPE\Exception\IO
-     *
-     * @return bool
-     */
-    private function looksLikeZendExtension($modulePath)
-    {
-        return strpos($this->fs->readFile($modulePath), 'zend_extension_entry') !== false;
     }
 }
