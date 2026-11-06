@@ -188,11 +188,13 @@ final class Compiler
      *
      * @param \IPE\Extension|null $known
      *
+     * @throws \IPE\Exception\IO
+     *
      * @return array<non-empty-string, string>
      */
     private function buildConfigureEnvironment($known)
     {
-        $flags = ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? '-O0 -g' : '-g -O2') . ' -fstack-protector-strong';
+        $flags = ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? '-O0 -g' : '-g -O2') . ' ' . $this->buildTools->getStackProtectorFlag();
         if ($known instanceof Extension\ProvidesCompilerFlags) {
             $flags .= ' ' . $known->getCompilerFlags();
         }

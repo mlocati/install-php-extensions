@@ -319,6 +319,45 @@ final class BuildToolsTest extends TestCase
     }
 
     /**
+     * @return list<array{int, string}>
+     */
+    public static function provideStackProtectorFlagCases()
+    {
+        return [[0, '-fstack-protector-strong'], [1, '-fstack-protector']];
+    }
+
+    /**
+     * @dataProvider provideStackProtectorFlagCases
+     *
+     * @param int $rc
+     * @param string $expected
+     *
+     * @return void
+     */
+    public function testStackProtectorFlag($rc, $expected)
+    {
+        $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
+        $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('/usr/bin/cc');
+        $fs->shouldReceive('createVolatileDirectory')->once()->andReturn(new VolatileDirectory('/tmp/x', $fs));
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('cc', ['-fstack-protector-strong', '-c', '/tmp/x/test.c', '-o', '/tmp/x/test.o'])->withOutput(Command::OUTPUT_DISCARD)))->andReturn([$rc, '']);
+        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        self::assertSame($expected, $buildTools->getStackProtectorFlag());
+        // The result is cached
+        self::assertSame($expected, $buildTools->getStackProtectorFlag());
+    }
+
+    /**
+     * @return void
+     */
+    public function testStackProtectorFlagWithoutCompiler()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('');
+        $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('');
+        self::assertSame('-fstack-protector-strong', (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getStackProtectorFlag());
+    }
+
+    /**
      * @return void
      */
     public function testProcessorCount()
