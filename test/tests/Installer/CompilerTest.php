@@ -8,6 +8,7 @@ use IPE\Extension\Manifest;
 use IPE\Extension\Resolved;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
+use IPE\Filesystem\VolatileDirectory;
 use IPE\Installer\BuildOptions;
 use IPE\Installer\BuildTools;
 use IPE\Installer\Compiler;
@@ -71,6 +72,13 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('/usr/bin/nproc');
         $fs->shouldReceive('resolveCommand')->with('readelf')->andReturn('');
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('nproc', [])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "4\n"]);
+        $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('/usr/bin/cc');
+        $fs->shouldReceive('createVolatileDirectory')->andReturnUsing(static function () use ($fs) {
+            return new VolatileDirectory('/tmp/cc', $fs);
+        });
+        $fs->shouldReceive('writeFile')->with('/tmp/cc/test.c', M::type('string'));
+        $fs->shouldReceive('deleteDirectory')->with('/tmp/cc');
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('cc', ['-fstack-protector-strong', '-c', '/tmp/cc/test.c', '-o', '/tmp/cc/test.o'])->withOutput(Command::OUTPUT_DISCARD)))->andReturn([0, '']);
 
         return $fs;
     }
