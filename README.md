@@ -339,7 +339,7 @@ These options apply to all the extensions (the options of specific extensions ar
 | `--enable[=]value` | Enable the extension loaded by this ini file, by uncommenting its extension= and zend_extension= lines (can be specified multiple times) |  |
 | `--disable[=]value` | Disable the extension loaded by this ini file, by commenting out its extension= and zend_extension= lines (can be specified multiple times) |  |
 | `--ini-basename[=]value` | The name of the ini files that enable the extensions (without .ini): use the {priority} and {name} placeholders, or compat for the names used by the official Docker PHP images (see https://github.com/mlocati/install-php-extensions#names-of-the-ini-files) | compat in the official Docker PHP images, {priority}-{name} otherwise |
-| `--keep-systempackager-cache` | Don't clear the system packager (APT/APK) cache after installing PHP extensions |  |
+| `--keep-systempackager-cache[=]<yes\|no>` | Keep the system packager (APT/APK) cache after installing PHP extensions | no in the official Docker PHP images, yes otherwise |
 | `--apt-debian-fix-archived[=]<yes\|no>` | Update the APT repositories for archived Debian systems | yes in the official Docker PHP images, no otherwise |
 | `--apt-debian-archiveurl-default[=]value` | The URL for APT for archived Debian systems | `http://archive.debian.org/debian` |
 | `--apt-debian-archiveurl-security[=]value` | The security URL for APT for archived Debian systems | `http://archive.debian.org/debian-security` |
