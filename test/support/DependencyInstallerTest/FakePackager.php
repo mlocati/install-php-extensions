@@ -32,6 +32,11 @@ final class FakePackager extends SystemPackager
     public $failInstall = false;
 
     /**
+     * @var \IPE\SystemPackager\InstalledPackage|null the package that owns every file
+     */
+    public $owningPackage;
+
+    /**
      * @param list<non-empty-string> $installed
      * @param array<non-empty-string, list<non-empty-string>> $expansions
      */
@@ -81,7 +86,7 @@ final class FakePackager extends SystemPackager
      */
     public function getInstalledPackageOwningFile($path)
     {
-        return null;
+        return $this->owningPackage;
     }
 
     /**
@@ -173,6 +178,6 @@ final class FakePackager extends SystemPackager
      */
     protected function validatePackageName($name, $mayIncludeVersion)
     {
-        return preg_match('/^(\^.+\$|[a-z0-9][a-z0-9+.-]*)$/D', $name) === 1;
+        return preg_match($mayIncludeVersion ? '/^(\^.+\$|[a-z0-9][a-z0-9+.-]*(=\S+)?)$/D' : '/^(\^.+\$|[a-z0-9][a-z0-9+.-]*)$/D', $name) === 1;
     }
 }

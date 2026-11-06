@@ -8,6 +8,7 @@ use IPE\Extension\Resolved;
 use IPE\Installer\Report\InstalledExtension;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\Service\PHPSystemPackage;
 use IPE\SystemDependency;
 
 /**
@@ -60,7 +61,12 @@ final class ExtensionsInstaller
      */
     private $resolver;
 
-    public function __construct(OS\Posix $os, PHPInfo $php, SystemDependency\Registry $dependencyRegistry, Compiler $compiler, BinaryInstaller $binaryInstaller, VendorArchivePreparer $vendorArchivePreparer, Enabler $enabler, Extension\Asked\Resolver $resolver, \IPE\Logger $logger)
+    /**
+     * @var \IPE\Service\PHPSystemPackage
+     */
+    private $phpSystemPackage;
+
+    public function __construct(OS\Posix $os, PHPInfo $php, SystemDependency\Registry $dependencyRegistry, Compiler $compiler, BinaryInstaller $binaryInstaller, VendorArchivePreparer $vendorArchivePreparer, Enabler $enabler, Extension\Asked\Resolver $resolver, PHPSystemPackage $phpSystemPackage, \IPE\Logger $logger)
     {
         $this->logger = $logger;
         $this->os = $os;
@@ -71,6 +77,7 @@ final class ExtensionsInstaller
         $this->vendorArchivePreparer = $vendorArchivePreparer;
         $this->enabler = $enabler;
         $this->resolver = $resolver;
+        $this->phpSystemPackage = $phpSystemPackage;
     }
 
     /**
@@ -109,7 +116,12 @@ final class ExtensionsInstaller
         $packages = $this->dependencyRegistry->collectSystemPackages($dependencies, $state);
         foreach ($resolvedExtensions as $resolvedExtension) {
             if ($resolvedExtension->getOrigin() !== Resolved::ORIGIN_BINARY || $resolvedExtension->getKnownExtension() instanceof Extension\BuildsModule) {
-                $packages = $packages->withVolatile($systemPackager->getPhpizeRequirements());
+                $phpizeRequirements = $systemPackager->getPhpizeRequirements();
+                $developmentPackage = $this->phpSystemPackage->getDevelopmentPackage();
+                if ($developmentPackage !== '') {
+                    $phpizeRequirements[] = $developmentPackage;
+                }
+                $packages = $packages->withVolatile($phpizeRequirements);
                 break;
             }
         }
