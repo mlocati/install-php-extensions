@@ -32,7 +32,7 @@ class ArchiveFormat
     const TAR_GZ = 'tar.gz';
 
     /**
-     * Tarball (compressed with bzip2).
+     * Tarball (compressed with xz).
      *
      * @var string
      * @public
