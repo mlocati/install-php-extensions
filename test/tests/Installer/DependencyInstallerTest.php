@@ -62,7 +62,7 @@ final class DependencyInstallerTest extends TestCase
                 'refresh',
                 'expand libzip4',
                 'expand libzip4 libzip-dev autoconf',
-                'install libzip4 libbz2-1.0 libzip-dev zlib1g-dev',
+                'install libzip4 libbz2-1.0 libzip-dev=1.0 zlib1g-dev=1.0',
             ],
             $packager->log
         );
@@ -100,7 +100,7 @@ final class DependencyInstallerTest extends TestCase
                 'expand libmcrypt4',
                 'expand libmcrypt4 libmcrypt-dev',
                 'mark libmcrypt4',
-                'install libmcrypt-dev',
+                'install libmcrypt-dev=1.0',
             ],
             $packager->log
         );
@@ -135,7 +135,7 @@ final class DependencyInstallerTest extends TestCase
                 'refresh',
                 'expand lapack',
                 'expand lapack openblas-dev',
-                'install lapack openblas-dev openblas',
+                'install lapack openblas-dev=1.0 openblas=1.0',
                 'remove lapack openblas-dev openblas',
                 'restore libc6',
             ],
