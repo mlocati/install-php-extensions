@@ -18,7 +18,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION_LUCID = 1004;
+    const LUCID = 1004;
 
     /**
      * Maverick Meerkat.
@@ -26,7 +26,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__MAVERICK = 1004;
+    const MAVERICK = 1010;
 
     /**
      * Natty Narwhal.
@@ -34,7 +34,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__NATTY = 1104;
+    const NATTY = 1104;
 
     /**
      * Oneiric Ocelot.
@@ -42,7 +42,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__ONEIRIC = 1110;
+    const ONEIRIC = 1110;
 
     /**
      * Precise Pangolin.
@@ -50,7 +50,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__PRECISE = 1204;
+    const PRECISE = 1204;
 
     /**
      * Quantal Quetzal.
@@ -58,7 +58,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__QUANTAL = 1210;
+    const QUANTAL = 1210;
 
     /**
      * Raring Ringtail.
@@ -66,15 +66,15 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__RARING = 1304;
+    const RARING = 1304;
 
     /**
-     * Saucy Salamander).
+     * Saucy Salamander.
      *
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__SAUCY = 1310;
+    const SAUCY = 1310;
 
     /**
      * Trusty Tahr.
@@ -82,7 +82,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__TRUSTY = 1404;
+    const TRUSTY = 1404;
 
     /**
      * Utopic Unicorn.
@@ -90,23 +90,23 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__UTOPIC = 1410;
+    const UTOPIC = 1410;
 
     /**
-     * Vivid Vervet).
+     * Vivid Vervet.
      *
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__VIVID = 1504;
+    const VIVID = 1504;
 
     /**
-     * Wily Werewolf).
+     * Wily Werewolf.
      *
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__WILY = 1510;
+    const WILY = 1510;
 
     /**
      * Xenial Xerus.
@@ -114,7 +114,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__XENIAL = 1604;
+    const XENIAL = 1604;
 
     /**
      * Yakkety Yak.
@@ -122,7 +122,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__YAKKETY = 1610;
+    const YAKKETY = 1610;
 
     /**
      * Zesty Zapus.
@@ -130,7 +130,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__ZESTY = 1704;
+    const ZESTY = 1704;
 
     /**
      * Artful Aardvark.
@@ -138,7 +138,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__ARTFUL = 1710;
+    const ARTFUL = 1710;
 
     /**
      * Bionic Beaver.
@@ -146,7 +146,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__BIONIC = 1804;
+    const BIONIC = 1804;
 
     /**
      * Cosmic Cuttlefish.
@@ -154,7 +154,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__COSMIC = 1810;
+    const COSMIC = 1810;
 
     /**
      * Disco Dingo.
@@ -162,7 +162,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__DISCO = 1904;
+    const DISCO = 1904;
 
     /**
      * Eoan Ermine.
@@ -170,7 +170,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__EOAN = 1910;
+    const EOAN = 1910;
 
     /**
      * Focal Fossa.
@@ -178,7 +178,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__FOCAL = 2004;
+    const FOCAL = 2004;
 
     /**
      * Groovy Gorilla.
@@ -186,7 +186,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__GROOVY = 2010;
+    const GROOVY = 2010;
 
     /**
      * Hirsute Hippo.
@@ -194,7 +194,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__HIRSUTE = 2104;
+    const HIRSUTE = 2104;
 
     /**
      * Impish Indri.
@@ -202,7 +202,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__IMPISH = 2110;
+    const IMPISH = 2110;
 
     /**
      * Jammy Jellyfish.
@@ -210,7 +210,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__JAMMY = 2204;
+    const JAMMY = 2204;
 
     /**
      * Kinetic Kudu.
@@ -218,7 +218,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__KINETIC = 2210;
+    const KINETIC = 2210;
 
     /**
      * Lunar Lobster.
@@ -226,7 +226,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__LUNAR = 2304;
+    const LUNAR = 2304;
 
     /**
      * Mantic Minotaur.
@@ -234,7 +234,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__MANTIC = 2310;
+    const MANTIC = 2310;
 
     /**
      * Noble Numbat.
@@ -242,7 +242,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__NOBLE = 2404;
+    const NOBLE = 2404;
 
     /**
      * Oracular Oriole.
@@ -250,7 +250,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__ORACULAR = 2410;
+    const ORACULAR = 2410;
 
     /**
      * Plucky Puffin.
@@ -258,7 +258,7 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__PLUCKY = 2504;
+    const PLUCKY = 2504;
 
     /**
      * Questing Quokka.
@@ -266,7 +266,23 @@ class Ubuntu implements Posix
      * @public
      * @var positive-int
      */
-    const NUMERICVERSION__QUESTING = 2510;
+    const QUESTING = 2510;
+
+    /**
+     * Resolute Raccoon.
+     *
+     * @public
+     * @var positive-int
+     */
+    const RESOLUTE = 2604;
+
+    /**
+     * Stonking Stingray.
+     *
+     * @public
+     * @var positive-int
+     */
+    const STONKING = 2610;
 
     /**
      * @var \IPE\Filesystem
