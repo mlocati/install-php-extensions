@@ -375,12 +375,17 @@ class Ubuntu implements Posix
     {
         $version = isset($data['VERSION']) ? $data['VERSION'] : '';
         $matches = null;
-        if (!preg_match('/^(?<version>\d\d?(\.\d\d?)+( LTS)?) \((?<extendedName>[A-Z][a-z]* [A-Z][a-z]*)\)$/D', $version, $matches)) {
+        if (preg_match('/^(?<version>\d\d?(\.\d\d?)+( LTS)?) \((?<extendedName>[A-Z][a-z]* [A-Z][a-z]*)\)$/D', $version, $matches)) {
+            $codename = isset($data['VERSION_CODENAME']) ? $data['VERSION_CODENAME'] : '';
+        } elseif (preg_match('/^(?<version>\d\d?(\.\d\d?)+( LTS)?), (?<extendedName>(?<codename>[A-Z][a-z]*) [A-Z][a-z]*)$/D', $version, $matches)) {
+            // Ubuntu 14.04: VERSION is like "14.04.6 LTS, Trusty Tahr", and VERSION_CODENAME is missing
+            $codename = strtolower($matches['codename']);
+        } else {
             throw new Exception\UnsupportedOS("'/etc/os-release' defines an invalid VERSION for Ubuntu ({$version})");
         }
         try {
             return $app->build(static::class, [
-                isset($data['VERSION_CODENAME']) ? $data['VERSION_CODENAME'] : '',
+                $codename,
                 $matches['version'],
                 $matches['extendedName'],
             ]);
