@@ -15,6 +15,13 @@ interface Filesystem
     public function getDirectorySeparator();
 
     /**
+     * Get the separator of the items in lists like the PATH environment variable.
+     *
+     * @return non-empty-string
+     */
+    public function getPathSeparator();
+
+    /**
      * @param non-empty-string $name
      *
      * @throws \IPE\Exception\InvalidArgument

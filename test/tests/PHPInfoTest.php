@@ -52,13 +52,14 @@ final class PHPInfoTest extends TestCase
     {
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('getPathSeparator')->andReturn(':');
         $fs->shouldReceive('exists')->andReturn(true);
         $fs->shouldReceive('isFile')->andReturn(true);
         $fs->shouldReceive('getRealPath')->andReturnUsing(static function ($path) {
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', 'Core', 'json', ''])],
+            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '/usr/local/etc/php/conf.d', 'Core', 'json', ''])],
             [0, implode("\n", [
                 'phpinfo()',
                 'PHP Version => 8.4.14',
@@ -81,7 +82,65 @@ final class PHPInfoTest extends TestCase
         self::assertSame("'./configure'  '--with-libdir=lib64'", $php->getConfigureCommand());
         self::assertSame('', $php->getLoadedIniFile());
         self::assertSame('/usr/local/etc/php/conf.d', $php->getIniScanDir());
+        self::assertSame(['/usr/local/etc/php/conf.d'], $php->getIniScanDirs());
         self::assertSame(['Core', 'json'], $php->getInstalledExtensions());
+    }
+
+    /**
+     * @return list<array{string, string, string, list<string>}>
+     */
+    public static function provideIniScanDirCases()
+    {
+        $defaultDir = '/usr/local/etc/php/conf.d';
+
+        return [
+            [':/app', $defaultDir, $defaultDir, [$defaultDir, '/app']],
+            ["{$defaultDir}:/app", $defaultDir, $defaultDir, [$defaultDir, '/app']],
+            ["/app:{$defaultDir}", $defaultDir, $defaultDir, ['/app', $defaultDir]],
+            [":/app:{$defaultDir}", $defaultDir, $defaultDir, [$defaultDir, '/app']],
+            ['/missing:/app', $defaultDir, '/app', ['/missing', '/app']],
+            ['/missing', $defaultDir, '/missing', ['/missing']],
+            ['/missing:/missing2', $defaultDir, '/missing', ['/missing', '/missing2']],
+            ['', $defaultDir, '', []],
+            [':/app', '', '/app', ['/app']],
+            [':', '', '', []],
+        ];
+    }
+
+    /**
+     * @dataProvider provideIniScanDirCases
+     *
+     * @param string $scanDirs the directories listed by phpinfo() (from the PHP_INI_SCAN_DIR environment variable, if set)
+     * @param string $defaultScanDir the value of PHP_CONFIG_FILE_SCAN_DIR
+     * @param string $expectedDir
+     * @param list<string> $expectedDirs
+     *
+     * @return void
+     */
+    public function testIniScanDir($scanDirs, $defaultScanDir, $expectedDir, array $expectedDirs)
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('getPathSeparator')->andReturn(':');
+        $fs->shouldReceive('isFile')->andReturn(true);
+        $fs->shouldReceive('exists')->andReturnUsing(static function ($path) {
+            return !in_array($path, ['/missing', '/missing2'], true);
+        });
+        $fs->shouldReceive('getRealPath')->andReturnUsing(static function ($path) {
+            return $path;
+        });
+        $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
+            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', $defaultScanDir, ''])],
+            [0, implode("\n", [
+                'Loaded Configuration File => (none)',
+                'Scan this dir for additional .ini files => ' . ($scanDirs === '' ? '(none)' : $scanDirs),
+                'PHP API => 20240924',
+                '',
+            ])]
+        );
+        $php = PHPInfo::fromPHPBin('/usr/local/bin/php', $fs);
+        self::assertSame($expectedDir, $php->getIniScanDir());
+        self::assertSame($expectedDirs, $php->getIniScanDirs());
     }
 
     /**
@@ -98,7 +157,7 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/lib/php/20240924', 'Core', ''])],
+            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/lib/php/20240924', '', 'Core', ''])],
             [0, "PHP API => 20240924\n"]
         );
         $php = PHPInfo::fromPHPBin('php8.4', $fs);
@@ -171,7 +230,7 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", [$version, '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', ''])],
+            [0, implode("\n", [$version, '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '', ''])],
             [0, "PHP API => 20240924\n"]
         );
         try {
