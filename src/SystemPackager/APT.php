@@ -16,13 +16,28 @@ class APT extends SystemPackager
     }
 
     /**
-     * {@inheritdoc}
+     * Like the $PHPIZE_DEPS env var of Debian docker images.
+     * The same packages are available on Ubuntu (verified from 14.04 to 26.04).
      *
+     * @see https://github.com/docker-library/php/blob/fab49d4cb1c61e4f74c2dffe06961408212f054c/5.6/jessie/cli/Dockerfile#L20-L29
+     * @see https://github.com/docker-library/php/blob/f6048b5f6e3c2202ee082665a4ccc0d90de291a3/8.4/trixie/cli/Dockerfile#L20-L29
+     *
+     * {@inheritdoc}
      * @see \IPE\SystemPackager::getPhpizeRequirements()
      */
     public function getPhpizeRequirements()
     {
-        return [];
+        return [
+            'autoconf',
+            'dpkg-dev',
+            'file',
+            'g++',
+            'gcc',
+            'libc-dev',
+            'make',
+            'pkg-config',
+            're2c',
+        ];
     }
 
     /**
