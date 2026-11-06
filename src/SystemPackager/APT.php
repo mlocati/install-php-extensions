@@ -27,7 +27,7 @@ class APT extends SystemPackager
      */
     public function getPhpizeRequirements()
     {
-        return [
+        $result = [
             'autoconf',
             'dpkg-dev',
             'file',
@@ -38,6 +38,12 @@ class APT extends SystemPackager
             'pkg-config',
             're2c',
         ];
+        // The php5-dev package of Ubuntu 14.04 doesn't depend on libpcre3-dev, but ext/pcre/php_pcre.h includes pcre.h
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+            $result[] = 'libpcre3-dev';
+        }
+
+        return $result;
     }
 
     /**
