@@ -68,6 +68,16 @@ class Local implements Filesystem
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\Filesystem::getPathSeparator()
+     */
+    public function getPathSeparator()
+    {
+        return PATH_SEPARATOR;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\Filesystem::resolveCommand()
      */
     public function resolveCommand($name)

@@ -68,6 +68,11 @@ class PHPInfo
     private $iniScanDir;
 
     /**
+     * @var list<non-empty-string>
+     */
+    private $iniScanDirs;
+
+    /**
      * @var string
      */
     private $loadedIniFile;
@@ -119,7 +124,7 @@ class PHPInfo
         if ($info === false) {
             throw new Exception\IO('Failed to collect the general PHP info');
         }
-        $result->parseGeneralInfo($info, $fs);
+        $result->parseGeneralInfo($info, PHP_CONFIG_FILE_SCAN_DIR, $fs);
         $installedExtensions = [];
         foreach ([false, true] as $zendExtensionFlag) {
             $installedExtensions = array_merge($installedExtensions, get_loaded_extensions($zendExtensionFlag));
@@ -166,6 +171,7 @@ class PHPInfo
                     'PHP_INT_SIZE',
                     'ZEND_THREAD_SAFE ? 1 : 0',
                     "ini_get('extension_dir')",
+                    'PHP_CONFIG_FILE_SCAN_DIR',
                     'implode(PHP_EOL, get_loaded_extensions(false))',
                     'implode(PHP_EOL, get_loaded_extensions(true))',
                 ]) . ';',
@@ -174,8 +180,9 @@ class PHPInfo
         if ($rc !== 0) {
             throw new Exception\IO('Failed to inspect the specified php.');
         }
-        $lines = Service\Regex::split('/[\r\n]+/', $output);
-        if (count($lines) < 6 || $lines[0] === '' || $lines[5] === '') {
+        // Empty lines are kept: PHP_CONFIG_FILE_SCAN_DIR may be empty
+        $lines = Service\Regex::split('/\r?\n/', $output);
+        if (count($lines) < 7 || $lines[0] === '' || $lines[5] === '') {
             throw new Exception\IO("Failed to inspect the specified php: unexpected output\n{$output}");
         }
         $result->setVersion($lines[0]);
@@ -188,8 +195,8 @@ class PHPInfo
         if ($rc !== 0) {
             throw new Exception\IO('Failed to collect the general info of the specified php.');
         }
-        $result->parseGeneralInfo($info, $fs);
-        $result->setInstalledExtensions(array_slice($lines, 6));
+        $result->parseGeneralInfo($info, $lines[6], $fs);
+        $result->setInstalledExtensions(array_slice($lines, 7));
 
         return $result;
     }
@@ -216,13 +223,23 @@ class PHPInfo
     }
 
     /**
-     * Get the directory scanned by PHP for additional ini files.
+     * Get the directory where the additional ini files should be written (it's one of the directories returned by getIniScanDirs()).
      *
      * @return string empty string if PHP doesn't scan any directory
      */
     public function getIniScanDir()
     {
         return $this->iniScanDir;
+    }
+
+    /**
+     * Get all the directories scanned by PHP for additional ini files (including the ones that don't exist).
+     *
+     * @return list<non-empty-string>
+     */
+    public function getIniScanDirs()
+    {
+        return $this->iniScanDirs;
     }
 
     /**
@@ -402,24 +419,78 @@ class PHPInfo
      * Read the values of interest from the output of phpinfo(INFO_GENERAL) / php -i.
      *
      * @param string $info
+     * @param string $defaultIniScanDir the value of PHP_CONFIG_FILE_SCAN_DIR
      *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    private function parseGeneralInfo($info, Filesystem $fs)
+    private function parseGeneralInfo($info, $defaultIniScanDir, Filesystem $fs)
     {
         $api = self::readInfoValue($info, 'PHP API');
         if (!preg_match('/^\d+$/D', $api)) {
             throw new Exception\IO("Failed to determine the PHP API version from the general PHP info\n{$info}");
         }
         $this->apiVersion = (int) $api;
-        // Paths are normalized because PHP may have been launched through a symlink
-        $iniScanDir = self::readInfoValue($info, 'Scan this dir for additional .ini files');
-        $this->iniScanDir = $iniScanDir !== '' && $fs->exists($iniScanDir) ? $fs->getRealPath($iniScanDir) : $iniScanDir;
+        $this->configureCommand = self::readInfoValue($info, 'Configure Command');
+        list($this->iniScanDir, $this->iniScanDirs) = self::parseIniScanDirs(self::readInfoValue($info, 'Scan this dir for additional .ini files'), $defaultIniScanDir, $fs);
         $loadedIniFile = self::readInfoValue($info, 'Loaded Configuration File');
         $this->loadedIniFile = $loadedIniFile === '' ? '' : $fs->getRealPath($loadedIniFile);
-        $this->configureCommand = self::readInfoValue($info, 'Configure Command');
+    }
+
+    /**
+     * The PHP_INI_SCAN_DIR environment variable may contain a list of directories, where an empty one is the directory PHP has been compiled with.
+     * We write to the directory PHP has been compiled with if it's in the list, otherwise to the first existing one.
+     *
+     * @param string $scanDirs
+     * @param string $defaultScanDir the value of PHP_CONFIG_FILE_SCAN_DIR
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return array{string, list<non-empty-string>} the directory where to write (empty string if PHP doesn't scan any directory), and all the scanned directories
+     *
+     * @see https://www.php.net/manual/en/configuration.file.php#configuration.file.scan
+     */
+    private static function parseIniScanDirs($scanDirs, $defaultScanDir, Filesystem $fs)
+    {
+        if ($scanDirs === '') {
+            return ['', []];
+        }
+        $default = $defaultScanDir === '' ? '' : self::normalizeDirectory($defaultScanDir, $fs);
+        $directories = [];
+        foreach (explode($fs->getPathSeparator(), $scanDirs) as $directory) {
+            $directory = $directory === '' ? $default : self::normalizeDirectory($directory, $fs);
+            if ($directory !== '' && !in_array($directory, $directories, true)) {
+                $directories[] = $directory;
+            }
+        }
+        if ($directories === []) {
+            return ['', []];
+        }
+        if ($default !== '' && in_array($default, $directories, true)) {
+            return [$default, $directories];
+        }
+        foreach ($directories as $directory) {
+            if ($fs->exists($directory)) {
+                return [$directory, $directories];
+            }
+        }
+
+        return [$directories[0], $directories];
+    }
+
+    /**
+     * Paths are normalized because PHP may have been launched through a symlink.
+     *
+     * @param non-empty-string $directory
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string
+     */
+    private static function normalizeDirectory($directory, Filesystem $fs)
+    {
+        return $fs->exists($directory) ? $fs->getRealPath($directory) : $directory;
     }
 
     /**

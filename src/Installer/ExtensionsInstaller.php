@@ -246,14 +246,18 @@ final class ExtensionsInstaller
      *
      * @throws \IPE\Exception\IO
      *
-     * @return array<string, true> the keys are the full paths of the module files in the PHP extension directory, and of the ini files in the directory scanned by PHP
+     * @return array<string, true> the keys are the full paths of the module files in the PHP extension directory, and of the ini files in the directories scanned by PHP
      */
     private function listModuleAndIniFiles()
     {
         $fs = $this->os->getFilesystem();
         $result = [];
-        foreach ([[$this->php->getExtensionDir(), '.so'], [$this->php->getIniScanDir(), '.ini']] as list($directory, $suffix)) {
-            if ($directory === '' || !$fs->isDirectory($directory)) {
+        $directories = [[$this->php->getExtensionDir(), '.so']];
+        foreach ($this->php->getIniScanDirs() as $iniScanDir) {
+            $directories[] = [$iniScanDir, '.ini'];
+        }
+        foreach ($directories as list($directory, $suffix)) {
+            if (!$fs->isDirectory($directory)) {
                 continue;
             }
             foreach ($fs->listDirectoryContents($directory) as $name) {

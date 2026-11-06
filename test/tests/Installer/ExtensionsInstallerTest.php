@@ -90,6 +90,7 @@ final class ExtensionsInstallerTest extends TestCase
         $this->php = M::mock(PHPInfo::class)->shouldIgnoreMissing();
         $this->php->shouldReceive('getExtensionDir')->andReturn('/ext');
         $this->php->shouldReceive('getIniScanDir')->andReturn('/ini');
+        $this->php->shouldReceive('getIniScanDirs')->andReturn(['/ini', '/app-ini']);
         $this->php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
         $os = M::mock(OS\Debian::class);
         $os->shouldReceive('getSystemPackager')->andReturn($this->packager);
@@ -312,9 +313,10 @@ final class ExtensionsInstallerTest extends TestCase
         $fs = $this->createFilesystem();
         $fs->shouldReceive('isDirectory')->andReturn(true);
         $fs->shouldReceive('listDirectoryContents')->with('/ext')->andReturn(['other.so'], ['other.so', 'vendor.so', 'vendor.txt']);
-        $fs->shouldReceive('listDirectoryContents')->with('/ini')->andReturn(['10-other.ini'], ['10-other.ini', '20-vendor.ini']);
+        $fs->shouldReceive('listDirectoryContents')->with('/ini')->andReturn(['10-other.ini']);
+        $fs->shouldReceive('listDirectoryContents')->with('/app-ini')->andReturn([], ['20-vendor.ini']);
         $fs->shouldReceive('run')->andReturn([0, "[PHP Modules]\nvendor\n"]);
-        $this->writtenFiles['/ini/20-vendor.ini'] = "; Disabled by the vendor\n;extension=vendor.so\n";
+        $this->writtenFiles['/app-ini/20-vendor.ini'] = "; Disabled by the vendor\n;extension=vendor.so\n";
         $installer = $this->createInstaller($fs);
         $skipped = new Extension\Skipped('other', Extension\Skipped::REASON_ALREADY_INSTALLED, 'The extension other is already installed - skipping');
         $report = $installer->install([self::createResolvedVendorInstaller()], (new State($this->php, $fs))->setSkippedExtensions([$skipped]));
@@ -324,7 +326,7 @@ final class ExtensionsInstallerTest extends TestCase
         self::assertSame(InstalledExtension::METHOD_VENDOR_INSTALLER, $installed->getMethod());
         self::assertSame(['/ext/vendor.so'], $installed->getModuleFiles());
         self::assertNull($installed->isZendExtension());
-        self::assertSame(['/ini/20-vendor.ini' => false], $installed->getIniFiles());
+        self::assertSame(['/app-ini/20-vendor.ini' => false], $installed->getIniFiles());
         self::assertSame(['vendor'], $installed->getLoadedModules());
         self::assertSame(['fake-tool-pkg'], $report->getSystemPackages()->getVolatile());
     }
