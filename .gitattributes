@@ -9,5 +9,6 @@
 /test/ export-ignore
 /.* export-ignore
 /*.md export-ignore
+/Dockerfile export-ignore
 /phpstan.*.neon.dist export-ignore
 /phpunit.xml.dist export-ignore

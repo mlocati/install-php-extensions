@@ -19,7 +19,8 @@ The workflow:
 2. builds the `install-php-extensions` PHAR file (not compressed) and the `install-php-extensions-gz` PHAR file (compressed with gzip), with the version in the line `const IPE_VERSION = '';` of `bin/install-php-extensions` (that line must not be changed);
 3. checks that the PHAR files report the right version;
 4. updates the automatically generated sections of `README.md` with `scripts/update-readme.php`: if they changed, it commits them and pushes the commit to the `main` branch;
-5. creates the release (and the tag, on the commit created in the previous step, or on the commit the workflow runs on) with the two PHAR files attached.
+5. builds the multi-platform `ghcr.io/mlocati/install-php-extensions` Docker image with the two PHAR files, tagged with the version and (except for pre-releases) with the major and minor versions, the major version (from version 1) and `latest`, and pushes it to the GitHub Container Registry;
+6. creates the release (and the tag, on the commit created in the step 4, or on the commit the workflow runs on) with the two PHAR files attached.
 
 Since the workflow pushes to the `main` branch, the rules that protect the branch must allow it.
 
