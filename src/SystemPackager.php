@@ -103,6 +103,16 @@ abstract class SystemPackager
     protected abstract function doDeleteCache();
 
     /**
+     * Get the argument that installs a specific version of a package.
+     *
+     * @param non-empty-string $name
+     * @param non-empty-string $version
+     *
+     * @return non-empty-string
+     */
+    public abstract function formatPackageNameWithVersion($name, $version);
+
+    /**
      * @param list<non-empty-string> $packages
      *
      * @throws \IPE\Exception\SystemPackager

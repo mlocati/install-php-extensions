@@ -224,7 +224,7 @@ final class ExtensionsInstallerTest extends TestCase
         } catch (Exception\IO $x) {
             self::assertStringContainsString('config.m4', $x->getMessage());
         }
-        self::assertContains('install autoconf gcc php8.4-dev', $this->packager->log);
+        self::assertContains('install autoconf=1.0 gcc=1.0 php8.4-dev=1.0', $this->packager->log);
         self::assertContains('remove autoconf gcc php8.4-dev', $this->packager->log);
     }
 
