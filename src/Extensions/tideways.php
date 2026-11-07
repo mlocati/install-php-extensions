@@ -82,7 +82,7 @@ final class tideways extends Extension\PrecompiledExtension implements Extension
         }
         if ($this->os instanceof OS\Alpine) {
             $platform = 'linux-alpine';
-        } elseif ($this->os instanceof OS\Debian) {
+        } elseif ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             $platform = 'linux';
         } else {
             throw new Exception\UnsupportedOS("Tideways can't be installed on {$this->os->getDisplayName()}");

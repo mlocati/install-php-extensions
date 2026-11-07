@@ -123,6 +123,9 @@ final class memcached extends Extension implements
         if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::VERSION_BOOKWORM) {
             $result[] = SystemDependencies\libopenssl::HANDLE;
         }
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() >= OS\Ubuntu::NOBLE) {
+            $result[] = SystemDependencies\libopenssl::HANDLE;
+        }
 
         return $result;
     }
@@ -136,6 +139,11 @@ final class memcached extends Extension implements
     {
         $version = $context->getVersion();
         if ($version !== '' && version_compare($version, '3.0.0') < 0) {
+            if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                // The libmemcached of Ubuntu 14.04 is built without SASL support
+                return ['--disable-memcached-sasl'];
+            }
+
             return [];
         }
         $installed = $this->php->getInstalledExtensions();

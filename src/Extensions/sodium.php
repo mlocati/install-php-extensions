@@ -47,6 +47,7 @@ final class sodium extends Extension implements
     {
         return [
             'debian8' => 'libsodium 1.0.0 is too old - at least 1.0.9 is required',
+            'ubuntu14.04..16.04' => 'libsodium 1.0.8 is too old - at least 1.0.9 is required',
         ];
     }
 

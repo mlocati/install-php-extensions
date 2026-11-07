@@ -115,7 +115,7 @@ final class swoole extends Extension implements
         $phpVersion = $this->php->getMajorMinorVersion();
         if ($phpVersion <= 506) {
             // 2.0.11 causes a segmentation fault when libpcre-dev is installed (see https://github.com/mlocati/docker-php-extension-installer/issues/1282)
-            return $this->os instanceof OS\Debian ? '2.0.10' : '2.0.11';
+            return $this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu ? '2.0.10' : '2.0.11';
         }
         if ($phpVersion <= 700) {
             return '4.3.6';
@@ -335,8 +335,15 @@ final class swoole extends Extension implements
             return false;
         }
 
-        // swoole requires libzstd 1.4.0+, but Debian Buster provides 1.3.8
-        return !$this->os instanceof OS\Debian || $this->os->getNumericVersion() >= OS\Debian::VERSION_BULLSEYE;
+        // swoole requires libzstd 1.4.0+, but Debian Buster provides 1.3.8 and Ubuntu 18.04 provides 1.3.3
+        if ($this->os instanceof OS\Debian) {
+            return $this->os->getNumericVersion() >= OS\Debian::VERSION_BULLSEYE;
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            return $this->os->getNumericVersion() >= OS\Ubuntu::FOCAL;
+        }
+
+        return true;
     }
 
     /**
@@ -353,9 +360,15 @@ final class swoole extends Extension implements
             // Alpine 3.19 fails with "invalid use of incomplete type 'const struct statx'"; swoole 6.2.0+ requires liburing 2.8+, available since Alpine 3.21
             return $this->os->getNumericVersion() >= (self::isAtLeast($version, '6.2.0') ? 321 : 320);
         }
-
         // swoole requires liburing 2.0+ (2.5+ for 6.0.0, 2.8+ for 6.2.0): we only use it where it's known to work
-        return $this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE;
+        if ($this->os instanceof OS\Debian) {
+            return $this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE;
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            return $this->os->getNumericVersion() >= OS\Ubuntu::RESOLUTE;
+        }
+
+        return false;
     }
 
     /**

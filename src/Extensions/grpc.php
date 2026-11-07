@@ -92,6 +92,16 @@ final class grpc extends Extension implements
             // Newer versions require GCC 10
             return $osVersion <= OS\Debian::VERSION_BUSTER ? '1.84.0' : '';
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            $osVersion = $this->os->getNumericVersion();
+            if ($osVersion <= OS\Ubuntu::XENIAL) {
+                // Ubuntu 16.04 has GCC 5: let's use the version that works with the GCC 4.9 of Debian 8
+                return '1.46.3';
+            }
+
+            // Newer versions require GCC 10
+            return $osVersion <= OS\Ubuntu::FOCAL ? '1.84.0' : '';
+        }
         if ($this->os instanceof OS\Alpine) {
             $osVersion = $this->os->getNumericVersion();
             if ($osVersion <= 308) {

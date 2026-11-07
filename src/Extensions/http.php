@@ -146,7 +146,7 @@ final class http extends Extension implements
                 ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libzlib::HANDLE]
                 : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libzlib::HANDLE];
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return $legacy
                 ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]
                 : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libgcrypt::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn2::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE];
