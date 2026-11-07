@@ -228,18 +228,6 @@ try {
     if ($options->getFlag('create-enable-scripts') && !$inDockerPHPImage) {
         throw new IPEException\InvalidOption('The --create-enable-scripts option is available only in the official Docker PHP images');
     }
-    $app->when(Installer\Enabler::class)
-        ->needs('$skipCheck')
-        ->give(static function () use ($options) {
-            return $options->getFlag('skip-check');
-        })
-    ;
-    $app->when(Installer\Enabler::class)
-        ->needs('$createEnableScripts')
-        ->give(static function () use ($options) {
-            return $options->getFlag('create-enable-scripts');
-        })
-    ;
     $iniBasename = $options->getString('ini-basename');
     if ($iniBasename === '') {
         $iniBasename = $inDockerPHPImage ? Installer\Enabler::INI_BASENAME_COMPAT : Installer\Enabler::INI_BASENAME_DEFAULT;
@@ -248,12 +236,16 @@ try {
     } elseif ($iniBasename !== Installer\Enabler::INI_BASENAME_COMPAT && !preg_match(Installer\Enabler::RX_VALID_INI_BASENAME, $iniBasename)) {
         throw new IPEException\InvalidOption("Invalid value of the --ini-basename option ('{$iniBasename}'): it must contain {priority} followed by {name} (once each), and only letters, digits, _, - and . (but it can't start or end with a dot)");
     }
-    $app->when(Installer\Enabler::class)
-        ->needs('$iniBasename')
-        ->give(static function () use ($iniBasename) {
-            return $iniBasename;
-        })
-    ;
+    $app->extend(
+        Installer\Enabler\Options::class,
+        static function (Installer\Enabler\Options $enablerOptions) use ($options, $iniBasename) {
+            return $enablerOptions
+                ->withSkipCheck($options->getFlag('skip-check'))
+                ->withCreateEnableScripts($options->getFlag('create-enable-scripts'))
+                ->withIniBasename($iniBasename)
+            ;
+        }
+    );
 
     // Configure the system packagers
     $app->when(SystemPackager\APT\OnDebian::class)

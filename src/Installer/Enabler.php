@@ -13,12 +13,12 @@ use IPE\Service\Regex;
 /**
  * Enables a compiled extension by creating an ini file in the directory scanned by PHP.
  */
-final class Enabler
+class Enabler
 {
     /**
      * @var \IPE\Logger
      */
-    private $logger;
+    protected $logger;
 
     /**
      * The extension= and zend_extension= lines (with \s the ^ could match the empty lines before them).
@@ -59,51 +59,29 @@ final class Enabler
     /**
      * @var \IPE\PHPInfo
      */
-    private $php;
+    protected $php;
 
     /**
      * @var \IPE\Filesystem
      */
-    private $fs;
+    protected $fs;
+
+    /**
+     * @var \IPE\Installer\Enabler\Options
+     */
+    protected $options;
 
     /**
      * @var array<non-empty-string, array{non-empty-string, non-empty-string}> the keys are the module names, the values are the path and the content of the ini files
      */
     private $enabledIniFiles = [];
 
-    /**
-     * @var bool
-     */
-    private $skipCheck;
-
-    /**
-     * @var bool
-     */
-    private $createEnableScripts;
-
-    /**
-     * @var non-empty-string
-     */
-    private $iniBasename;
-
-    /**
-     * @param bool $skipCheck true to enable the extensions without checking that PHP loads them correctly
-     * @param bool $createEnableScripts true to create the docker-php-ext-enable-<module> scripts when disabling the extensions
-     * @param string $iniBasename INI_BASENAME_COMPAT, or the name of the ini files (without .ini) with the {priority} and {name} placeholders
-     *
-     * @throws \IPE\Exception\InvalidArgument
-     */
-    public function __construct(PHPInfo $php, Filesystem $fs, \IPE\Logger $logger, $skipCheck = false, $createEnableScripts = false, $iniBasename = self::INI_BASENAME_DEFAULT)
+    public function __construct(PHPInfo $php, Filesystem $fs, \IPE\Logger $logger, Enabler\Options $options)
     {
-        if ($iniBasename !== self::INI_BASENAME_COMPAT && !preg_match(self::RX_VALID_INI_BASENAME, $iniBasename)) {
-            throw new Exception\InvalidArgument("Invalid name of the ini files: '{$iniBasename}'");
-        }
         $this->logger = $logger;
         $this->php = $php;
         $this->fs = $fs;
-        $this->skipCheck = $skipCheck;
-        $this->createEnableScripts = $createEnableScripts;
-        $this->iniBasename = $iniBasename;
+        $this->options = $options;
     }
 
     /**
@@ -121,7 +99,7 @@ final class Enabler
         }
         $iniBasename = $this->buildIniBasename($compiled);
         $iniContent = $this->buildIniContent($compiled);
-        if ($this->skipCheck) {
+        if ($this->options->shouldSkipCheck()) {
             return $this->enableWithoutCheck($compiled, "{$iniScanDir}/{$iniBasename}.ini", $iniContent);
         }
         $this->logger->debug("Checking if the module {$compiled->getModuleName()} can be loaded");
@@ -151,13 +129,29 @@ final class Enabler
         if (self::withoutNumbers($outputAfter) !== self::withoutNumbers($outputBefore)) {
             throw new Exception\IO("The module {$compiled->getModuleName()} loads, but it changes the output of PHP:\n{$outputAfter}");
         }
-        $iniFile = "{$iniScanDir}/{$iniBasename}.ini";
-        $this->logger->debug("Creating {$iniFile}", ['content' => $iniContent]);
-        $this->fs->writeFile($iniFile, $iniContent);
+        $iniFile = $this->writeIniFile($compiled, "{$iniScanDir}/{$iniBasename}.ini", $iniContent);
         $this->addLoadedModules($newModules);
         $this->enabledIniFiles[$compiled->getModuleName()] = [$iniFile, $iniContent];
 
         return $newModules;
+    }
+
+    /**
+     * Create the ini file that enables the module.
+     *
+     * @param non-empty-string $iniFile the ini file in the directory scanned by PHP
+     * @param non-empty-string $iniContent
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string the full path of the created ini file
+     */
+    protected function writeIniFile(CompiledExtension $compiled, $iniFile, $iniContent)
+    {
+        $this->logger->debug("Creating {$iniFile}", ['content' => $iniContent]);
+        $this->fs->writeFile($iniFile, $iniContent);
+
+        return $iniFile;
     }
 
     /**
@@ -171,8 +165,8 @@ final class Enabler
     private function enableWithoutCheck(CompiledExtension $compiled, $iniFile, $iniContent)
     {
         list($loadedBefore) = $this->listLoadedModules();
-        $this->logger->debug("Creating {$iniFile} without checking if the module {$compiled->getModuleName()} can be loaded", ['content' => $iniContent]);
-        $this->fs->writeFile($iniFile, $iniContent);
+        $this->logger->debug("Enabling the module {$compiled->getModuleName()} without checking if it can be loaded");
+        $iniFile = $this->writeIniFile($compiled, $iniFile, $iniContent);
         list($loadedAfter) = $this->listLoadedModules();
         $newModules = array_values(array_udiff($loadedAfter, $loadedBefore, 'strcasecmp'));
         if ($newModules === []) {
@@ -198,7 +192,7 @@ final class Enabler
     }
 
     /**
-     * Comment out the extensions enabled so far, and create the scripts that enable them again (if requested in the constructor).
+     * Disable the extensions enabled so far, and create the scripts that enable them again (if requested in the options).
      *
      * @throws \IPE\Exception\IO
      *
@@ -208,14 +202,32 @@ final class Enabler
     {
         $result = [];
         foreach ($this->enabledIniFiles as $moduleName => list($iniFile, $iniContent)) {
-            $this->fs->writeFile($iniFile, Regex::replace(self::RX_ACTIVE_LINE, '\1;\2', $iniContent));
-            if ($this->createEnableScripts) {
-                $result[$moduleName] = $this->createEnableScript($moduleName, $iniFile);
+            $script = $this->disableEnabledModule($moduleName, $iniFile, $iniContent);
+            if ($script !== '') {
+                $result[$moduleName] = $script;
             }
         }
         $this->enabledIniFiles = [];
 
         return $result;
+    }
+
+    /**
+     * Disable a module enabled by enable().
+     *
+     * @param non-empty-string $moduleName
+     * @param non-empty-string $iniFile the value returned by writeIniFile()
+     * @param non-empty-string $iniContent
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string the full path of the script that enables the module again (empty string if none)
+     */
+    protected function disableEnabledModule($moduleName, $iniFile, $iniContent)
+    {
+        $this->fs->writeFile($iniFile, Regex::replace(self::RX_ACTIVE_LINE, '\1;\2', $iniContent));
+
+        return $this->options->shouldCreateEnableScripts() ? $this->createEnableScript($moduleName, $iniFile) : '';
     }
 
     /**
@@ -277,11 +289,11 @@ final class Enabler
     /**
      * @param non-empty-string $iniFile
      *
-     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\IO if the file doesn't exist or it doesn't load any module
      *
      * @return string
      */
-    private function readModuleIniFile($iniFile)
+    protected function readModuleIniFile($iniFile)
     {
         if (!$this->fs->isFile($iniFile)) {
             throw new Exception\IO("The file {$iniFile} does not exist");
@@ -305,7 +317,7 @@ final class Enabler
     {
         list($loaded, $errors) = $this->listLoadedModules();
         $names = array_values(array_uintersect($loaded, $extension::getInstalledNames(), 'strcasecmp'));
-        if ($names === [] && $this->skipCheck) {
+        if ($names === [] && $this->options->shouldSkipCheck()) {
             $names = array_values($extension::getInstalledNames());
         }
         if ($names === []) {
@@ -351,11 +363,12 @@ final class Enabler
     {
         $moduleName = $compiled->getModuleName();
         $priority = self::getPriority($compiled->getResolved());
-        if ($this->iniBasename === self::INI_BASENAME_COMPAT) {
+        $iniBasename = $this->options->getIniBasename();
+        if ($iniBasename === self::INI_BASENAME_COMPAT) {
             return ($priority > Manifest::DEFAULT_PRIORITY ? 'xx-php-ext-' : 'docker-php-ext-') . $moduleName;
         }
 
-        return strtr($this->iniBasename, [
+        return strtr($iniBasename, [
             '{priority}' => (string) $priority,
             '{name}' => $moduleName,
         ]);
@@ -366,7 +379,7 @@ final class Enabler
      *
      * @return int
      */
-    private static function getPriority(Extension\Resolved $resolved)
+    protected static function getPriority(Extension\Resolved $resolved)
     {
         $manifest = $resolved->getManifest();
         $priority = $manifest === null ? null : $manifest->getPriority();

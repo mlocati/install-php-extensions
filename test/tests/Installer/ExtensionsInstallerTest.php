@@ -111,7 +111,7 @@ final class ExtensionsInstallerTest extends TestCase
             new Compiler($buildTools, $buildOptions, $this->php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()),
             new BinaryInstaller($this->php, $fs, $buildTools, $buildOptions),
             new VendorArchivePreparer(M::mock(Filesystem\ArchiveExtractor::class), $fs),
-            new Enabler($this->php, $fs, new \IPE\Logger()),
+            new Enabler($this->php, $fs, new \IPE\Logger(), new Enabler\Options()),
             $this->resolver,
             new \IPE\Logger()
         );

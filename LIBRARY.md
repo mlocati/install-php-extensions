@@ -130,29 +130,25 @@ To enable (or disable) them later:
 $ipe->make(\IPE\Installer\Enabler::class)->enableIniFile('/usr/local/etc/php/conf.d/docker-php-ext-gd.ini');
 ```
 
-By default, the ini files are named `{priority}-{name}.ini` (for example `80-apcu.ini`).
-To use other names (`{priority}` must come before `{name}`):
+By default, the ini files are named `{priority}-{name}.ini` (for example `80-apcu.ini`), and before enabling an extension IPE checks that PHP loads it correctly.
+To change that:
 
 ```php
-$ipe->when(\IPE\Installer\Enabler::class)
-    ->needs('$iniBasename')
-    ->give(static function () {
-        return 'php-{priority}-{name}';
-    })
-;
+$ipe->extend(
+    \IPE\Installer\Enabler\Options::class,
+    static function (\IPE\Installer\Enabler\Options $options, $app) {
+        return $options
+            // Other names of the ini files ({priority} must come before {name})
+            ->withIniBasename('php-{priority}-{name}')
+            // Don't check that PHP loads the extensions
+            ->withSkipCheck(true)
+        ;
+    }
+);
 ```
 
-Before enabling an extension, IPE checks that PHP loads it correctly.
-To skip this check:
-
-```php
-$ipe->when(\IPE\Installer\Enabler::class)
-    ->needs('$skipCheck')
-    ->give(static function () {
-        return true;
-    })
-;
-```
+With the PHP packages of Debian and Ubuntu, the ini files are created in the `mods-available` directory (for example `/etc/php/8.3/mods-available/apcu.ini`) and they are enabled for all the SAPIs with `phpenmod`.
+In this case, the names of the ini files can't be changed.
 
 ### Installation report
 
