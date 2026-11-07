@@ -227,8 +227,9 @@ final class swoole extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
+        $version = $context->getVersion();
         $result = [];
         if ($this->php->getBits() === 32 && $this->os->getMachineArchitecture() === OS\Architecture::X64) {
             // Otherwise configure detects the machine architecture and swoole fails to compile its x86_64 assembly code
@@ -274,7 +275,7 @@ final class swoole extends Extension implements
         if ($this->php->isThreadSafe() && self::isAtLeast($version, '6.0.0')) {
             $result[] = '--enable-swoole-thread';
         }
-        if ($this->usesIOUring($version, $options)) {
+        if ($this->usesIOUring($version, $context->getOptionValues())) {
             $result[] = '--enable-iouring';
             if (self::isAtLeast($version, '6.2.0')) {
                 $result[] = '--enable-uring-socket';

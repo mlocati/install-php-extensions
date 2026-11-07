@@ -132,8 +132,9 @@ final class redis extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
+        $version = $context->getVersion();
         $installed = $this->php->getInstalledExtensions();
         $result = ['--enable-redis-lzf'];
         if (in_array(igbinary::HANDLE, $installed, true)) {

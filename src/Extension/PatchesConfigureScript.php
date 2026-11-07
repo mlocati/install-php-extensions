@@ -10,11 +10,9 @@ interface PatchesConfigureScript
     /**
      * Called after running phpize.
      *
-     * @param non-empty-string $sourceDirectory
-     *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    public function patchConfigureScript($sourceDirectory);
+    public function patchConfigureScript(BuildContext $context);
 }

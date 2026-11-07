@@ -100,7 +100,7 @@ final class tensor extends Extension implements
      *
      * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
      */
-    public function getCompilerFlags()
+    public function getCompilerFlags(Extension\BuildContext $context)
     {
         return '-Wno-incompatible-pointer-types';
     }
@@ -110,7 +110,7 @@ final class tensor extends Extension implements
      *
      * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
      */
-    public function patchSourceCode($sourceDirectory)
+    public function patchSourceCode(Extension\BuildContext $context)
     {
         // config.m4 needs the unversioned libraries, but some systems only provide the versioned ones
         $script = 'for f in /usr/lib/liblapacke.so.3 /usr/lib/*/libblas.so.3; do if [ -f "$f" ] && [ ! -e "${f%.3}" ]; then ln -s "$f" "${f%.3}"; fi; done';

@@ -10,11 +10,9 @@ interface PatchesSourceCode
     /**
      * Called before running phpize.
      *
-     * @param non-empty-string $sourceDirectory
-     *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    public function patchSourceCode($sourceDirectory);
+    public function patchSourceCode(BuildContext $context);
 }

@@ -86,7 +86,7 @@ final class odbc extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         return ['--with-unixODBC=shared,/usr'];
     }
@@ -96,10 +96,10 @@ final class odbc extends Extension implements
      *
      * @see \IPE\Extension\PatchesConfigureScript::patchConfigureScript()
      */
-    public function patchConfigureScript($sourceDirectory)
+    public function patchConfigureScript(Extension\BuildContext $context)
     {
         $fs = $this->os->getFilesystem();
-        $configure = "{$sourceDirectory}/configure";
+        $configure = "{$context->getSourceDirectory()}/configure";
         // Otherwise configure enables the other ODBC drivers too, and fails looking for their headers (eg /usr/local/incl/sqlext.h).
         $fs->writeFile(
             $configure,

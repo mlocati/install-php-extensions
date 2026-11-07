@@ -63,7 +63,7 @@ final class GdTest extends TestCase
         $php = self::createPHP($phpVersion);
         $os = M::mock(OS::class);
         $gd = new gd($php, $os);
-        self::assertSame($expectedArguments, $gd->getConfigureArguments('', new Values()));
+        self::assertSame($expectedArguments, $gd->getConfigureArguments(self::createBuildContext()));
         self::assertSame($expectedDependencies, $gd->getRequiredSystemDependencies('', new Values()));
     }
 
@@ -97,7 +97,7 @@ final class GdTest extends TestCase
         $os->shouldReceive('getFilesystem')->andReturn($fs);
         $options = new Values([], [gd::OPTION_WITHOUT_AVIF => true]);
         $gd = new gd($php, $os);
-        self::assertSame($available, in_array('--with-avif', $gd->getConfigureArguments('', $options), true));
+        self::assertSame($available, in_array('--with-avif', $gd->getConfigureArguments(self::createBuildContext('', $options)), true));
         self::assertSame($available, in_array('lib-avif', $gd->getRequiredSystemDependencies('', $options), true));
     }
 

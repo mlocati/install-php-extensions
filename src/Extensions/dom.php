@@ -84,11 +84,12 @@ final class dom extends Extension implements
      *
      * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
      */
-    public function patchSourceCode($sourceDirectory)
+    public function patchSourceCode(Extension\BuildContext $context)
     {
         if ($this->php->getMajorMinorVersion() < 805) {
             return;
         }
+        $sourceDirectory = $context->getSourceDirectory();
         // Since PHP 8.5 the lexbor headers are in ext/lexbor, and PHP doesn't install them: dom includes them both as lexbor/... and as ext/lexbor/lexbor/...
         $fs = $this->os->getFilesystem();
         $configM4 = "{$sourceDirectory}/config.m4";

@@ -140,7 +140,7 @@ final class grpc extends Extension implements
      *
      * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
      */
-    public function getCompilerFlags()
+    public function getCompilerFlags(Extension\BuildContext $context)
     {
         return '-Wno-maybe-uninitialized -Wno-attributes -Wno-return-type';
     }

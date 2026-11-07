@@ -84,7 +84,7 @@ final class ftp extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         if ($this->php->getMajorMinorVersion() <= 803) {
             return ['--with-openssl-dir=/usr'];
