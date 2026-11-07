@@ -82,7 +82,7 @@ final class snappy extends Extension\GitHubExtension
     protected function getLatestGitHubVersion()
     {
         // These systems provide snappy 1.1.7, whose snappy-stubs-public.h has empty version numbers: the configure script of newer versions fails with it
-        $oldSnappy = $this->os instanceof OS\Debian ? $this->os->getNumericVersion() === OS\Debian::VERSION_BUSTER : ($this->os instanceof OS\Alpine && $this->os->getNumericVersion() <= 310);
+        $oldSnappy = $this->os instanceof OS\Debian ? $this->os->getNumericVersion() === OS\Debian::VERSION_BUSTER : ($this->os instanceof OS\Alpine && $this->os->getNumericVersion() <= 311);
 
         return $oldSnappy ? '0.2.1' : self::VERSION;
     }
