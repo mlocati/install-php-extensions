@@ -127,8 +127,8 @@ final class BuildTools
         if (preg_match('/--with-libdir=(?<libdir>[^\s\'"]+)/', $this->php->getConfigureCommand(), $matches)) {
             return $matches['libdir'];
         }
-        // The Docker images of PHP 5.5 don't specify it, but Debian stores the libraries in a multiarch directory
-        if ($this->php->getMajorMinorVersion() > 505 || $this->fs->resolveCommand('gcc') === '') {
+        // Debian stores the libraries in a multiarch directory: the configure scripts of PHP up to 7.0 often don't look there, and both the Docker images of PHP 5.5 and the system PHP packages don't specify it
+        if ($this->php->getMajorMinorVersion() > 700 || $this->fs->resolveCommand('gcc') === '') {
             return '';
         }
         list($rc, $output) = $this->fs->run(Command::create('gcc', ['-print-multiarch']));
