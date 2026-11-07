@@ -207,7 +207,8 @@ final class APK extends SystemPackager
      */
     protected function doDeleteCache()
     {
-        $this->os->getFilesystem()->run(Command::raw('apk cache clean ; rm -rf /var/cache/apk/*')->withOutput(Command::OUTPUT_SHOW));
+        // Old versions of apk fail with "Package cache is not enabled" when /etc/apk/cache doesn't exist
+        $this->os->getFilesystem()->run(Command::raw('if [ -e /etc/apk/cache ]; then apk cache clean; fi; rm -rf /var/cache/apk/*')->withOutput(Command::OUTPUT_SHOW));
     }
 
     /**
