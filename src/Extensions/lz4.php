@@ -102,6 +102,10 @@ final class lz4 extends Extension\GitHubExtension implements Extension\DeclaresU
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() >= OS\Ubuntu::XENIAL && $this->os->getNumericVersion() <= OS\Ubuntu::BIONIC) {
             return '0.4.4';
         }
+        // Since 0.5.0 lz4 doesn't ship the arginfo header, and the stub declares constants, which the gen_stub.php of PHP 8.0 doesn't support
+        if ($this->php->getMajorMinorVersion() === 800) {
+            return '0.4.4';
+        }
 
         return self::VERSION;
     }
