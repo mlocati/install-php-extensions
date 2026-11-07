@@ -193,8 +193,9 @@ final class Compiler
     private function buildConfigureEnvironment($known)
     {
         $flags = ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? '-O0 -g' : '-g -O2') . ' -fstack-protector-strong';
-        if ($known instanceof Extension\ProvidesCompilerFlags) {
-            $flags .= ' ' . $known->getCompilerFlags();
+        $extraFlags = $known instanceof Extension\ProvidesCompilerFlags ? $known->getCompilerFlags() : '';
+        if ($extraFlags !== '') {
+            $flags .= ' ' . $extraFlags;
         }
         $result = [];
         foreach (['CFLAGS', 'CXXFLAGS'] as $name) {
