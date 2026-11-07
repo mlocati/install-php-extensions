@@ -38,7 +38,7 @@ final class libsmbclient extends SystemDependency
                 ['samba-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libsmbclient(0)?(t64)?$'],
                 ['libsmbclient-dev']

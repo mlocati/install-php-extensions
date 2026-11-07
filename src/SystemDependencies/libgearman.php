@@ -51,7 +51,7 @@ final class libgearman extends CompiledLibrary
                 ['boost-dev', 'gperf', 'libmemcached-dev', 'libevent-dev', 'util-linux-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libgearman[0-9]*(t64)?$'],
                 ['libgearman-dev']

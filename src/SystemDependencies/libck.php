@@ -45,6 +45,13 @@ class libck extends SystemDependency
 
             return new Packages(['^libck0(t64)?$']);
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(['^libck0(t64)?$']);
+        }
 
         throw $this->createUnknownPackagesException();
     }

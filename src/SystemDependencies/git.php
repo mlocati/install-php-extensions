@@ -38,7 +38,7 @@ final class git extends SystemDependency
                 ['git']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 [],
                 ['git']

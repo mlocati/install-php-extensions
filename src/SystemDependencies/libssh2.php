@@ -38,7 +38,7 @@ class libssh2 extends SystemDependency
                 ['libssh2-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libssh2-1(t64)?$'],
                 ['libssh2-1-dev']

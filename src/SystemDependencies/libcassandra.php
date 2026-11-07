@@ -58,6 +58,17 @@ final class libcassandra extends CompiledLibrary
                 ['cmake', 'g++', 'libuv1-dev', 'zlib1g-dev', 'libgmp-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                // libuv1 is missing
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['libstdc++6', '^libuv1(t64)?$', '^libgmp10(t64)?$'],
+                ['cmake', 'g++', 'libuv1-dev', 'zlib1g-dev', 'libgmp-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -69,7 +80,7 @@ final class libcassandra extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return $this->os instanceof OS\Debian && parent::needsCompilation();
+        return ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) && parent::needsCompilation();
     }
 
     /**

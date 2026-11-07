@@ -97,6 +97,12 @@ final class libcclient extends SystemDependency
                 ['libkrb5-dev', 'libpam0g-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            return new Packages(
+                ['libc-client2007e'],
+                ['libkrb5-dev', 'libc-client-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

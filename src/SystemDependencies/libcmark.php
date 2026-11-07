@@ -99,6 +99,14 @@ final class libcmark extends CompiledLibrary
                 return '0.31.1';
             }
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::XENIAL) {
+                return '0.29.0';
+            }
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::BIONIC) {
+                return '0.31.1';
+            }
+        }
         if ($this->os instanceof OS\Alpine && $this->os->getNumericVersion() <= 310) {
             return '0.31.1';
         }

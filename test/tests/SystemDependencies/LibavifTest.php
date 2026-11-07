@@ -90,7 +90,12 @@ final class LibavifTest extends TestCase
             [OS\Alpine::class, 315, 802, true],
             [OS\Alpine::class, 318, 806, false],
             [OS\Alpine::class, 319, 806, true],
-            [OS\Ubuntu::class, 2404, 802, false],
+            [OS\Ubuntu::class, OS\Ubuntu::FOCAL, 802, false],
+            [OS\Ubuntu::class, OS\Ubuntu::JAMMY, 802, true],
+            [OS\Ubuntu::class, OS\Ubuntu::JAMMY, 806, false],
+            [OS\Ubuntu::class, OS\Ubuntu::NOBLE, 802, true],
+            [OS\Ubuntu::class, OS\Ubuntu::NOBLE, 806, true],
+            [OS\Posix::class, 1, 802, false],
         ];
     }
 

@@ -124,6 +124,13 @@ final class oracleinstantclient extends SystemDependency
 
             return new Packages(['libaio1t64']);
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::JAMMY) {
+                return new Packages(['^libaio[0-9]*$']);
+            }
+
+            return new Packages(['libaio1t64']);
+        }
 
         throw new Exception\UnsupportedOS("The Oracle Instant Client can't be installed on {$this->os->getDisplayName()}");
     }
@@ -137,6 +144,9 @@ final class oracleinstantclient extends SystemDependency
     {
         $fs = $this->os->getFilesystem();
         if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE) {
+            $this->linkDebianLibaio();
+        }
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() >= OS\Ubuntu::NOBLE) {
             $this->linkDebianLibaio();
         }
         $libraryPath = self::getLibraryPath($this->php, $this->os);

@@ -54,6 +54,17 @@ final class libmpdec extends CompiledLibrary
 
             return new Packages();
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            // Ubuntu 24.04 doesn't provide libmpdec
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::JAMMY) {
+                return new Packages(
+                    ['^libmpdec[0-9]*$'],
+                    ['libmpdec-dev']
+                );
+            }
+
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -65,7 +76,14 @@ final class libmpdec extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return ($this->os instanceof OS\Alpine || $this->os->getNumericVersion() >= OS\Debian::VERSION_BOOKWORM) && parent::needsCompilation();
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_BULLSEYE) {
+            return false;
+        }
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::JAMMY) {
+            return false;
+        }
+
+        return parent::needsCompilation();
     }
 
     /**

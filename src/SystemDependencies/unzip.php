@@ -43,7 +43,7 @@ class unzip extends SystemDependency
 
             return new Packages();
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 [],
                 ['unzip']

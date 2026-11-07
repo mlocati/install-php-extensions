@@ -51,6 +51,19 @@ final class libodbc extends SystemDependency
                 ['unixodbc-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::FOCAL) {
+                return new Packages(
+                    ['libodbc1'],
+                    ['unixodbc-dev']
+                );
+            }
+
+            return new Packages(
+                ['libodbc2'],
+                ['unixodbc-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

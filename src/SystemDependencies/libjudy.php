@@ -38,7 +38,7 @@ final class libjudy extends SystemDependency
                 ['judy-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['libjudydebian1'],
                 ['libjudy-dev']

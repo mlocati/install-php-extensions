@@ -38,7 +38,7 @@ final class libeventextra extends SystemDependency
                 ['libevent-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libevent-openssl[0-9.-]*$', '^libevent-extra[0-9.-]*$', '^libevent-pthreads[0-9.-]*$'],
                 ['libevent-dev']

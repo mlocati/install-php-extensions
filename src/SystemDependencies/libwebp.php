@@ -45,7 +45,7 @@ final class libwebp extends SystemDependency
                 ['libwebp-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             if ($this->php->getMajorMinorVersion() <= 805) {
                 return new Packages(
                     ['^libwebp[0-9]+$'],

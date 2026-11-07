@@ -38,7 +38,7 @@ final class liburiparser extends SystemDependency
                 ['uriparser-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['liburiparser1'],
                 ['liburiparser-dev']

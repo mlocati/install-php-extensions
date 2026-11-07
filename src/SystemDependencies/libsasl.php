@@ -38,7 +38,7 @@ final class libsasl extends SystemDependency
                 ['cyrus-sasl-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 [],
                 ['libsasl2-dev']
