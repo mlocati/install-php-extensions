@@ -256,6 +256,64 @@ final class CompilerTest extends TestCase
     }
 
     /**
+     * @return array<array{string|false, string}> the CPPFLAGS of the user, and the expected CPPFLAGS
+     */
+    public static function providePreprocessorFlags()
+    {
+        return [
+            [false, '-I/usr/src/php'],
+            ['', '-I/usr/src/php'],
+            ['-DFOO', '-I/usr/src/php -DFOO'],
+        ];
+    }
+
+    /**
+     * @dataProvider providePreprocessorFlags
+     *
+     * @param string|false $userFlags
+     * @param string $expected
+     *
+     * @return void
+     */
+    public function testPreprocessorFlagsProvidedByTheExtension($userFlags, $expected)
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment() + ['CPPFLAGS' => $expected])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $php = self::createPHPInfo();
+        $extension = M::mock(Extension::class . ', ' . Extension\ProvidesPreprocessorFlags::class);
+        $extension->shouldReceive('getPreprocessorFlags')->once()->with(self::isBuildContext(self::SOURCE_DIR, '1.0.0'))->andReturn('-I/usr/src/php');
+        putenv($userFlags === false ? 'CPPFLAGS' : "CPPFLAGS={$userFlags}");
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED));
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertSame('configure failed with exit code 1', $x->getMessage());
+        } finally {
+            putenv('CPPFLAGS');
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testNoPreprocessorFlags()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $php = self::createPHPInfo();
+        $extension = M::mock(Extension::class . ', ' . Extension\ProvidesPreprocessorFlags::class);
+        $extension->shouldReceive('getPreprocessorFlags')->once()->andReturn('');
+        $this->expectExceptionMessage('configure failed with exit code 1');
+        (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED));
+    }
+
+    /**
      * @return void
      */
     public function testUserExtraFlagsComeLast()
