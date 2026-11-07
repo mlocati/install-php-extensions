@@ -156,14 +156,14 @@ final class BuildToolsTest extends TestCase
 
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(506);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(701);
         self::assertSame('', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
     }
 
     /**
      * @return array<array{string, int, string, string}> the path of gcc, its exit code, its output, and the expected libdir
      */
-    public static function provideLibdirOnPHP55()
+    public static function provideLibdirOnOldPHP()
     {
         return [
             ['/usr/bin/gcc', 0, "x86_64-linux-gnu\n", 'lib/x86_64-linux-gnu'],
@@ -174,7 +174,7 @@ final class BuildToolsTest extends TestCase
     }
 
     /**
-     * @dataProvider provideLibdirOnPHP55
+     * @dataProvider provideLibdirOnOldPHP
      *
      * @param string $gcc
      * @param int $rc
@@ -183,11 +183,11 @@ final class BuildToolsTest extends TestCase
      *
      * @return void
      */
-    public function testLibdirOnPHP55($gcc, $rc, $output, $expected)
+    public function testLibdirOnOldPHP($gcc, $rc, $output, $expected)
     {
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(505);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(700);
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn($gcc);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('gcc', ['-print-multiarch'])))->andReturn([$rc, $output]);
@@ -197,7 +197,7 @@ final class BuildToolsTest extends TestCase
     /**
      * @return void
      */
-    public function testLibdirOnPHP55ConfiguredWithIt()
+    public function testLibdirOnOldPHPConfiguredWithIt()
     {
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--with-libdir=lib64'");
