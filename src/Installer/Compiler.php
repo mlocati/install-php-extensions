@@ -205,6 +205,11 @@ final class Compiler
             $userFlags = getenv($name);
             $result[$name] = $userFlags === false || $userFlags === '' ? $flags : "{$flags} {$userFlags}";
         }
+        $preprocessorFlags = $known instanceof Extension\ProvidesPreprocessorFlags ? $known->getPreprocessorFlags($context) : '';
+        if ($preprocessorFlags !== '') {
+            $userFlags = getenv('CPPFLAGS');
+            $result['CPPFLAGS'] = $userFlags === false || $userFlags === '' ? $preprocessorFlags : "{$preprocessorFlags} {$userFlags}";
+        }
 
         return $result;
     }
