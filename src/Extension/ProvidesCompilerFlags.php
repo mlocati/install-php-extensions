@@ -8,7 +8,7 @@ namespace IPE\Extension;
 interface ProvidesCompilerFlags
 {
     /**
-     * @return non-empty-string
+     * @return string an empty string if no flags are needed
      */
     public function getCompilerFlags();
 }
