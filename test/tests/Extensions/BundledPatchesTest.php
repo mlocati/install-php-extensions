@@ -3,6 +3,7 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Extensions\dba;
+use IPE\Extensions\dom;
 use IPE\Extensions\intl;
 use IPE\Extensions\odbc;
 use IPE\Extensions\sockets;
@@ -104,6 +105,17 @@ final class BundledPatchesTest extends TestCase
         self::assertPatch(sockets::class, self::createPHP('8.1.2'), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), $original, implode("\n", $expected));
         self::assertPatch(sockets::class, self::createPHP('8.0.15'), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), $original, implode("\n", $expected));
         self::assertPatch(sockets::class, self::createPHP('8.1.3'), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), $original, null);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDom()
+    {
+        $original = "PHP_ADD_EXTENSION_DEP(dom, lexbor)\n";
+        $expected = "PHP_ADD_EXTENSION_DEP(dom, lexbor)\nPHP_ADD_INCLUDE([/tmp/ext/lexbor])\nPHP_ADD_INCLUDE([/tmp])\n";
+        self::assertPatch(dom::class, self::createPHP('8.5.4'), self::createOS(OS\Ubuntu::class, OS\Ubuntu::RESOLUTE), $original, $expected);
+        self::assertPatch(dom::class, self::createPHP('8.4.1'), self::createOS(OS\Ubuntu::class, OS\Ubuntu::RESOLUTE), $original, null);
     }
 
     /**
