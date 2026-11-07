@@ -69,7 +69,7 @@ final class seaslog extends Extension implements
      *
      * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
      */
-    public function getCompilerFlags()
+    public function getCompilerFlags(Extension\BuildContext $context)
     {
         return '-Wno-incompatible-pointer-types';
     }

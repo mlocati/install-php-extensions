@@ -49,6 +49,12 @@ class libopenssl extends SystemDependency
                 ['libssl-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            return new Packages(
+                [$this->getUbuntuPackage($this->os)],
+                ['libssl-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -86,14 +92,33 @@ class libopenssl extends SystemDependency
     private function getDebianPackage(OS\Debian $os)
     {
         $version = $os->getNumericVersion();
-        if ($version <= OS\Debian::VERSION_JESSIE) {
+        if ($version <= OS\Debian::JESSIE) {
             return 'libssl1.0.0';
         }
-        if ($version <= OS\Debian::VERSION_BULLSEYE) {
+        if ($version <= OS\Debian::BULLSEYE) {
             return 'libssl1.1';
         }
 
-        if ($version <= OS\Debian::VERSION_BOOKWORM) {
+        if ($version <= OS\Debian::BOOKWORM) {
+            return 'libssl3';
+        }
+
+        return '^libssl3(t64)?$';
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function getUbuntuPackage(OS\Ubuntu $os)
+    {
+        $version = $os->getNumericVersion();
+        if ($version <= OS\Ubuntu::XENIAL) {
+            return 'libssl1.0.0';
+        }
+        if ($version <= OS\Ubuntu::FOCAL) {
+            return 'libssl1.1';
+        }
+        if ($version <= OS\Ubuntu::JAMMY) {
             return 'libssl3';
         }
 

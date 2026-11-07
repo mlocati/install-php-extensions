@@ -39,7 +39,7 @@ final class LibicuTest extends TestCase
         self::assertSame(['icu-dev'], $full->getVolatile());
         self::assertSame(['icu-libs'], self::createDependency(OS\Alpine::class, 316, true)->getSystemPackages($state)->getPersistent());
         self::assertSame(['icu-libs'], self::createDependency(OS\Alpine::class, 315, false)->getSystemPackages($state)->getPersistent());
-        $debian = self::createDependency(OS\Debian::class, OS\Debian::VERSION_TRIXIE, true)->getSystemPackages($state);
+        $debian = self::createDependency(OS\Debian::class, OS\Debian::TRIXIE, true)->getSystemPackages($state);
         self::assertSame(['^libicu[0-9]+$'], $debian->getPersistent());
         self::assertSame(['libicu-dev'], $debian->getVolatile());
     }

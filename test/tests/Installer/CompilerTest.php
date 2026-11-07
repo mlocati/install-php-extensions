@@ -8,6 +8,7 @@ use IPE\Extension\Manifest;
 use IPE\Extension\Resolved;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
+use IPE\Filesystem\VolatileDirectory;
 use IPE\Installer\BuildOptions;
 use IPE\Installer\BuildTools;
 use IPE\Installer\Compiler;
@@ -71,6 +72,13 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('/usr/bin/nproc');
         $fs->shouldReceive('resolveCommand')->with('readelf')->andReturn('');
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('nproc', [])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "4\n"]);
+        $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('/usr/bin/cc');
+        $fs->shouldReceive('createVolatileDirectory')->andReturnUsing(static function () use ($fs) {
+            return new VolatileDirectory('/tmp/cc', $fs);
+        });
+        $fs->shouldReceive('writeFile')->with('/tmp/cc/test.c', M::type('string'));
+        $fs->shouldReceive('deleteDirectory')->with('/tmp/cc');
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('cc', ['-fstack-protector-strong', '-c', '/tmp/cc/test.c', '-o', '/tmp/cc/test.o'])->withOutput(Command::OUTPUT_DISCARD)))->andReturn([0, '']);
 
         return $fs;
     }
@@ -145,8 +153,8 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
         $php = self::createPHPInfo();
         $extension = M::mock(Extension::class . ', ' . Extension\ProvidesConfigureArguments::class);
-        $extension->shouldReceive('getConfigureArguments')->once()->with('1.0.0', M::type(Option\Values::class))->andReturnUsing(static function ($version, Option\Values $options) {
-            return ['--enable-foo=' . $options->getCustomValue('variant'), '--with-baz', '--with-libdir=lib'];
+        $extension->shouldReceive('getConfigureArguments')->once()->with(self::isBuildContext(self::SOURCE_DIR, '1.0.0'))->andReturnUsing(static function (Extension\BuildContext $context) {
+            return ['--enable-foo=' . $context->getOptionValues()->getCustomValue('variant'), '--with-baz', '--with-libdir=lib'];
         });
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-qux=no', '--with-php-config=/usr/local/bin/php-config', '--enable-foo=alt', '--with-libdir=lib', '--without-baz'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
@@ -167,9 +175,9 @@ final class CompilerTest extends TestCase
         $extension = M::mock(Extension::class . ', ' . Extension\PatchesSourceCode::class . ', ' . Extension\PatchesConfigureScript::class);
         $extension->shouldReceive('getHandle')->andReturn('foo');
         $extension->shouldReceive('getInstalledNames')->andReturn(['foo']);
-        $extension->shouldReceive('patchSourceCode')->once()->ordered()->with(self::SOURCE_DIR);
+        $extension->shouldReceive('patchSourceCode')->once()->ordered()->with(self::isBuildContext(self::SOURCE_DIR, '1.0.0'));
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
-        $extension->shouldReceive('patchConfigureScript')->once()->ordered()->with(self::SOURCE_DIR);
+        $extension->shouldReceive('patchConfigureScript')->once()->ordered()->with(self::isBuildContext(self::SOURCE_DIR, '1.0.0'));
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
         $resolved = new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED);
         try {
@@ -248,6 +256,64 @@ final class CompilerTest extends TestCase
     }
 
     /**
+     * @return array<array{string|false, string}> the CPPFLAGS of the user, and the expected CPPFLAGS
+     */
+    public static function providePreprocessorFlags()
+    {
+        return [
+            [false, '-I/usr/src/php'],
+            ['', '-I/usr/src/php'],
+            ['-DFOO', '-I/usr/src/php -DFOO'],
+        ];
+    }
+
+    /**
+     * @dataProvider providePreprocessorFlags
+     *
+     * @param string|false $userFlags
+     * @param string $expected
+     *
+     * @return void
+     */
+    public function testPreprocessorFlagsProvidedByTheExtension($userFlags, $expected)
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment() + ['CPPFLAGS' => $expected])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $php = self::createPHPInfo();
+        $extension = M::mock(Extension::class . ', ' . Extension\ProvidesPreprocessorFlags::class);
+        $extension->shouldReceive('getPreprocessorFlags')->once()->with(self::isBuildContext(self::SOURCE_DIR, '1.0.0'))->andReturn('-I/usr/src/php');
+        putenv($userFlags === false ? 'CPPFLAGS' : "CPPFLAGS={$userFlags}");
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED));
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertSame('configure failed with exit code 1', $x->getMessage());
+        } finally {
+            putenv('CPPFLAGS');
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testNoPreprocessorFlags()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $php = self::createPHPInfo();
+        $extension = M::mock(Extension::class . ', ' . Extension\ProvidesPreprocessorFlags::class);
+        $extension->shouldReceive('getPreprocessorFlags')->once()->andReturn('');
+        $this->expectExceptionMessage('configure failed with exit code 1');
+        (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED));
+    }
+
+    /**
      * @return void
      */
     public function testUserExtraFlagsComeLast()
@@ -308,8 +374,25 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('isFile')->with($subdirectory . '/configure')->andReturn(false);
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory($subdirectory)->withOutput(Command::OUTPUT_SHOW)))->andThrow(new Exception\IO('stop here'));
         $php = self::createPHPInfo();
-        $resolved = new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY);
+        $extension = M::mock(Extension::class . ', ' . Extension\PatchesSourceCode::class);
+        $extension->shouldReceive('getHandle')->andReturn('foo');
+        $extension->shouldReceive('getInstalledNames')->andReturn(['foo']);
+        $extension->shouldReceive('patchSourceCode')->once()->with(self::isBuildContext($subdirectory, '1.0.0'));
+        $resolved = new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_DIRECTORY);
         $this->expectExceptionMessage('stop here');
         (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile($resolved);
+    }
+
+    /**
+     * @param non-empty-string $sourceDirectory
+     * @param string $version
+     *
+     * @return \Mockery\Matcher\Closure
+     */
+    private static function isBuildContext($sourceDirectory, $version)
+    {
+        return M::on(static function ($actual) use ($sourceDirectory, $version) {
+            return $actual instanceof Extension\BuildContext && $actual->getSourceDirectory() === $sourceDirectory && $actual->getVersion() === $version;
+        });
     }
 }

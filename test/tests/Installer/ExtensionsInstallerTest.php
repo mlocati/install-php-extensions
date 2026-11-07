@@ -21,7 +21,9 @@ use IPE\Option\Validator;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\Service\PHPSystemPackage;
 use IPE\SystemDependency\Registry;
+use IPE\SystemPackager\InstalledPackage;
 use IPE\Test\Support\DependencyInstallerTest\FakePackager;
 use IPE\Test\Support\ResolverTest\FakeBinaryExtension;
 use IPE\Test\Support\SystemDependencyTest\FakeLibrary;
@@ -78,15 +80,19 @@ final class ExtensionsInstallerTest extends TestCase
     }
 
     /**
+     * @param \IPE\SystemPackager\InstalledPackage|null $phpPackage the system package that installed PHP
+     *
      * @return \IPE\Installer\ExtensionsInstaller
      */
-    private function createInstaller(Filesystem $fs)
+    private function createInstaller(Filesystem $fs, $phpPackage = null)
     {
         $expansions = [];
         foreach (['libfake', 'libfake-dev', 'fake-tool-pkg', 'autoconf', 'gcc'] as $package) {
             $expansions[$package] = [$package];
         }
+        $expansions['php8.4-dev=8.4.27-1~deb13u1'] = ['php8.4-dev'];
         $this->packager = new FakePackager(M::mock(OS::class), [], $expansions);
+        $this->packager->owningPackage = $phpPackage;
         $this->php = M::mock(PHPInfo::class)->shouldIgnoreMissing();
         $this->php->shouldReceive('getExtensionDir')->andReturn('/ext');
         $this->php->shouldReceive('getIniScanDir')->andReturn('/ini');
@@ -111,8 +117,9 @@ final class ExtensionsInstallerTest extends TestCase
             new Compiler($buildTools, $buildOptions, $this->php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()),
             new BinaryInstaller($this->php, $fs, $buildTools, $buildOptions),
             new VendorArchivePreparer(M::mock(Filesystem\ArchiveExtractor::class), $fs),
-            new Enabler($this->php, $fs, new \IPE\Logger()),
+            new Enabler($this->php, $fs, new \IPE\Logger(), new Enabler\Options()),
             $this->resolver,
+            new PHPSystemPackage($this->php, $os),
             new \IPE\Logger()
         );
     }
@@ -199,6 +206,26 @@ final class ExtensionsInstallerTest extends TestCase
         }
         self::assertEqualsCanonicalizing(['libfake', 'libfake-dev', 'fake-tool-pkg', 'autoconf', 'gcc'], $this->packager->installed);
         self::assertContains('remove fake-tool-pkg libfake-dev autoconf gcc', $this->packager->log);
+    }
+
+    /**
+     * @return void
+     */
+    public function testCompilingWithSystemPHPNeedsItsDevelopmentPackage()
+    {
+        $fs = $this->createFilesystem();
+        $fs->shouldReceive('isFile')->andReturn(false);
+        $fs->shouldReceive('listDirectoryContents')->andReturn([]);
+        $installer = $this->createInstaller($fs, new InstalledPackage('php8.4-cli', '8.4.27-1~deb13u1', 'php8.4'));
+        $resolved = new Resolved(null, '/src', '', Resolved::ORIGIN_URL, new Manifest(Manifest::TYPE_PECL, 'foo', 'foo'));
+        try {
+            $installer->install([$resolved], new State($this->php, $fs));
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertStringContainsString('config.m4', $x->getMessage());
+        }
+        self::assertContains('install autoconf=1.0 gcc=1.0 php8.4-dev=1.0', $this->packager->log);
+        self::assertContains('remove autoconf gcc php8.4-dev', $this->packager->log);
     }
 
     /**

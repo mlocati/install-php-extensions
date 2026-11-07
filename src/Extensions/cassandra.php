@@ -141,7 +141,17 @@ final class cassandra extends Extension implements
             return false;
         }
 
-        return $this->os instanceof OS\Alpine ? $this->os->getNumericVersion() >= 321 : ($this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE);
+        if ($this->os instanceof OS\Alpine) {
+            return $this->os->getNumericVersion() >= 321;
+        }
+        if ($this->os instanceof OS\Debian) {
+            return $this->os->getNumericVersion() >= OS\Debian::TRIXIE;
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            return $this->os->getNumericVersion() >= OS\Ubuntu::RESOLUTE;
+        }
+
+        return false;
     }
 
     /**

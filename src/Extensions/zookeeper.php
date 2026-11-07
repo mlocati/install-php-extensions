@@ -116,8 +116,9 @@ final class zookeeper extends Extension implements
      *
      * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
      */
-    public function patchSourceCode($sourceDirectory)
+    public function patchSourceCode(Extension\BuildContext $context)
     {
+        $sourceDirectory = $context->getSourceDirectory();
         $fs = $this->os->getFilesystem();
         // Old versions call php_add_tick_function() without including its header
         $file = "{$sourceDirectory}/php_zookeeper.c";

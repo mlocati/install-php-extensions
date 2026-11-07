@@ -106,8 +106,10 @@ final class parle extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
+        $version = $context->getVersion();
+
         return $version === '' || version_compare($version, '0.8.4') >= 0 ? ['--enable-parle-utf32'] : [];
     }
 }

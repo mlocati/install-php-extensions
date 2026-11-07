@@ -39,7 +39,17 @@ final class libmaxminddb extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+            if ($this->os->getNumericVersion() <= OS\Debian::JESSIE) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['^libmaxminddb[0-9]*$'],
+                ['libmaxminddb-dev']
+            );
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
                 throw $this->createNotProvidedException();
             }
 

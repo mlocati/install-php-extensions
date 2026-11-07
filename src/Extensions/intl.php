@@ -88,8 +88,9 @@ final class intl extends Extension implements
      * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
      * @see https://github.com/php/php-src/commit/3fdd3ed9f722d9f0aa3122b2340a611db2dfa110
      */
-    public function patchSourceCode($sourceDirectory)
+    public function patchSourceCode(Extension\BuildContext $context)
     {
+        $sourceDirectory = $context->getSourceDirectory();
         $fs = $this->os->getFilesystem();
         if ($this->os instanceof OS\Alpine && $this->os->getNumericVersion() >= 322 && $this->php->getMajorMinorVersion() === 801 && version_compare($this->php->getBaseVersion(), '8.1.33', '<')) {
             $fs->writeFile("{$sourceDirectory}/config.m4", str_replace('PHP_CXX_COMPILE_STDCXX(11, mandatory, PHP_INTL_STDCXX)', 'PHP_CXX_COMPILE_STDCXX(17, mandatory, PHP_INTL_STDCXX)', $fs->readFile("{$sourceDirectory}/config.m4")));

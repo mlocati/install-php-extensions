@@ -38,7 +38,7 @@ final class libxpm extends SystemDependency
                 ['libxpm-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['libxpm4'],
                 ['libxpm-dev']

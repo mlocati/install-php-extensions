@@ -39,7 +39,17 @@ final class libuv extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+            if ($this->os->getNumericVersion() <= OS\Debian::JESSIE) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['^libuv1(t64)?$'],
+                ['libuv1-dev']
+            );
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
                 throw $this->createNotProvidedException();
             }
 

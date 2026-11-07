@@ -44,6 +44,16 @@ class libbrotli extends SystemDependency
                 ['libbrotli-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['libbrotli1'],
+                ['libbrotli-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

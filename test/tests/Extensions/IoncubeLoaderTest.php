@@ -185,7 +185,7 @@ final class IoncubeLoaderTest extends TestCase
      */
     public function testUnsupportedOS()
     {
-        $os = M::mock(OS\Ubuntu::class);
+        $os = M::mock(OS\Posix::class);
         $os->shouldReceive('getDisplayName')->andReturn('The OS');
         $os->shouldReceive('getFilesystem')->andReturn(M::mock(Filesystem::class)->shouldIgnoreMissing());
         $this->expectException(Exception\UnsupportedOS::class);

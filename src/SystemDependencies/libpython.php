@@ -38,7 +38,7 @@ final class libpython extends SystemDependency
                 ['python3-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libpython3\.[0-9]+(t64)?$'],
                 ['python3-dev']

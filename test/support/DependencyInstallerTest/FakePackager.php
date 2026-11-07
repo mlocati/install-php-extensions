@@ -32,6 +32,11 @@ final class FakePackager extends SystemPackager
     public $failInstall = false;
 
     /**
+     * @var \IPE\SystemPackager\InstalledPackage|null the package that owns every file
+     */
+    public $owningPackage;
+
+    /**
      * @param list<non-empty-string> $installed
      * @param array<non-empty-string, list<non-empty-string>> $expansions
      */
@@ -55,6 +60,16 @@ final class FakePackager extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\SystemPackager::formatPackageNameWithVersion()
+     */
+    public function formatPackageNameWithVersion($name, $version)
+    {
+        return "{$name}={$version}";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\SystemPackager::refresh()
      */
     public function refresh()
@@ -72,6 +87,16 @@ final class FakePackager extends SystemPackager
         $this->log[] = 'list';
 
         return $this->installed;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getInstalledPackageOwningFile()
+     */
+    public function getInstalledPackageOwningFile($path)
+    {
+        return $this->owningPackage;
     }
 
     /**
@@ -103,7 +128,12 @@ final class FakePackager extends SystemPackager
         if ($this->failInstall) {
             throw new Exception\SystemPackager('install failed');
         }
-        $this->installed = array_values(array_unique(array_merge($this->installed, $packages)));
+        foreach ($packages as $package) {
+            list($name) = explode('=', $package, 2);
+            if ($name !== '' && !in_array($name, $this->installed, true)) {
+                $this->installed[] = $name;
+            }
+        }
     }
 
     /**
@@ -163,6 +193,6 @@ final class FakePackager extends SystemPackager
      */
     protected function validatePackageName($name, $mayIncludeVersion)
     {
-        return preg_match('/^(\^.+\$|[a-z0-9][a-z0-9+.-]*)$/D', $name) === 1;
+        return preg_match($mayIncludeVersion ? '/^(\^.+\$|[a-z0-9][a-z0-9+.-]*(=\S+)?)$/D' : '/^(\^.+\$|[a-z0-9][a-z0-9+.-]*)$/D', $name) === 1;
     }
 }

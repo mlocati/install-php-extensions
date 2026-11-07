@@ -2,7 +2,9 @@
 
 namespace IPE\Test\Support;
 
+use IPE\Extension\BuildContext;
 use IPE\Filesystem;
+use IPE\Option;
 use IPE\Service\Container;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
 
@@ -72,6 +74,18 @@ abstract class TestCaseBase extends MockeryTestCase
     protected static function createLocalFilesystem()
     {
         return new Filesystem\Local(new \IPE\Logger(), IPE_TEST_TMPDIR);
+    }
+
+    /**
+     * @param string $version
+     * @param \IPE\Option\Values|null $options
+     * @param non-empty-string $sourceDirectory
+     *
+     * @return \IPE\Extension\BuildContext
+     */
+    protected static function createBuildContext($version = '', $options = null, $sourceDirectory = '/tmp/ipe/ext')
+    {
+        return new BuildContext($sourceDirectory, $version, $options === null ? new Option\Values() : $options);
     }
 
     /**

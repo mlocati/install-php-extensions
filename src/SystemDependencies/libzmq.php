@@ -38,7 +38,7 @@ final class libzmq extends SystemDependency
                 []
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['libzmq3-dev'],
                 []

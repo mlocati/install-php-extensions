@@ -103,6 +103,16 @@ abstract class SystemPackager
     protected abstract function doDeleteCache();
 
     /**
+     * Get the argument that installs a specific version of a package.
+     *
+     * @param non-empty-string $name
+     * @param non-empty-string $version
+     *
+     * @return non-empty-string
+     */
+    public abstract function formatPackageNameWithVersion($name, $version);
+
+    /**
      * @param list<non-empty-string> $packages
      *
      * @throws \IPE\Exception\SystemPackager
@@ -184,6 +194,17 @@ abstract class SystemPackager
      * @return list<non-empty-string>
      */
     public abstract function listInstalledPackages();
+
+    /**
+     * Get the installed package that contains a file.
+     *
+     * @param non-empty-string $path the absolute path of the file
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\SystemPackager\InstalledPackage|null NULL if the file doesn't belong to any installed package
+     */
+    public abstract function getInstalledPackageOwningFile($path);
 
     /**
      * Mark already installed packages as explicitly required, so that they won't be removed as unused dependencies.

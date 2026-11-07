@@ -61,7 +61,7 @@ final class libaspell extends SystemDependency
                 ['aspell-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 array_merge(['libaspell15'], $dictionaries),
                 ['libpspell-dev']

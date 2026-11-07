@@ -53,6 +53,11 @@ final class BuildTools
      */
     private $strip = null;
 
+    /**
+     * @var non-empty-string|null
+     */
+    private $stackProtectorFlag = null;
+
     public function __construct(PHPInfo $php, Filesystem $fs, \IPE\Logger $logger)
     {
         $this->logger = $logger;
@@ -122,8 +127,8 @@ final class BuildTools
         if (preg_match('/--with-libdir=(?<libdir>[^\s\'"]+)/', $this->php->getConfigureCommand(), $matches)) {
             return $matches['libdir'];
         }
-        // The Docker images of PHP 5.5 don't specify it, but Debian stores the libraries in a multiarch directory
-        if ($this->php->getMajorMinorVersion() > 505 || $this->fs->resolveCommand('gcc') === '') {
+        // Debian stores the libraries in a multiarch directory: the configure scripts of PHP up to 7.0 often don't look there, and both the Docker images of PHP 5.5 and the system PHP packages don't specify it
+        if ($this->php->getMajorMinorVersion() > 700 || $this->fs->resolveCommand('gcc') === '') {
             return '';
         }
         list($rc, $output) = $this->fs->run(Command::create('gcc', ['-print-multiarch']));
@@ -247,6 +252,45 @@ final class BuildTools
         }
 
         return false;
+    }
+
+    /**
+     * -fstack-protector-strong requires GCC 4.9 (Ubuntu 14.04 has GCC 4.8).
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string
+     */
+    public function getStackProtectorFlag()
+    {
+        if ($this->stackProtectorFlag === null) {
+            $this->stackProtectorFlag = $this->compilerAcceptsFlag('-fstack-protector-strong') ? '-fstack-protector-strong' : '-fstack-protector';
+        }
+
+        return $this->stackProtectorFlag;
+    }
+
+    /**
+     * @param non-empty-string $flag
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return bool true if the compiler is missing (configure will report it)
+     */
+    private function compilerAcceptsFlag($flag)
+    {
+        foreach (['cc', 'gcc'] as $compiler) {
+            if ($this->fs->resolveCommand($compiler) !== '') {
+                $directory = $this->fs->createVolatileDirectory();
+                $source = $directory->getPath() . '/test.c';
+                $this->fs->writeFile($source, "int main(void)\n{\n    return 0;\n}\n");
+                list($rc) = $this->fs->run(Command::create($compiler, [$flag, '-c', $source, '-o', $directory->getPath() . '/test.o'])->withOutput(Command::OUTPUT_DISCARD));
+
+                return $rc === 0;
+            }
+        }
+
+        return true;
     }
 
     /**

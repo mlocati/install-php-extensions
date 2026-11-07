@@ -82,15 +82,20 @@ final class LibavifTest extends TestCase
     public static function provideOSCases()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 802, false],
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 802, true],
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 806, false],
-            [OS\Debian::class, OS\Debian::VERSION_TRIXIE, 806, true],
+            [OS\Debian::class, OS\Debian::BULLSEYE, 802, false],
+            [OS\Debian::class, OS\Debian::BOOKWORM, 802, true],
+            [OS\Debian::class, OS\Debian::BOOKWORM, 806, false],
+            [OS\Debian::class, OS\Debian::TRIXIE, 806, true],
             [OS\Alpine::class, 314, 802, false],
             [OS\Alpine::class, 315, 802, true],
             [OS\Alpine::class, 318, 806, false],
             [OS\Alpine::class, 319, 806, true],
-            [OS\Ubuntu::class, 2404, 802, false],
+            [OS\Ubuntu::class, OS\Ubuntu::FOCAL, 802, false],
+            [OS\Ubuntu::class, OS\Ubuntu::JAMMY, 802, true],
+            [OS\Ubuntu::class, OS\Ubuntu::JAMMY, 806, false],
+            [OS\Ubuntu::class, OS\Ubuntu::NOBLE, 802, true],
+            [OS\Ubuntu::class, OS\Ubuntu::NOBLE, 806, true],
+            [OS\Posix::class, 1, 802, false],
         ];
     }
 
@@ -118,11 +123,11 @@ final class LibavifTest extends TestCase
      */
     public function testAlreadyCompiled()
     {
-        list($php, $os) = $this->createEnvironment(OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 802, ['libavif >= 0.8.2']);
+        list($php, $os) = $this->createEnvironment(OS\Debian::class, OS\Debian::BULLSEYE, 802, ['libavif >= 0.8.2']);
         self::assertTrue(libavif::isAvailableWithoutCompiling($php, $os));
-        self::assertSame([], $this->createLibavif(OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 802, ['libavif >= 0.8.2'])->getRequiredDependencies());
+        self::assertSame([], $this->createLibavif(OS\Debian::class, OS\Debian::BULLSEYE, 802, ['libavif >= 0.8.2'])->getRequiredDependencies());
         // PHP 8.6 needs a newer version
-        list($php, $os) = $this->createEnvironment(OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 806, ['libavif >= 0.8.2']);
+        list($php, $os) = $this->createEnvironment(OS\Debian::class, OS\Debian::BOOKWORM, 806, ['libavif >= 0.8.2']);
         self::assertFalse(libavif::isAvailableWithoutCompiling($php, $os));
     }
 
@@ -132,7 +137,7 @@ final class LibavifTest extends TestCase
     public function testNoPackagesWhenCompiling()
     {
         self::assertTrue($this->createLibavif(OS\Alpine::class, 314, 802)->getSystemPackages(M::mock(State::class))->isEmpty());
-        self::assertTrue($this->createLibavif(OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 802)->getSystemPackages(M::mock(State::class))->isEmpty());
+        self::assertTrue($this->createLibavif(OS\Debian::class, OS\Debian::BULLSEYE, 802)->getSystemPackages(M::mock(State::class))->isEmpty());
     }
 
     /**
@@ -156,7 +161,7 @@ final class LibavifTest extends TestCase
      */
     public function testCompilation($buildType, $expectedCMakeType)
     {
-        list($php, $os, $buildTools, $fs) = $this->createEnvironment(OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 802, []);
+        list($php, $os, $buildTools, $fs) = $this->createEnvironment(OS\Debian::class, OS\Debian::BULLSEYE, 802, []);
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('saveAs')->once()->with('https://codeload.github.com/AOMediaCodec/libavif/tar.gz/refs/tags/v' . libavif::VERSION, M::type('string'));
         $extractor = M::mock(ArchiveExtractor::class);
@@ -197,7 +202,7 @@ final class LibavifTest extends TestCase
      */
     public function testNothingToCompile()
     {
-        list($php, $os, $buildTools) = $this->createEnvironment(OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 802, []);
+        list($php, $os, $buildTools) = $this->createEnvironment(OS\Debian::class, OS\Debian::BOOKWORM, 802, []);
         $downloader = M::mock(Downloader::class);
         $downloader->shouldNotReceive('saveAs');
         $libavif = new libavif($php, $os, new Values(), $downloader, M::mock(ArchiveExtractor::class), $buildTools, new BuildOptions(), new \IPE\Logger());

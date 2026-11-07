@@ -16,13 +16,44 @@ class APT extends SystemPackager
     }
 
     /**
-     * {@inheritdoc}
+     * Like the $PHPIZE_DEPS env var of Debian docker images.
+     * The same packages are available on Ubuntu (verified from 14.04 to 26.04).
      *
+     * @see https://github.com/docker-library/php/blob/fab49d4cb1c61e4f74c2dffe06961408212f054c/5.6/jessie/cli/Dockerfile#L20-L29
+     * @see https://github.com/docker-library/php/blob/f6048b5f6e3c2202ee082665a4ccc0d90de291a3/8.4/trixie/cli/Dockerfile#L20-L29
+     *
+     * {@inheritdoc}
      * @see \IPE\SystemPackager::getPhpizeRequirements()
      */
     public function getPhpizeRequirements()
     {
-        return [];
+        $result = [
+            'autoconf',
+            'dpkg-dev',
+            'file',
+            'g++',
+            'gcc',
+            'libc-dev',
+            'make',
+            'pkg-config',
+            're2c',
+        ];
+        // The php5-dev package of Ubuntu 14.04 doesn't depend on libpcre3-dev, but ext/pcre/php_pcre.h includes pcre.h
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+            $result[] = 'libpcre3-dev';
+        }
+
+        return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::formatPackageNameWithVersion()
+     */
+    public function formatPackageNameWithVersion($name, $version)
+    {
+        return "{$name}={$version}";
     }
 
     /**
@@ -107,6 +138,54 @@ class APT extends SystemPackager
         }
 
         return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getInstalledPackageOwningFile()
+     */
+    public function getInstalledPackageOwningFile($path)
+    {
+        $name = $this->getNameOfPackageOwningFile($path);
+        $match = null;
+        // With merged /usr, dpkg may still have registered the file in /bin, /sbin or /lib* (for example, /bin/dash in Debian 12)
+        if ($name === '' && preg_match('#^/usr(?<path>/(?:s?bin|lib[^/]*)/.+)$#D', $path, $match)) {
+            $name = $this->getNameOfPackageOwningFile($match['path']);
+        }
+        if ($name === '') {
+            return null;
+        }
+        list($rc, $output) = $this->os->getFilesystem()->run(Command::create('dpkg-query', ['--show', '--showformat=${Package}|${Version}|${source:Package}\n', $name])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0 || !preg_match('/^(?<name>[^|\s]+)\|(?<version>[^|\s]+)\|(?<source>[^|\s]+)$/m', $output, $match)) {
+            return null;
+        }
+
+        return new InstalledPackage($match['name'], $match['version'], $match['source']);
+    }
+
+    /**
+     * @param non-empty-string $path
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if the file doesn't belong to any installed package
+     */
+    private function getNameOfPackageOwningFile($path)
+    {
+        list($rc, $output) = $this->os->getFilesystem()->run(Command::create('dpkg-query', ['--search', $path])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0) {
+            return '';
+        }
+        $match = null;
+        foreach (Regex::split('/[\r\n]+/', $output, -1, true) as $line) {
+            // Like "php8.4-cli: /usr/bin/php8.4" or "pkg1:amd64, pkg2:amd64: /path" (the diversion lines don't match)
+            if (preg_match('#^(?<name>[a-z0-9][a-z0-9+\-.]+)(?::[a-z0-9\-]+)?(?:, [a-z0-9][a-z0-9+\-.]+(?::[a-z0-9\-]+)?)*: (?<path>/.*)$#D', $line, $match) && $match['path'] === $path) {
+                return $match['name'];
+            }
+        }
+
+        return '';
     }
 
     /**

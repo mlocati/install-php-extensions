@@ -92,6 +92,16 @@ final class APK extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\SystemPackager::formatPackageNameWithVersion()
+     */
+    public function formatPackageNameWithVersion($name, $version)
+    {
+        return "{$name}={$version}";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\SystemPackager::doInstallPackages()
      */
     protected function doInstallPackages(array $packages)
@@ -161,6 +171,29 @@ final class APK extends SystemPackager
         }
 
         return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getInstalledPackageOwningFile()
+     */
+    public function getInstalledPackageOwningFile($path)
+    {
+        $fs = $this->os->getFilesystem();
+        list($rc, $output) = $fs->run(Command::create('apk', ['info', '--quiet', '--who-owns', $path])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        $name = trim($output);
+        if ($rc !== 0 || $name === '' || !$this->validatePackageName($name, false)) {
+            return null;
+        }
+        list($rc, $output) = $fs->run(Command::create('apk', ['list', '--installed', $name])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        $match = null;
+        // Like "php84-8.4.27-r0 x86_64 {php84} (PHP-3.01 BSD-3-Clause) [installed]"
+        if ($rc !== 0 || !preg_match('/^' . preg_quote($name, '/') . '-(?<version>\d\S*) \S+ \{(?<origin>[^}\s]+)\}/m', $output, $match)) {
+            return null;
+        }
+
+        return new InstalledPackage($name, $match['version'], $match['origin']);
     }
 
     /**

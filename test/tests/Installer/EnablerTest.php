@@ -10,6 +10,7 @@ use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\Installer\CompiledExtension;
 use IPE\Installer\Enabler;
+use IPE\Installer\Enabler\Options;
 use IPE\OS;
 use IPE\PHPInfo;
 use IPE\Test\Support\TestCase;
@@ -95,7 +96,7 @@ final class EnablerTest extends TestCase
         $php = self::createPHPInfo();
         $php->shouldReceive('addInstalledExtensions')->once()->with(['apcu']);
 
-        $loaded = (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('apcu'));
+        $loaded = (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('apcu'));
 
         self::assertSame(['apcu'], $loaded);
     }
@@ -121,7 +122,7 @@ final class EnablerTest extends TestCase
         $php = self::createPHPInfo();
         $php->shouldReceive('addInstalledExtensions')->once()->with(['apcu']);
 
-        $loaded = (new Enabler($php, $fs, new \IPE\Logger(), false, false, 'z.{priority}_{name}.conf'))->enable(self::createCompiledExtension('apcu'));
+        $loaded = (new Enabler($php, $fs, new \IPE\Logger(), (new Options())->withIniBasename('z.{priority}_{name}.conf')))->enable(self::createCompiledExtension('apcu'));
 
         self::assertSame(['apcu'], $loaded);
     }
@@ -157,7 +158,7 @@ final class EnablerTest extends TestCase
     public function testInvalidIniBasename($iniBasename)
     {
         $this->expectException(Exception\InvalidArgument::class);
-        new Enabler(self::createPHPInfo(), self::createFilesystem(), new \IPE\Logger(), false, false, $iniBasename);
+        (new Options())->withIniBasename($iniBasename);
     }
 
     /**
@@ -172,7 +173,7 @@ final class EnablerTest extends TestCase
         $php = self::createPHPInfo();
         $php->shouldReceive('addInstalledExtensions')->once()->with(['blackfire']);
 
-        self::assertSame(['blackfire'], (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('blackfire')));
+        self::assertSame(['blackfire'], (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('blackfire')));
     }
 
     /**
@@ -214,7 +215,7 @@ final class EnablerTest extends TestCase
         $resolved = new Resolved(new http($php, M::mock(OS::class)), '/tmp/ipe/src', '1.0.0', Resolved::ORIGIN_COMPOSER, $manifest);
         $compiled = new CompiledExtension($resolved, 'http', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924/http.so', false);
 
-        self::assertSame(['http'], (new Enabler($php, $fs, new \IPE\Logger(), false, false, $compat ? Enabler::INI_BASENAME_COMPAT : Enabler::INI_BASENAME_DEFAULT))->enable($compiled));
+        self::assertSame(['http'], (new Enabler($php, $fs, new \IPE\Logger(), (new Options())->withIniBasename($compat ? Enabler::INI_BASENAME_COMPAT : Enabler::INI_BASENAME_DEFAULT)))->enable($compiled));
     }
 
     /**
@@ -249,7 +250,7 @@ final class EnablerTest extends TestCase
         $manifest = new Manifest(Manifest::TYPE_PECL, 'opcache', 'opcache');
         $manifest->setPriority($priority);
 
-        $loaded = (new Enabler($php, $fs, new \IPE\Logger(), false, false, Enabler::INI_BASENAME_COMPAT))->enable(self::createCompiledExtension('opcache', true, $manifest));
+        $loaded = (new Enabler($php, $fs, new \IPE\Logger(), (new Options())->withIniBasename(Enabler::INI_BASENAME_COMPAT)))->enable(self::createCompiledExtension('opcache', true, $manifest));
 
         self::assertSame(['Zend OPcache'], $loaded);
     }
@@ -268,7 +269,7 @@ final class EnablerTest extends TestCase
         $manifest = new Manifest(Manifest::TYPE_PECL, 'xdebug', 'xdebug');
         $manifest->setPriority(99);
 
-        $loaded = (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('xdebug', true, $manifest));
+        $loaded = (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('xdebug', true, $manifest));
 
         self::assertSame(['Xdebug'], $loaded);
     }
@@ -287,7 +288,7 @@ final class EnablerTest extends TestCase
         $php = self::createPHPInfo(506);
         $php->shouldReceive('addInstalledExtensions')->once()->with(['seaslog']);
 
-        self::assertSame(['seaslog'], (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('seaslog')));
+        self::assertSame(['seaslog'], (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('seaslog')));
     }
 
     /**
@@ -311,7 +312,7 @@ final class EnablerTest extends TestCase
         $php = self::createPHPInfo();
         $php->shouldReceive('addInstalledExtensions')->once()->with(['apcu']);
 
-        $enabler = new Enabler($php, $fs, new \IPE\Logger(), false, true, Enabler::INI_BASENAME_COMPAT);
+        $enabler = new Enabler($php, $fs, new \IPE\Logger(), (new Options())->withCreateEnableScripts(true)->withIniBasename(Enabler::INI_BASENAME_COMPAT));
         self::assertSame(['apcu'], $enabler->enable(self::createCompiledExtension('apcu')));
         self::assertSame(['apcu' => '/usr/local/bin/docker-php-ext-enable-apcu'], $enabler->disableEnabledExtensions());
     }
@@ -331,7 +332,7 @@ final class EnablerTest extends TestCase
         $php = self::createPHPInfo();
         $php->shouldReceive('addInstalledExtensions')->once();
 
-        $enabler = new Enabler($php, $fs, new \IPE\Logger());
+        $enabler = new Enabler($php, $fs, new \IPE\Logger(), new Options());
         $enabler->enable(self::createCompiledExtension('xdebug', true));
         // No scripts unless asked in the constructor
         self::assertSame([], $enabler->disableEnabledExtensions());
@@ -372,7 +373,7 @@ final class EnablerTest extends TestCase
             } else {
                 $fs->shouldNotReceive('writeFile');
             }
-            $enabler = new Enabler(self::createPHPInfo(), $fs, new \IPE\Logger());
+            $enabler = new Enabler(self::createPHPInfo(), $fs, new \IPE\Logger(), new Options());
             self::assertSame($changes, $enable ? $enabler->enableIniFile($iniFile) : $enabler->disableIniFile($iniFile));
         }
     }
@@ -386,7 +387,7 @@ final class EnablerTest extends TestCase
         $fs->shouldReceive('isFile')->with('/missing.ini')->andReturn(false);
         $fs->shouldReceive('isFile')->with('/settings.ini')->andReturn(true);
         $fs->shouldReceive('readFile')->with('/settings.ini')->andReturn("memory_limit=1G\n;extension=\n");
-        $enabler = new Enabler(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $enabler = new Enabler(self::createPHPInfo(), $fs, new \IPE\Logger(), new Options());
         try {
             $enabler->enableIniFile('/missing.ini');
             self::fail('Expected exception not thrown');
@@ -412,7 +413,7 @@ final class EnablerTest extends TestCase
         $fs->shouldReceive('deleteFile')->once()->with(self::INI_DIR . '/80-broken--temp.ini');
         $php = self::createPHPInfo();
         try {
-            (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('broken'));
+            (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('broken'));
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('broken does not load', $x->getMessage());
@@ -446,7 +447,7 @@ final class EnablerTest extends TestCase
         $fs->shouldReceive('writeFile')->once()->with(self::INI_DIR . '/80-broken--temp.ini', "extension=broken.so\n");
         $fs->shouldReceive('deleteFile')->once()->with(self::INI_DIR . '/80-broken--temp.ini');
         try {
-            (new Enabler(self::createPHPInfo(), $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('broken'));
+            (new Enabler(self::createPHPInfo(), $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('broken'));
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString($error, $x->getMessage());
@@ -465,7 +466,7 @@ final class EnablerTest extends TestCase
         $fs->shouldReceive('deleteFile')->once()->with(self::INI_DIR . '/80-noisy--temp.ini');
         $php = self::createPHPInfo();
         try {
-            (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('noisy'));
+            (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('noisy'));
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('noisy loads, but it changes the output of PHP', $x->getMessage());
@@ -484,7 +485,7 @@ final class EnablerTest extends TestCase
         $fs->shouldReceive('deleteFile')->once()->with(self::INI_DIR . '/80-geos--temp.ini');
         $php = self::createPHPInfo();
         try {
-            (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('geos'));
+            (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('geos'));
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('geos uses functions that are not available', $x->getMessage());
@@ -504,7 +505,7 @@ final class EnablerTest extends TestCase
         $fs->shouldReceive('deleteFile')->once()->with(self::INI_DIR . '/80-noisy--temp.ini');
         $php = self::createPHPInfo();
         try {
-            (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('noisy'));
+            (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('noisy'));
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('noisy loads, but it changes the output of PHP', $x->getMessage());
@@ -522,7 +523,7 @@ final class EnablerTest extends TestCase
         $fs->shouldReceive('deleteFile')->once()->with(self::INI_DIR . '/80-crashing--temp.ini');
         $php = self::createPHPInfo();
         try {
-            (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('crashing'));
+            (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('crashing'));
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('crashing loads, but PHP exits with the code 139', $x->getMessage());
@@ -542,7 +543,7 @@ final class EnablerTest extends TestCase
         $fs->shouldReceive('writeFile')->once()->with(self::INI_DIR . '/80-apcu.ini', "extension=apcu.so\n");
         $php = self::createPHPInfo();
         $php->shouldReceive('addInstalledExtensions')->once()->with(['apcu']);
-        self::assertSame(['apcu'], (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('apcu')));
+        self::assertSame(['apcu'], (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('apcu')));
     }
 
     /**
@@ -562,7 +563,7 @@ final class EnablerTest extends TestCase
         $fs->shouldReceive('writeFile')->once()->with(self::INI_DIR . '/80-apcu.ini', "extension=apcu.so\n");
         $php = self::createPHPInfo();
         $php->shouldReceive('addInstalledExtensions')->once()->with(['apcu']);
-        self::assertSame(['apcu'], (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('apcu')));
+        self::assertSame(['apcu'], (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('apcu')));
     }
 
     /**
@@ -574,7 +575,7 @@ final class EnablerTest extends TestCase
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getIniScanDir')->andReturn('');
         try {
-            (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('apcu'));
+            (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('apcu'));
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('ini', $x->getMessage());

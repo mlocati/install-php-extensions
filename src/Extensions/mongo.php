@@ -82,8 +82,10 @@ final class mongo extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
+        $version = $context->getVersion();
+
         return $version === '' || version_compare($version, '1.5.0') >= 0 ? ['--with-mongo-sasl'] : [];
     }
 }

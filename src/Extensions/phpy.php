@@ -46,6 +46,7 @@ final class phpy extends Extension implements
     {
         return [
             'debian10' => 'the version of Python of this system is too old',
+            'ubuntu14.04..18.04' => 'the version of Python of this system is too old',
         ];
     }
 

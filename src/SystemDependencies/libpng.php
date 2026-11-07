@@ -38,7 +38,7 @@ final class libpng extends SystemDependency
                 ['libpng-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libpng[0-9]+-[0-9]+$'],
                 ['libpng-dev']

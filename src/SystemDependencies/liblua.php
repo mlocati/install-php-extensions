@@ -38,7 +38,7 @@ final class liblua extends SystemDependency
                 ['lua5.1-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['liblua5.1-0'],
                 ['liblua5.1-0-dev']

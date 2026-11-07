@@ -3,7 +3,6 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
-use IPE\Option;
 
 final class pdo_oci extends Extension\OracleDatabase implements Extension\AvailableAsComposerPackage
 {
@@ -54,9 +53,9 @@ final class pdo_oci extends Extension\OracleDatabase implements Extension\Availa
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
-        $arguments = parent::getConfigureArguments($version, $options);
+        $arguments = parent::getConfigureArguments($context);
         if ($this->php->getMajorMinorVersion() < 700) {
             // In PHP 5 the configure script can't detect the version of the Instant Client, and it doesn't accept the versions above 12.1.
             $arguments[0] .= ',12.1';

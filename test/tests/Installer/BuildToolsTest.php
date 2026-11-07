@@ -156,14 +156,14 @@ final class BuildToolsTest extends TestCase
 
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(506);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(701);
         self::assertSame('', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
     }
 
     /**
      * @return array<array{string, int, string, string}> the path of gcc, its exit code, its output, and the expected libdir
      */
-    public static function provideLibdirOnPHP55()
+    public static function provideLibdirOnOldPHP()
     {
         return [
             ['/usr/bin/gcc', 0, "x86_64-linux-gnu\n", 'lib/x86_64-linux-gnu'],
@@ -174,7 +174,7 @@ final class BuildToolsTest extends TestCase
     }
 
     /**
-     * @dataProvider provideLibdirOnPHP55
+     * @dataProvider provideLibdirOnOldPHP
      *
      * @param string $gcc
      * @param int $rc
@@ -183,11 +183,11 @@ final class BuildToolsTest extends TestCase
      *
      * @return void
      */
-    public function testLibdirOnPHP55($gcc, $rc, $output, $expected)
+    public function testLibdirOnOldPHP($gcc, $rc, $output, $expected)
     {
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(505);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(700);
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn($gcc);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('gcc', ['-print-multiarch'])))->andReturn([$rc, $output]);
@@ -197,7 +197,7 @@ final class BuildToolsTest extends TestCase
     /**
      * @return void
      */
-    public function testLibdirOnPHP55ConfiguredWithIt()
+    public function testLibdirOnOldPHPConfiguredWithIt()
     {
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--with-libdir=lib64'");
@@ -316,6 +316,45 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('');
         self::assertFalse((new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->canLinkLibrary('yuv', 'libyuv.h'));
+    }
+
+    /**
+     * @return list<array{int, string}>
+     */
+    public static function provideStackProtectorFlagCases()
+    {
+        return [[0, '-fstack-protector-strong'], [1, '-fstack-protector']];
+    }
+
+    /**
+     * @dataProvider provideStackProtectorFlagCases
+     *
+     * @param int $rc
+     * @param string $expected
+     *
+     * @return void
+     */
+    public function testStackProtectorFlag($rc, $expected)
+    {
+        $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
+        $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('/usr/bin/cc');
+        $fs->shouldReceive('createVolatileDirectory')->once()->andReturn(new VolatileDirectory('/tmp/x', $fs));
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('cc', ['-fstack-protector-strong', '-c', '/tmp/x/test.c', '-o', '/tmp/x/test.o'])->withOutput(Command::OUTPUT_DISCARD)))->andReturn([$rc, '']);
+        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        self::assertSame($expected, $buildTools->getStackProtectorFlag());
+        // The result is cached
+        self::assertSame($expected, $buildTools->getStackProtectorFlag());
+    }
+
+    /**
+     * @return void
+     */
+    public function testStackProtectorFlagWithoutCompiler()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('');
+        $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('');
+        self::assertSame('-fstack-protector-strong', (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getStackProtectorFlag());
     }
 
     /**

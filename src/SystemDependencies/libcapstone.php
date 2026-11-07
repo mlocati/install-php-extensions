@@ -48,6 +48,16 @@ final class libcapstone extends SystemDependency
                 ['libcapstone-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['^libcapstone[0-9]+$'],
+                ['libcapstone-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

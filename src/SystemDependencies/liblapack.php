@@ -57,25 +57,25 @@ final class liblapack extends SystemDependency
         if ($this->os instanceof OS\Debian) {
             $osVersion = $this->os->getNumericVersion();
             $volatile = ['liblapack-dev', 'libopenblas-dev', 'liblapacke-dev'];
-            if ($osVersion <= OS\Debian::VERSION_STRETCH) {
+            if ($osVersion <= OS\Debian::STRETCH) {
                 return new Packages(
                     ['liblapacke', 'gfortran-6', 'libopenblas-base'],
                     array_merge($volatile, ['libgfortran-6-dev'])
                 );
             }
-            if ($osVersion <= OS\Debian::VERSION_BUSTER) {
+            if ($osVersion <= OS\Debian::BUSTER) {
                 return new Packages(
                     ['liblapacke', 'gfortran-8', 'libopenblas-base'],
                     array_merge($volatile, ['libgfortran-8-dev'])
                 );
             }
-            if ($osVersion <= OS\Debian::VERSION_BULLSEYE) {
+            if ($osVersion <= OS\Debian::BULLSEYE) {
                 return new Packages(
                     ['liblapacke', 'gfortran-10', 'libopenblas-base'],
                     array_merge($volatile, ['libgfortran-10-dev'])
                 );
             }
-            if ($osVersion <= OS\Debian::VERSION_BOOKWORM) {
+            if ($osVersion <= OS\Debian::BOOKWORM) {
                 return new Packages(
                     ['liblapacke', 'gfortran-12', 'libopenblas0'],
                     array_merge($volatile, ['libgfortran-12-dev'])
@@ -85,6 +85,21 @@ final class liblapack extends SystemDependency
             return new Packages(
                 ['liblapacke', 'libgfortran5', 'libopenblas0'],
                 array_merge($volatile, ['libgfortran-14-dev'])
+            );
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            // gfortran pulls the libgfortran-dev of the default GCC, whose version changes in every release
+            $volatile = ['liblapack-dev', 'libopenblas-dev', 'liblapacke-dev', 'gfortran'];
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::BIONIC) {
+                return new Packages(
+                    ['liblapacke', 'libopenblas-base'],
+                    $volatile
+                );
+            }
+
+            return new Packages(
+                ['liblapacke', 'libopenblas0'],
+                $volatile
             );
         }
 

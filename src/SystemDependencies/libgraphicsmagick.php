@@ -38,7 +38,7 @@ final class libgraphicsmagick extends SystemDependency
                 ['graphicsmagick-dev', 'libtool']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libgraphicsmagick(-q16-)?[0-9]*$'],
                 ['libgraphicsmagick1-dev']

@@ -11,6 +11,8 @@ final class amqp extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesPreprocessorFlags,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -37,6 +39,18 @@ final class amqp extends Extension implements
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            'ubuntu14.04' => 'the version of the librabbitmq library of this system is too old',
+        ];
     }
 
     /**
@@ -86,9 +100,13 @@ final class amqp extends Extension implements
      */
     public function getDefaultVersionRequirements()
     {
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::JESSIE) {
             // This system provides librabbitmq 0.5.2
             return '1.9.3';
+        }
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::XENIAL) {
+            // Ubuntu 16.04 provides librabbitmq 0.7.1
+            return '1.11.0';
         }
         $phpVersion = $this->php->getMajorMinorVersion();
         if ($phpVersion <= 505) {
@@ -106,5 +124,20 @@ final class amqp extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\librabbitmq::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesPreprocessorFlags::getPreprocessorFlags()
+     */
+    public function getPreprocessorFlags(Extension\BuildContext $context)
+    {
+        // amqp uses strtoimax() without including inttypes.h, which the headers of PHP include only since PHP 5.6
+        if ($this->php->getMajorMinorVersion() <= 505) {
+            return '-include inttypes.h';
+        }
+
+        return '';
     }
 }

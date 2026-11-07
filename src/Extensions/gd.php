@@ -119,7 +119,7 @@ final class gd extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         $phpVersion = $this->php->getMajorMinorVersion();
         if ($phpVersion <= 506) {
@@ -132,7 +132,7 @@ final class gd extends Extension implements
             return ['--with-gd', '--with-jpeg-dir', '--with-png-dir', '--with-zlib-dir', '--with-xpm-dir', '--with-freetype-dir', '--with-webp-dir'];
         }
         $result = ['--enable-gd', '--with-webp', '--with-jpeg', '--with-xpm', '--with-freetype'];
-        if ($this->isAvifEnabled($options)) {
+        if ($this->isAvifEnabled($context->getOptionValues())) {
             $result[] = '--with-avif';
         }
 
