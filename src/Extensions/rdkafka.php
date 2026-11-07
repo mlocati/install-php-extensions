@@ -94,6 +94,9 @@ final class rdkafka extends Extension implements
         if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_STRETCH) {
             return '3.1.3';
         }
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::XENIAL) {
+            return '3.1.3';
+        }
 
         return $phpVersion <= 506 ? '4.1.2' : '';
     }

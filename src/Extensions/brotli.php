@@ -83,6 +83,13 @@ final class brotli extends Extension implements
      */
     public function getDefaultVersionRequirements()
     {
-        return $this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE ? '0.18.2' : '';
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+            return '0.18.2';
+        }
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+            return '0.18.2';
+        }
+
+        return '';
     }
 }

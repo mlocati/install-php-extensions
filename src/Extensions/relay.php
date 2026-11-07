@@ -131,6 +131,8 @@ final class relay extends Extension\PrecompiledExtension implements
             $build = $this->os->getNumericVersion() < 317 ? 'alpine3.9' : 'alpine3.17';
         } elseif ($this->os instanceof OS\Debian) {
             $build = 'debian' . ($this->os->getNumericVersion() >= OS\Debian::VERSION_BOOKWORM ? '+libssl3' : '');
+        } elseif ($this->os instanceof OS\Ubuntu) {
+            $build = 'debian' . ($this->os->getNumericVersion() >= OS\Ubuntu::JAMMY ? '+libssl3' : '');
         } else {
             throw new Exception\UnsupportedOS("Relay can't be installed on {$this->os->getDisplayName()}");
         }

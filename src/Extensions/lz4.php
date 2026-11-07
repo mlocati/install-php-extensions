@@ -54,6 +54,7 @@ final class lz4 extends Extension\GitHubExtension implements Extension\DeclaresU
         return [
             'alpine3.0..3.8' => 'the version of the LZ4 library of this system is too old',
             'debian8' => 'the version of the LZ4 library of this system is too old',
+            'ubuntu14.04' => 'the version of the LZ4 library of this system is too old',
         ];
     }
 
@@ -94,8 +95,15 @@ final class lz4 extends Extension\GitHubExtension implements Extension\DeclaresU
      */
     protected function getLatestGitHubVersion()
     {
-        // This system provides liblz4 r131: newer versions require LZ4_versionString() and a more recent frame API
-        return $this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH ? '0.4.4' : self::VERSION;
+        // These systems provide liblz4 r131: newer versions require LZ4_versionString() and a more recent frame API
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH) {
+            return '0.4.4';
+        }
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() >= OS\Ubuntu::XENIAL && $this->os->getNumericVersion() <= OS\Ubuntu::BIONIC) {
+            return '0.4.4';
+        }
+
+        return self::VERSION;
     }
 
     /**

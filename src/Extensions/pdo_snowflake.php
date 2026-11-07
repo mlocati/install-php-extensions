@@ -67,6 +67,7 @@ final class pdo_snowflake extends Extension implements
         return [
             'alpine' => 'the vendor only supports glibc',
             'debian8' => 'the extension requires OpenSSL 1.1',
+            'ubuntu14.04..16.04' => 'the extension requires OpenSSL 1.1',
         ];
     }
 

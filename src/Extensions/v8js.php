@@ -55,6 +55,7 @@ final class v8js extends Extension\GitHubExtension implements Extension\Declares
 
         return [
             'debian10..11' => $reason,
+            'ubuntu20.04..22.04' => $reason,
             'alpine3.12..3.18' => $reason,
         ];
     }

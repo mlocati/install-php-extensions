@@ -90,6 +90,9 @@ final class geos extends Extension\GitHubExtension implements Extension\Declares
             // Newer versions use GEOSMinimumRotatedRectangle_r, which requires GEOS 3.6+
             return '889e2b1d9aa6f82995db4dab6891f48c3bacfb59';
         }
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::XENIAL) {
+            return '889e2b1d9aa6f82995db4dab6891f48c3bacfb59';
+        }
 
         return self::COMMIT;
     }
