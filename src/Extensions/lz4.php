@@ -95,7 +95,15 @@ final class lz4 extends Extension\GitHubExtension implements Extension\DeclaresU
     protected function getLatestGitHubVersion()
     {
         // This system provides liblz4 r131: newer versions require LZ4_versionString() and a more recent frame API
-        return $this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH ? '0.4.4' : self::VERSION;
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH) {
+            return '0.4.4';
+        }
+        // Since 0.5.0 lz4 doesn't ship the arginfo header, and the stub declares constants, which the gen_stub.php of PHP 8.0 doesn't support
+        if ($this->php->getMajorMinorVersion() === 800) {
+            return '0.4.4';
+        }
+
+        return self::VERSION;
     }
 
     /**
