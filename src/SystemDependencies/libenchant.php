@@ -58,7 +58,7 @@ final class libenchant extends CompiledLibrary
                 ['glib-dev', 'aspell-dev', 'hunspell-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             if ($osProvidesEnchant1) {
                 return new Packages(
                     ['libenchant1c2a'],

@@ -55,6 +55,12 @@ final class libgmp extends SystemDependency
                 ['libgmp-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            return new Packages(
+                ['libgmp10'],
+                ['libgmp-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -68,7 +74,7 @@ final class libgmp extends SystemDependency
     {
         // The configure script of PHP 5 doesn't look in the multiarch directories
         $fs = $this->os->getFilesystem();
-        if ($this->os instanceof OS\Debian && $this->php->getMajorMinorVersion() < 700 && !$fs->isFile(self::HEADER)) {
+        if (($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) && $this->php->getMajorMinorVersion() < 700 && !$fs->isFile(self::HEADER)) {
             list(, $multiarch) = $fs->run(Command::create('gcc', ['-print-multiarch'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
             $fs->createSymlink('/usr/include/' . trim($multiarch) . '/gmp.h', self::HEADER);
             $this->headerLinked = true;

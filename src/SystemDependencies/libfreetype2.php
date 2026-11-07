@@ -51,6 +51,19 @@ final class libfreetype2 extends SystemDependency
                 ['libfreetype-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::BIONIC) {
+                return new Packages(
+                    ['libfreetype6'],
+                    ['libfreetype6-dev']
+                );
+            }
+
+            return new Packages(
+                ['libfreetype6'],
+                ['libfreetype-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

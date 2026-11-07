@@ -38,7 +38,7 @@ class libzlib extends SystemDependency
                 ['zlib-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 [],
                 ['zlib1g-dev']

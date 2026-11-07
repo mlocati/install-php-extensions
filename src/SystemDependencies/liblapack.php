@@ -87,6 +87,21 @@ final class liblapack extends SystemDependency
                 array_merge($volatile, ['libgfortran-14-dev'])
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            // gfortran pulls the libgfortran-dev of the default GCC, whose version changes in every release
+            $volatile = ['liblapack-dev', 'libopenblas-dev', 'liblapacke-dev', 'gfortran'];
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::BIONIC) {
+                return new Packages(
+                    ['liblapacke', 'libopenblas-base'],
+                    $volatile
+                );
+            }
+
+            return new Packages(
+                ['liblapacke', 'libopenblas0'],
+                $volatile
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

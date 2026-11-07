@@ -51,6 +51,19 @@ final class libpcre extends SystemDependency
                 ['libpcre2-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::NOBLE) {
+                return new Packages(
+                    [],
+                    ['libpcre3-dev']
+                );
+            }
+
+            return new Packages(
+                [],
+                ['libpcre2-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

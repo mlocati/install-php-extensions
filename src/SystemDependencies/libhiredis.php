@@ -38,6 +38,13 @@ class libhiredis extends SystemDependency
         if ($this->os instanceof OS\Debian) {
             return new Packages(['libhiredis1.1.0']);
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::JAMMY) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(['libhiredis1.1.0']);
+        }
 
         throw $this->createUnknownPackagesException();
     }

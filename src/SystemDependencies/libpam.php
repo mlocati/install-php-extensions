@@ -52,6 +52,20 @@ final class libpam extends SystemDependency
                 ['libpam0g-dev', 'libaudit-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::NOBLE) {
+                return new Packages(
+                    ['libpam0g'],
+                    ['libpam0g-dev']
+                );
+            }
+
+            return new Packages(
+                ['libpam0g'],
+                // pam.pc requires audit.pc, but libpam0g-dev doesn't depend on libaudit-dev
+                ['libpam0g-dev', 'libaudit-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

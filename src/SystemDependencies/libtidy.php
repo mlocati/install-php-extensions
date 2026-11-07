@@ -55,7 +55,7 @@ final class libtidy extends SystemDependency
                 ['tidyhtml-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libtidy-?[0-9][0-9.\-]*(deb[0-9])?$'],
                 ['libtidy-dev']

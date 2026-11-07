@@ -38,7 +38,7 @@ final class libpq extends SystemDependency
                 ['postgresql-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['libpq5'],
                 ['libpq-dev']

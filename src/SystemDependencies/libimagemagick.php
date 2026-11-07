@@ -59,6 +59,25 @@ final class libimagemagick extends SystemDependency
                 ['libmagickwand-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                return new Packages(
+                    ['libmagickwand5', 'libmagickcore5-extra', 'ghostscript'],
+                    ['libmagickwand-dev']
+                );
+            }
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::NOBLE) {
+                return new Packages(
+                    ['^libmagickwand-6.q16-[0-9]+$', '^libmagickcore-6.q16-[0-9]+-extra$', 'ghostscript'],
+                    ['libmagickwand-dev']
+                );
+            }
+
+            return new Packages(
+                ['^libmagickwand-7.q16-[0-9]+$', '^libmagickcore-7.q16-[0-9]+-extra$', 'libheif-plugin-aomenc', 'ghostscript'],
+                ['libmagickwand-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -44,6 +44,19 @@ final class librecode extends SystemDependency
                 ['librecode-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::NOBLE) {
+                return new Packages(
+                    ['librecode0'],
+                    ['librecode-dev']
+                );
+            }
+
+            return new Packages(
+                ['librecode3'],
+                ['librecode-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

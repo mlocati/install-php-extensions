@@ -48,6 +48,16 @@ final class libnode extends SystemDependency
                 ['libnode-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::BIONIC) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['^libnode[0-9]+$'],
+                ['libnode-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

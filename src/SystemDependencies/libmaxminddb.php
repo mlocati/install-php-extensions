@@ -48,6 +48,16 @@ final class libmaxminddb extends SystemDependency
                 ['libmaxminddb-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['^libmaxminddb[0-9]*$'],
+                ['libmaxminddb-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -113,6 +113,11 @@ final class BundledLibrariesTest extends TestCase
         $php = self::createPHP();
         self::assertPackages([], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_JESSIE), new Values()))->getSystemPackages(self::createState()));
         self::assertPackages(['libldap-common'], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_STRETCH), new Values()))->getSystemPackages(self::createState()));
+        self::assertPackages(['libldap-2.4-2'], ['libldap2-dev', 'libsasl2-dev'], (new libldap($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::TRUSTY), new Values()))->getSystemPackages(self::createState()));
+        self::assertPackages(['libldap-2.4-2'], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::XENIAL), new Values()))->getSystemPackages(self::createState()));
+        self::assertPackages(['libldap-common', 'libldap-2.4-2'], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::FOCAL), new Values()))->getSystemPackages(self::createState()));
+        self::assertPackages(['libldap-common', 'libldap-2.5-0'], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::JAMMY), new Values()))->getSystemPackages(self::createState()));
+        self::assertPackages(['libldap-common', 'libldap2'], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::NOBLE), new Values()))->getSystemPackages(self::createState()));
     }
 
     /**

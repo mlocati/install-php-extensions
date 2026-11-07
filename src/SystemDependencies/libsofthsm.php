@@ -44,6 +44,16 @@ final class libsofthsm extends SystemDependency
                 []
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['libsofthsm2'],
+                []
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

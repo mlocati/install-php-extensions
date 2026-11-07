@@ -48,6 +48,16 @@ final class libuv extends SystemDependency
                 ['libuv1-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['^libuv1(t64)?$'],
+                ['libuv1-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
