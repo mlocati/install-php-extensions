@@ -76,6 +76,15 @@ function createApp()
         }
         throw new Exception\UnsupportedOS('Unsupported OS: ' . $os->getDisplayName());
     });
+    // Extension enabler
+    $app->bind(Installer\Enabler::class, static function (Container $app) {
+        $modsAvailable = Installer\Enabler\ModsAvailable::detect($app->make(PHPInfo::class), $app->make(Filesystem::class));
+        if ($modsAvailable !== null) {
+            return $app->build(Installer\Enabler\WithModsAvailable::class, ['modsAvailable' => $modsAvailable]);
+        }
+
+        return $app->build(Installer\Enabler::class);
+    });
 
     return $app;
 }
