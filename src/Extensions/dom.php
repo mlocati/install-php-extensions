@@ -8,7 +8,7 @@ use IPE\SystemDependencies;
 
 final class dom extends Extension implements
     Extension\BundledInPHPSource,
-    Extension\PatchesSourceCode,
+    Extension\ProvidesPreprocessorFlags,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -82,18 +82,17 @@ final class dom extends Extension implements
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
+     * @see \IPE\Extension\ProvidesPreprocessorFlags::getPreprocessorFlags()
      */
-    public function patchSourceCode(Extension\BuildContext $context)
+    public function getPreprocessorFlags(Extension\BuildContext $context)
     {
         if ($this->php->getMajorMinorVersion() < 805) {
-            return;
+            return '';
         }
-        $sourceDirectory = $context->getSourceDirectory();
         // Since PHP 8.5 the lexbor headers are in ext/lexbor, and PHP doesn't install them: dom includes them both as lexbor/... and as ext/lexbor/lexbor/...
+        $phpSourceDirectory = dirname(dirname($context->getSourceDirectory()));
         $fs = $this->os->getFilesystem();
-        $configM4 = "{$sourceDirectory}/config.m4";
-        $phpSourceDirectory = dirname(dirname($sourceDirectory));
-        $fs->writeFile($configM4, rtrim($fs->readFile($configM4)) . "\nPHP_ADD_INCLUDE([{$phpSourceDirectory}/ext/lexbor])\nPHP_ADD_INCLUDE([{$phpSourceDirectory}])\n");
+
+        return '-I' . $fs->escapeShellArg("{$phpSourceDirectory}/ext/lexbor") . ' -I' . $fs->escapeShellArg($phpSourceDirectory);
     }
 }
