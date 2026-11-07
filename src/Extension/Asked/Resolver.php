@@ -16,6 +16,7 @@ use IPE\Filesystem\ArchiveExtractor;
 use IPE\Filesystem\ArchiveFetcher;
 use IPE\Filesystem\ArchiveFormat;
 use IPE\Filesystem\Downloader;
+use IPE\Installer\Enabler;
 use IPE\Installer\State;
 use IPE\Installer\VendorArchivePreparer;
 use IPE\Option;
@@ -97,6 +98,11 @@ abstract class Resolver
      */
     protected $unsupportedEnvironment;
 
+    /**
+     * @var \IPE\Installer\Enabler
+     */
+    protected $enabler;
+
     public function __construct(
         PHPInfo $php,
         OS $os,
@@ -111,6 +117,7 @@ abstract class Resolver
         Manifest\Reader $manifestReader,
         Option\Validator $optionValidator,
         Extension\UnsupportedEnvironment $unsupportedEnvironment,
+        Enabler $enabler,
         \IPE\Logger $logger
     ) {
         $this->logger = $logger;
@@ -127,6 +134,7 @@ abstract class Resolver
         $this->manifestReader = $manifestReader;
         $this->optionValidator = $optionValidator;
         $this->unsupportedEnvironment = $unsupportedEnvironment;
+        $this->enabler = $enabler;
     }
 
     /**
@@ -595,6 +603,10 @@ abstract class Resolver
             if ($this->isAlreadyInstalled($known, $state)) {
                 return null;
             }
+            $disabled = $this->resolveDisabled($known);
+            if ($disabled !== null) {
+                return $disabled;
+            }
         }
 
         return $this->createResolved($known, $path, '', $origin, $manifest, $asked->getOptions(), $state);
@@ -684,6 +696,10 @@ abstract class Resolver
             if ($this->isAlreadyInstalled($known, $state)) {
                 return null;
             }
+            $disabled = $this->resolveDisabled($known);
+            if ($disabled !== null) {
+                return $disabled;
+            }
         }
 
         return $this->createResolved($known, $path, $version->getVersion(), Resolved::ORIGIN_COMPOSER, $manifest, $asked->getOptions(), $state, $forcedVersion);
@@ -736,6 +752,10 @@ abstract class Resolver
         $handle = $extension::getHandle();
         if ($this->isAlreadyInstalled($extension, $state)) {
             return null;
+        }
+        $disabled = $this->resolveDisabled($extension);
+        if ($disabled !== null) {
+            return $disabled;
         }
         if (!$this->checkEnvironment($extension, $state)) {
             return null;
@@ -915,6 +935,24 @@ abstract class Resolver
         $this->skip($extension::getHandle(), Extension\Skipped::REASON_ALREADY_INSTALLED, 'The extension ' . $extension::getHandle() . ' is already installed - skipping', $state);
 
         return true;
+    }
+
+    /**
+     * Like the already installed extensions, the ones that have been disabled are enabled whatever version and options have been asked.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\Extension\Resolved|null NULL if the extension is not installed
+     */
+    private function resolveDisabled(Extension $extension)
+    {
+        $iniFile = $this->enabler->getDisabledIniFile($extension);
+        if ($iniFile === '') {
+            return null;
+        }
+        $this->logger->info('The extension ' . $extension::getHandle() . " is installed but disabled ({$iniFile}): it will be enabled");
+
+        return new Resolved($extension, $iniFile, '', Resolved::ORIGIN_DISABLED);
     }
 
     /**

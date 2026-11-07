@@ -53,6 +53,14 @@ final class Resolved
     const ORIGIN_VENDOR_ARCHIVE = 'vendor archive';
 
     /**
+     * Already installed, but disabled: the path is its ini file.
+     *
+     * @public
+     * @var string
+     */
+    const ORIGIN_DISABLED = 'disabled';
+
+    /**
      * @var \IPE\Extension|null
      */
     private $knownExtension;
@@ -94,7 +102,7 @@ final class Resolved
 
     /**
      * @param \IPE\Extension|null $knownExtension
-     * @param non-empty-string $path the directory containing the extension source code
+     * @param non-empty-string $path the directory containing the extension source code (the ini file for ORIGIN_DISABLED)
      * @param string $version the extension version (empty string if unknown)
      * @param non-empty-string $origin one of the ORIGIN_* constants
      * @param \IPE\Extension\Manifest|null $manifest the manifest found in the source code directory (if any)
@@ -128,6 +136,7 @@ final class Resolved
             self::ORIGIN_URL,
             self::ORIGIN_BINARY,
             self::ORIGIN_VENDOR_ARCHIVE,
+            self::ORIGIN_DISABLED,
         ];
     }
 
@@ -295,6 +304,8 @@ final class Resolved
                 return "{$result} (from {$this->path})";
             case self::ORIGIN_BUNDLED:
                 return "{$result} (bundled in PHP)";
+            case self::ORIGIN_DISABLED:
+                return "{$result} (installed but disabled)";
             default:
                 return "{$result} (from {$this->origin})";
         }

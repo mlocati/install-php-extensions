@@ -3,6 +3,7 @@
 namespace IPE\Installer\Enabler;
 
 use IPE\Exception;
+use IPE\Extension;
 use IPE\Filesystem;
 use IPE\Installer\CompiledExtension;
 use IPE\Installer\Enabler;
@@ -134,9 +135,79 @@ final class WithModsAvailable extends Enabler
      */
     protected function disableEnabledModule($moduleName, $iniFile, $iniContent)
     {
-        $this->modsAvailable->disable($moduleName);
+        // The re-enabled extensions are identified by their handle
+        $iniModuleName = $this->getModuleName($iniFile);
+        $this->modsAvailable->disable($iniModuleName === '' ? $moduleName : $iniModuleName);
 
         return '';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Installer\Enabler::getDisabledIniFile()
+     */
+    public function getDisabledIniFile(Extension $extension)
+    {
+        foreach (array_unique(array_merge([$extension::getHandle()], $extension::getInstalledNames())) as $moduleName) {
+            if (!preg_match('/^[\w-]+$/D', $moduleName)) {
+                continue;
+            }
+            $iniFile = $this->modsAvailable->getIniFile($moduleName);
+            if ($this->fs->isFile($iniFile) && $this->hasModuleFiles($this->fs->readFile($iniFile)) && !$this->modsAvailable->isEnabled($moduleName)) {
+                return $iniFile;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * The ini files of the packages that have been removed stay until the packages are purged.
+     *
+     * @param string $iniContent
+     *
+     * @return bool
+     */
+    private function hasModuleFiles($iniContent)
+    {
+        if (!preg_match_all('/^[ \t]*;?[ \t]*(zend_)?extension[ \t]*=[ \t]*"?([^"\s;]+)/m', $iniContent, $matches, PREG_SET_ORDER)) {
+            return false;
+        }
+        foreach ($matches as $match) {
+            if (!$this->moduleExists($match[2], $match[1] !== '')) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param non-empty-string $value the value of extension= or zend_extension=
+     * @param bool $zendExtension
+     *
+     * @return bool
+     */
+    private function moduleExists($value, $zendExtension)
+    {
+        if ($value[0] === '/') {
+            return $this->fs->isFile($value);
+        }
+        // PHP resolves it against the current directory
+        if (!$zendExtension && strpos($value, '/') !== false) {
+            return false;
+        }
+        $path = "{$this->php->getExtensionDir()}/{$value}";
+        if ($this->fs->isFile($path)) {
+            return true;
+        }
+        // Since PHP 7.2 the modules can be specified by name
+        if ($this->php->getMajorMinorVersion() >= 702 && $this->fs->isFile("{$path}.so")) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

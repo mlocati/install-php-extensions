@@ -14,6 +14,7 @@ use IPE\Extension\Source;
 use IPE\Extension\Version;
 use IPE\Extensions;
 use IPE\Filesystem;
+use IPE\Installer\Enabler;
 use IPE\Installer\PHPSourceProvider;
 use IPE\Installer\State;
 use IPE\Installer\VendorArchivePreparer;
@@ -137,10 +138,11 @@ final class ResolverTest extends TestCase
      * @param \IPE\Extension\Asked\Resolver\Options|null $options
      * @param list<\IPE\Extension> $additionalExtensions
      * @param \IPE\OS|null $os
+     * @param \IPE\Installer\Enabler|null $enabler
      *
      * @return \IPE\Extension\Asked\Resolver
      */
-    private static function createResolver(PHPInfo $php, $options = null, array $additionalExtensions = [], $os = null)
+    private static function createResolver(PHPInfo $php, $options = null, array $additionalExtensions = [], $os = null, $enabler = null)
     {
         $downloader = self::createDownloader();
         $archiveExtractor = new Filesystem\ArchiveExtractor(self::$fs, new \IPE\Logger());
@@ -176,6 +178,7 @@ final class ResolverTest extends TestCase
             new Manifest\Reader(new \IPE\Logger()),
             new Option\Validator(new \IPE\Logger()),
             new Extension\UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger())),
+            $enabler === null ? new Enabler($php, self::$fs, new \IPE\Logger(), new Enabler\Options()) : $enabler,
             new \IPE\Logger()
         );
     }
@@ -980,6 +983,56 @@ final class ResolverTest extends TestCase
         self::assertSame(['apcu', 'fake_b', 'fake_a'], self::describe($resolved));
         self::assertSame([false, false, true], array_map(static function (Resolved $extension) { return $extension->isAsked(); }, $resolved));
         self::assertSame([['fake_b'], ['fake_a'], []], array_map(static function (Resolved $extension) { return $extension->getRequiredBy(); }, $resolved));
+    }
+
+    /**
+     * @param array<string, string> $disabledIniFiles the keys are the handles of the disabled extensions
+     *
+     * @return \IPE\Installer\Enabler
+     */
+    private static function createEnablerWithDisabled(array $disabledIniFiles)
+    {
+        $enabler = M::mock(Enabler::class);
+        $enabler->shouldReceive('getDisabledIniFile')->andReturnUsing(static function (Extension $extension) use ($disabledIniFiles) {
+            return isset($disabledIniFiles[$extension::getHandle()]) ? $disabledIniFiles[$extension::getHandle()] : '';
+        });
+
+        return $enabler;
+    }
+
+    /**
+     * @return void
+     */
+    public function testDisabledExtension()
+    {
+        $php = self::createPHP('8.3.0');
+        $state = new State($php, self::$fs);
+        $resolver = self::createResolver($php, null, [], null, self::createEnablerWithDisabled(['apcu' => '/etc/php/8.3/mods-available/apcu.ini']));
+        $resolved = self::resolveOne($resolver, new Asked\FromHandle('apcu', '^5'), $state);
+        self::assertSame(Resolved::ORIGIN_DISABLED, $resolved->getOrigin());
+        self::assertSame('/etc/php/8.3/mods-available/apcu.ini', $resolved->getPath());
+        self::assertSame('', $resolved->getVersion());
+        self::assertSame('apcu (installed but disabled)', (string) $resolved);
+        self::assertSame([], $state->getSkippedExtensions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testDisabledRequiredExtension()
+    {
+        $php = self::createPHP('8.3.0');
+        $resolver = self::createResolver(
+            $php,
+            null,
+            [new FakeDependentExtensionA($php, self::createOS(), ['apcu'])],
+            null,
+            self::createEnablerWithDisabled(['apcu' => '/etc/php/8.3/mods-available/apcu.ini'])
+        );
+        $resolved = $resolver->resolveAskedExtensions([new Asked\FromHandle('fake_a', '')], new State($php, self::$fs));
+        self::assertSame(['apcu', 'fake_a'], self::describe($resolved));
+        self::assertSame(Resolved::ORIGIN_DISABLED, $resolved[0]->getOrigin());
+        self::assertSame(['fake_a'], $resolved[0]->getRequiredBy());
     }
 
     /**

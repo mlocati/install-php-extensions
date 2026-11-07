@@ -72,7 +72,7 @@ class Enabler
     protected $options;
 
     /**
-     * @var array<non-empty-string, array{non-empty-string, non-empty-string}> the keys are the module names, the values are the path and the content of the ini files
+     * @var array<non-empty-string, array{non-empty-string, string}> the keys are the module names (the handles for the re-enabled extensions), the values are the path and the content of the ini files
      */
     private $enabledIniFiles = [];
 
@@ -180,6 +180,47 @@ class Enabler
     }
 
     /**
+     * Find the ini file of an extension that's installed but disabled.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if not found
+     */
+    public function getDisabledIniFile(Extension $extension)
+    {
+        return '';
+    }
+
+    /**
+     * Enable the ini file returned by getDisabledIniFile(), and check that PHP loads the extension.
+     *
+     * @param non-empty-string $iniFile
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-list<non-empty-string> the names of the modules provided by the extension, as seen by PHP
+     */
+    public function reenable(Extension $extension, $iniFile)
+    {
+        list($loadedBefore) = $this->listLoadedModules();
+        $this->enableIniFile($iniFile);
+        list($loadedAfter, $errors) = $this->listLoadedModules();
+        $newModules = array_values(array_udiff($loadedAfter, $loadedBefore, 'strcasecmp'));
+        if ($newModules === []) {
+            if (!$this->options->shouldSkipCheck()) {
+                $this->disableIniFile($iniFile);
+
+                throw new Exception\IO('The extension ' . $extension::getHandle() . ' does not load' . ($errors === '' ? '' : ":\n{$errors}"));
+            }
+            $newModules = array_values($extension::getInstalledNames());
+        }
+        $this->php->addInstalledExtensions($newModules);
+        $this->enabledIniFiles[$extension::getHandle()] = [$iniFile, $this->readModuleIniFile($iniFile)];
+
+        return $newModules;
+    }
+
+    /**
      * Get the full path of the ini file that enable() creates.
      *
      * @throws \IPE\Exception\IO
@@ -213,11 +254,11 @@ class Enabler
     }
 
     /**
-     * Disable a module enabled by enable().
+     * Disable a module enabled by enable() or reenable().
      *
-     * @param non-empty-string $moduleName
-     * @param non-empty-string $iniFile the value returned by writeIniFile()
-     * @param non-empty-string $iniContent
+     * @param non-empty-string $moduleName the handle of the extension for reenable()
+     * @param non-empty-string $iniFile the value returned by writeIniFile(), or the ini file passed to reenable()
+     * @param string $iniContent
      *
      * @throws \IPE\Exception\IO
      *

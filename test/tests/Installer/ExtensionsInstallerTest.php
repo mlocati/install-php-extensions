@@ -306,6 +306,46 @@ final class ExtensionsInstallerTest extends TestCase
     }
 
     /**
+     * @return list<array{bool, string}>
+     */
+    public static function provideReenableCases()
+    {
+        return [
+            [true, "extension=fake.so\n"],
+            [false, ";extension=fake.so\n"],
+        ];
+    }
+
+    /**
+     * @dataProvider provideReenableCases
+     *
+     * @param bool $enable
+     * @param string $expectedIniContent
+     *
+     * @return void
+     */
+    public function testDisabledExtensionIsEnabledWithoutInstallingAnything($enable, $expectedIniContent)
+    {
+        $iniFile = '/ini/80-fake.ini';
+        $this->writtenFiles[$iniFile] = ";extension=fake.so\n";
+        $fs = $this->createFilesystem();
+        $fs->shouldReceive('isFile')->andReturn(true);
+        $fs->shouldReceive('run')->andReturn([0, "[PHP Modules]\nCore\n"], [0, "[PHP Modules]\nCore\nfake\n"]);
+        $installer = $this->createInstaller($fs);
+        $extension = M::mock(Extension::class . ', ' . Extension\RequiresSystemDependencies::class);
+        $extension->shouldReceive('getHandle')->andReturn('fake');
+        $extension->shouldReceive('getInstalledNames')->andReturn(['fake']);
+        $extension->shouldNotReceive('getRequiredSystemDependencies');
+        $report = $installer->install([new Resolved($extension, $iniFile, '', Resolved::ORIGIN_DISABLED)], new State($this->php, $fs), $enable);
+        self::assertSame([], $this->packager->installed);
+        self::assertSame($expectedIniContent, $this->writtenFiles[$iniFile]);
+        $installed = $report->getExtensions()[0];
+        self::assertSame(InstalledExtension::METHOD_ENABLED, $installed->getMethod());
+        self::assertSame([$iniFile => $enable], $installed->getIniFiles());
+        self::assertSame(['fake'], $installed->getLoadedModules());
+    }
+
+    /**
      * @return void
      */
     public function testFilesCreatedByTheInstallerOfTheVendor()

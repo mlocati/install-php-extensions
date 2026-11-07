@@ -3,6 +3,7 @@
 namespace IPE\Test\Installer\Enabler;
 
 use IPE\Exception;
+use IPE\Extension;
 use IPE\Extension\Resolved;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
@@ -24,13 +25,15 @@ final class WithModsAvailableTest extends TestCase
     const MODULES_BEFORE = "[PHP Modules]\nCore\njson\n\n[Zend Modules]\n";
 
     /**
+     * @param int $majorMinorVersion
+     *
      * @return \IPE\PHPInfo&\Mockery\MockInterface
      */
-    private static function createPHPInfo()
+    private static function createPHPInfo($majorMinorVersion = 803)
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(803);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn($majorMinorVersion);
         $php->shouldReceive('getIniScanDir')->andReturn(self::INI_DIR);
         $php->shouldReceive('getSSLLibrary')->andReturn(null)->byDefault();
 
@@ -244,6 +247,109 @@ final class WithModsAvailableTest extends TestCase
         $enabler = self::createEnabler($fs);
 
         self::assertSame($changes, $enable ? $enabler->enableIniFile($iniFile) : $enabler->disableIniFile($iniFile));
+    }
+
+    /**
+     * @return \IPE\Extension&\Mockery\MockInterface
+     */
+    private static function createExtension()
+    {
+        $extension = M::mock(Extension::class);
+        $extension->shouldReceive('getHandle')->andReturn('opcache');
+        $extension->shouldReceive('getInstalledNames')->andReturn(['Zend OPcache']);
+
+        return $extension;
+    }
+
+    /**
+     * @return array<string, array{string|null, int, list<string>, int, bool}>
+     */
+    public static function provideDisabledCases()
+    {
+        $soFile = '/usr/lib/php/20230831/opcache.so';
+
+        return [
+            'disabled' => ['zend_extension=opcache.so', 803, [$soFile], 1, true],
+            'disabled by the admin, quoted' => ['zend_extension="opcache.so"', 803, [$soFile], 32, true],
+            'enabled' => ['zend_extension=opcache.so', 803, [$soFile], 0, false],
+            'package removed' => ['zend_extension=opcache.so', 803, [], 33, false],
+            'no ini file' => [null, 803, [$soFile], 1, false],
+            'name' => ['zend_extension=opcache', 803, [$soFile], 1, true],
+            'name before PHP 7.2' => ['zend_extension=opcache', 701, [$soFile], 1, false],
+            'absolute path' => ['zend_extension=/opt/opcache.so', 803, ['/opt/opcache.so'], 1, true],
+            'zend_extension relative to extension_dir' => ['zend_extension=sub/opcache.so', 803, ['/usr/lib/php/20230831/sub/opcache.so'], 1, true],
+            'extension relative to the current directory' => ['extension=sub/opcache.so', 803, ['/usr/lib/php/20230831/sub/opcache.so'], 1, false],
+            'several modules, one missing' => ["extension=opcache.so\nextension=other.so", 803, [$soFile], 1, false],
+        ];
+    }
+
+    /**
+     * @dataProvider provideDisabledCases
+     *
+     * @param string|null $iniLines NULL if the ini file doesn't exist
+     * @param int $phpVersion
+     * @param list<string> $existingFiles
+     * @param int $queryRC
+     * @param bool $expectedDisabled
+     *
+     * @return void
+     */
+    public function testGetDisabledIniFile($iniLines, $phpVersion, array $existingFiles, $queryRC, $expectedDisabled)
+    {
+        $iniFile = self::MODS_AVAILABLE_DIR . '/opcache.ini';
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with($iniFile)->andReturn($iniLines !== null);
+        $fs->shouldReceive('readFile')->with($iniFile)->andReturn("; priority=10\n{$iniLines}\n");
+        $fs->shouldReceive('isFile')->andReturnUsing(static function ($path) use ($existingFiles) {
+            return in_array($path, $existingFiles, true);
+        });
+        $fs->shouldReceive('run')->with(self::isCommand(self::createPHPQueryCommand('opcache')))->andReturn([$queryRC, '']);
+        $php = self::createPHPInfo($phpVersion);
+        $php->shouldReceive('getExtensionDir')->andReturn('/usr/lib/php/20230831');
+
+        self::assertSame($expectedDisabled ? $iniFile : '', self::createEnabler($fs, $php)->getDisabledIniFile(self::createExtension()));
+    }
+
+    /**
+     * @return void
+     */
+    public function testReenable()
+    {
+        $iniFile = self::MODS_AVAILABLE_DIR . '/opcache.ini';
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with($iniFile)->andReturn(true);
+        $fs->shouldReceive('readFile')->with($iniFile)->andReturn("; priority=10\nzend_extension=opcache.so\n");
+        self::expectModuleListings($fs, "[PHP Modules]\nCore\njson\nZend OPcache\n\n[Zend Modules]\nZend OPcache\n");
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/sbin/phpenmod', ['-v', '8.3', '-r', 'opcache'])))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/sbin/phpdismod', ['-v', '8.3', '-r', 'opcache'])))->andReturn([0, '']);
+        // Before and after phpenmod, and after phpdismod
+        $fs->shouldReceive('run')->times(3)->with(self::isCommand(self::createPHPQueryCommand('opcache')))->andReturn([1, ''], [0, ''], [1, '']);
+        $fs->shouldNotReceive('writeFile');
+        $php = self::createPHPInfo();
+        $php->shouldReceive('addInstalledExtensions')->once()->with(['Zend OPcache']);
+
+        $enabler = self::createEnabler($fs, $php);
+        self::assertSame(['Zend OPcache'], $enabler->reenable(self::createExtension(), $iniFile));
+        self::assertSame([], $enabler->disableEnabledExtensions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testReenableModuleThatDoesNotLoad()
+    {
+        $iniFile = self::MODS_AVAILABLE_DIR . '/opcache.ini';
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with($iniFile)->andReturn(true);
+        $fs->shouldReceive('readFile')->with($iniFile)->andReturn("; priority=10\nzend_extension=opcache.so\n");
+        self::expectModuleListings($fs, self::MODULES_BEFORE);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/sbin/phpenmod', ['-v', '8.3', '-r', 'opcache'])))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/sbin/phpdismod', ['-v', '8.3', '-r', 'opcache'])))->andReturn([0, '']);
+        $fs->shouldReceive('run')->times(4)->with(self::isCommand(self::createPHPQueryCommand('opcache')))->andReturn([1, ''], [0, ''], [0, ''], [1, '']);
+
+        $this->expectException(Exception\IO::class);
+        $this->expectExceptionMessage('The extension opcache does not load');
+        self::createEnabler($fs)->reenable(self::createExtension(), $iniFile);
     }
 
     /**
