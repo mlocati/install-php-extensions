@@ -402,7 +402,7 @@ final class FactoryTest extends TestCase
                 ],
                 [
                     'getDisplayName' => 'Debian 8 (Jessie)',
-                    'getNumericVersion' => OS\Debian::VERSION_JESSIE,
+                    'getNumericVersion' => OS\Debian::JESSIE,
                     'getCodename' => 'jessie',
                 ],
             ],
@@ -421,7 +421,7 @@ final class FactoryTest extends TestCase
                 ],
                 [
                     'getDisplayName' => 'Debian 13 (Trixie)',
-                    'getNumericVersion' => OS\Debian::VERSION_TRIXIE,
+                    'getNumericVersion' => OS\Debian::TRIXIE,
                     'getCodename' => 'trixie',
                 ],
             ],

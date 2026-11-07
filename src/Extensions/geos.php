@@ -86,7 +86,7 @@ final class geos extends Extension\GitHubExtension implements Extension\Declares
         if ($this->php->getMajorMinorVersion() < 700) {
             return 'dfe1ab17b0f155cc315bc13c75689371676e02e1';
         }
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_STRETCH) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::STRETCH) {
             // Newer versions use GEOSMinimumRotatedRectangle_r, which requires GEOS 3.6+
             return '889e2b1d9aa6f82995db4dab6891f48c3bacfb59';
         }

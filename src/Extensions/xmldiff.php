@@ -87,7 +87,7 @@ final class xmldiff extends Extension implements
     public function getDefaultVersionRequirements()
     {
         // Newer versions don't compile with the old GCC of this system
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::JESSIE) {
             return '1.1.4';
         }
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {

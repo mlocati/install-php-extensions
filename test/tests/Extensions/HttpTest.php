@@ -91,7 +91,7 @@ final class HttpTest extends TestCase
             [libcurl::HANDLE, libevent::HANDLE, libicu::HANDLE, libidn::HANDLE, libidnkit::HANDLE, libzlib::HANDLE],
             (new Extensions\http(self::createPHP(804), $alpine))->getRequiredSystemDependencies('', new Values())
         );
-        $debian = self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE);
+        $debian = self::createOS(OS\Debian::class, OS\Debian::TRIXIE);
         self::assertSame(
             [libcurl::HANDLE, libevent::HANDLE, libidn::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
             (new Extensions\http(self::createPHP(506), $debian))->getRequiredSystemDependencies('', new Values())

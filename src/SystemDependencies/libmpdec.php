@@ -45,7 +45,7 @@ final class libmpdec extends CompiledLibrary
             return new Packages();
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_BULLSEYE) {
+            if ($this->os->getNumericVersion() <= OS\Debian::BULLSEYE) {
                 return new Packages(
                     ['^libmpdec[0-9]*$'],
                     ['libmpdec-dev']
@@ -76,7 +76,7 @@ final class libmpdec extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_BULLSEYE) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::BULLSEYE) {
             return false;
         }
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::JAMMY) {

@@ -85,7 +85,7 @@ final class snappy extends Extension\GitHubExtension
         if ($this->os instanceof OS\Alpine && $this->os->getNumericVersion() <= 310) {
             return '0.2.1';
         }
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_BUSTER) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::BUSTER) {
             return '0.2.1';
         }
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() === OS\Ubuntu::BIONIC) {

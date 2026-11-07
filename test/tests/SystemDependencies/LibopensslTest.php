@@ -58,10 +58,10 @@ final class LibopensslTest extends TestCase
     public function testSystemPackages()
     {
         self::assertSame(['libssl3'], self::getPackages(OS\Alpine::class, 317)->getPersistent());
-        self::assertSame(['libssl1.0.0'], self::getPackages(OS\Debian::class, OS\Debian::VERSION_JESSIE)->getPersistent());
-        self::assertSame(['libssl1.1'], self::getPackages(OS\Debian::class, OS\Debian::VERSION_BULLSEYE)->getPersistent());
-        self::assertSame(['libssl3'], self::getPackages(OS\Debian::class, OS\Debian::VERSION_BOOKWORM)->getPersistent());
-        self::assertSame(['^libssl3(t64)?$'], self::getPackages(OS\Debian::class, OS\Debian::VERSION_TRIXIE)->getPersistent());
-        self::assertSame(['libssl-dev'], self::getPackages(OS\Debian::class, OS\Debian::VERSION_TRIXIE)->getVolatile());
+        self::assertSame(['libssl1.0.0'], self::getPackages(OS\Debian::class, OS\Debian::JESSIE)->getPersistent());
+        self::assertSame(['libssl1.1'], self::getPackages(OS\Debian::class, OS\Debian::BULLSEYE)->getPersistent());
+        self::assertSame(['libssl3'], self::getPackages(OS\Debian::class, OS\Debian::BOOKWORM)->getPersistent());
+        self::assertSame(['^libssl3(t64)?$'], self::getPackages(OS\Debian::class, OS\Debian::TRIXIE)->getPersistent());
+        self::assertSame(['libssl-dev'], self::getPackages(OS\Debian::class, OS\Debian::TRIXIE)->getVolatile());
     }
 }

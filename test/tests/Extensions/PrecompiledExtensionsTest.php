@@ -182,7 +182,7 @@ final class PrecompiledExtensionsTest extends TestCase
     {
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('getContent')->andReturn('1.2.3');
-        $extension = new $class(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM, null, $architecture, $rawArchitecture), $downloader);
+        $extension = new $class(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM, null, $architecture, $rawArchitecture), $downloader);
         self::assertStringContainsString($expected, $extension->getBinaryArchiveURL(''));
     }
 
@@ -263,8 +263,8 @@ final class PrecompiledExtensionsTest extends TestCase
     {
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('getContent')->with('https://builds.r2.relay.so/meta/latest')->andReturn("v1.2.3\n");
-        self::assertMatchesRegularExpression('#/v1\.2\.3/relay-v1\.2\.3-php8\.4-debian-aarch64\+libssl3\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), $downloader))->getBinaryArchiveURL(''));
-        self::assertMatchesRegularExpression('#/v2\.0/relay-v2\.0-php8\.4-debian-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::VERSION_BULLSEYE), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#/v1\.2\.3/relay-v1\.2\.3-php8\.4-debian-aarch64\+libssl3\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), $downloader))->getBinaryArchiveURL(''));
+        self::assertMatchesRegularExpression('#/v2\.0/relay-v2\.0-php8\.4-debian-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::BULLSEYE), $downloader))->getBinaryArchiveURL('2.0'));
         self::assertMatchesRegularExpression('#-alpine3\.9-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Alpine::class, 316), $downloader))->getBinaryArchiveURL('2.0'));
         self::assertMatchesRegularExpression('#-alpine3\.17-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Alpine::class, 317), $downloader))->getBinaryArchiveURL('2.0'));
         $fs = self::createFilesystem(['/src/relay-pkg.so', '/src/relay-zts.so']);
@@ -293,9 +293,9 @@ final class PrecompiledExtensionsTest extends TestCase
     public static function provideRelayZTSLibraries()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_TRIXIE, true, true],
-            [OS\Debian::class, OS\Debian::VERSION_TRIXIE, false, false],
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, false, false],
+            [OS\Debian::class, OS\Debian::TRIXIE, true, true],
+            [OS\Debian::class, OS\Debian::TRIXIE, false, false],
+            [OS\Debian::class, OS\Debian::BOOKWORM, false, false],
             [OS\Alpine::class, 318, true, true],
             [OS\Alpine::class, 318, false, false],
             [OS\Alpine::class, 317, false, false],
@@ -308,10 +308,10 @@ final class PrecompiledExtensionsTest extends TestCase
     public static function provideRelayZTSEnvironments()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER, true],
-            [OS\Debian::class, OS\Debian::VERSION_BULLSEYE, true],
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, true],
-            [OS\Debian::class, OS\Debian::VERSION_TRIXIE, false],
+            [OS\Debian::class, OS\Debian::BUSTER, true],
+            [OS\Debian::class, OS\Debian::BULLSEYE, true],
+            [OS\Debian::class, OS\Debian::BOOKWORM, true],
+            [OS\Debian::class, OS\Debian::TRIXIE, false],
             [OS\Alpine::class, 310, true],
             [OS\Alpine::class, 316, true],
             [OS\Alpine::class, 317, true],
@@ -374,7 +374,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $php = self::createPHP(804, true);
         $state = M::mock(State::class);
         $alpine = self::createOS(OS\Alpine::class, 318);
-        $debian = self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE);
+        $debian = self::createOS(OS\Debian::class, OS\Debian::TRIXIE);
         self::assertInstanceOf(OS\Posix::class, $alpine);
         self::assertInstanceOf(OS\Posix::class, $debian);
         self::assertSame(['hiredis', 'hiredis-ssl'], (new SystemDependencies\libhiredis($php, $alpine, new Values()))->getSystemPackages($state)->getPersistent());

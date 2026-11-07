@@ -47,7 +47,7 @@ final class libimagemagick extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_BOOKWORM) {
+            if ($this->os->getNumericVersion() <= OS\Debian::BOOKWORM) {
                 return new Packages(
                     ['^libmagickwand-6.q16-[0-9]+$', '^libmagickcore-6.q16-[0-9]+-extra$', 'ghostscript'],
                     ['libmagickwand-dev']

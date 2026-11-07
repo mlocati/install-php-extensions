@@ -53,7 +53,7 @@ final class LetsEncryptFixer
                 return '';
             }
         } elseif ($os instanceof OS\Debian) {
-            if ($os->getNumericVersion() > OS\Debian::VERSION_STRETCH) {
+            if ($os->getNumericVersion() > OS\Debian::STRETCH) {
                 return '';
             }
             $conf = $fs->readFile('/etc/ca-certificates.conf');

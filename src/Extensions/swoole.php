@@ -337,7 +337,7 @@ final class swoole extends Extension implements
 
         // swoole requires libzstd 1.4.0+, but Debian Buster provides 1.3.8 and Ubuntu 18.04 provides 1.3.3
         if ($this->os instanceof OS\Debian) {
-            return $this->os->getNumericVersion() >= OS\Debian::VERSION_BULLSEYE;
+            return $this->os->getNumericVersion() >= OS\Debian::BULLSEYE;
         }
         if ($this->os instanceof OS\Ubuntu) {
             return $this->os->getNumericVersion() >= OS\Ubuntu::FOCAL;
@@ -362,7 +362,7 @@ final class swoole extends Extension implements
         }
         // swoole requires liburing 2.0+ (2.5+ for 6.0.0, 2.8+ for 6.2.0): we only use it where it's known to work
         if ($this->os instanceof OS\Debian) {
-            return $this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE;
+            return $this->os->getNumericVersion() >= OS\Debian::TRIXIE;
         }
         if ($this->os instanceof OS\Ubuntu) {
             return $this->os->getNumericVersion() >= OS\Ubuntu::RESOLUTE;

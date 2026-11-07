@@ -79,7 +79,7 @@ final class libcclient extends SystemDependency
         }
         if ($this->os instanceof OS\Debian) {
             $version = $this->os->getNumericVersion();
-            if ($version <= OS\Debian::VERSION_BOOKWORM) {
+            if ($version <= OS\Debian::BOOKWORM) {
                 return new Packages(
                     ['libc-client2007e'],
                     ['libkrb5-dev', 'libc-client-dev']
@@ -117,7 +117,7 @@ final class libcclient extends SystemDependency
         if (!$this->os instanceof OS\Debian) {
             return;
         }
-        if ($this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE) {
+        if ($this->os->getNumericVersion() >= OS\Debian::TRIXIE) {
             $this->installPackagesOfBookworm($state);
         }
     }

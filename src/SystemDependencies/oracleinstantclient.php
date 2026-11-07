@@ -118,7 +118,7 @@ final class oracleinstantclient extends SystemDependency
             return new Packages(['libaio', 'libc6-compat', 'libnsl']);
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_BOOKWORM) {
+            if ($this->os->getNumericVersion() <= OS\Debian::BOOKWORM) {
                 return new Packages(['^libaio[0-9]*$']);
             }
 
@@ -143,7 +143,7 @@ final class oracleinstantclient extends SystemDependency
     public function install(State $state)
     {
         $fs = $this->os->getFilesystem();
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::TRIXIE) {
             $this->linkDebianLibaio();
         }
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() >= OS\Ubuntu::NOBLE) {

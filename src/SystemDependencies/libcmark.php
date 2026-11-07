@@ -92,10 +92,10 @@ final class libcmark extends CompiledLibrary
     private function getVersionToBeCompiled()
     {
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+            if ($this->os->getNumericVersion() <= OS\Debian::JESSIE) {
                 return '0.29.0';
             }
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_BUSTER) {
+            if ($this->os->getNumericVersion() <= OS\Debian::BUSTER) {
                 return '0.31.1';
             }
         }

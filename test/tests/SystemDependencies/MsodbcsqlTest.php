@@ -107,10 +107,10 @@ final class MsodbcsqlTest extends TestCase
         $alpine = $this->createDependency(OS\Alpine::class, 323, 804)->getSystemPackages(M::mock(State::class));
         self::assertSame(['libstdc++', 'unixodbc'], $alpine->getPersistent());
         self::assertSame(['unixodbc-dev'], $alpine->getVolatile());
-        $debian = $this->createDependency(OS\Debian::class, OS\Debian::VERSION_BUSTER, 804)->getSystemPackages(M::mock(State::class));
+        $debian = $this->createDependency(OS\Debian::class, OS\Debian::BUSTER, 804)->getSystemPackages(M::mock(State::class));
         self::assertSame(['unixodbc'], $debian->getPersistent());
         self::assertSame(['unixodbc-dev'], $debian->getVolatile());
-        $old = $this->createDependency(OS\Debian::class, OS\Debian::VERSION_STRETCH, 700)->getSystemPackages(M::mock(State::class));
+        $old = $this->createDependency(OS\Debian::class, OS\Debian::STRETCH, 700)->getSystemPackages(M::mock(State::class));
         self::assertSame(['unixodbc', 'apt-transport-https'], $old->getPersistent());
         self::assertSame(['unixodbc-dev'], $old->getVolatile());
     }
@@ -138,7 +138,7 @@ final class MsodbcsqlTest extends TestCase
      */
     public function testAlreadyInstalled()
     {
-        $this->createDependency(OS\Debian::class, OS\Debian::VERSION_TRIXIE, 804, "[Other]\nDriver=x\n\n[ODBC Driver 18 for SQL Server]\nDriver=y\n")->install(M::mock(State::class));
+        $this->createDependency(OS\Debian::class, OS\Debian::TRIXIE, 804, "[Other]\nDriver=x\n\n[ODBC Driver 18 for SQL Server]\nDriver=y\n")->install(M::mock(State::class));
         self::assertSame([], $this->commands);
         self::assertSame([], $this->downloads);
     }
@@ -149,10 +149,10 @@ final class MsodbcsqlTest extends TestCase
     public static function provideDebianCases()
     {
         return [
-            [OS\Debian::VERSION_TRIXIE, 804, 'microsoft-2025.asc', 'msodbcsql18'],
-            [OS\Debian::VERSION_BOOKWORM, 804, 'microsoft.asc', 'msodbcsql18'],
-            [OS\Debian::VERSION_BUSTER, 703, 'microsoft.asc', 'msodbcsql17'],
-            [OS\Debian::VERSION_FORKY, 804, 'microsoft-2025.asc', '^msodbcsql[0-9]+$'],
+            [OS\Debian::TRIXIE, 804, 'microsoft-2025.asc', 'msodbcsql18'],
+            [OS\Debian::BOOKWORM, 804, 'microsoft.asc', 'msodbcsql18'],
+            [OS\Debian::BUSTER, 703, 'microsoft.asc', 'msodbcsql17'],
+            [OS\Debian::FORKY, 804, 'microsoft-2025.asc', '^msodbcsql[0-9]+$'],
         ];
     }
 
@@ -182,7 +182,7 @@ final class MsodbcsqlTest extends TestCase
      */
     public function testInstallOnDebian8()
     {
-        $this->createDependency(OS\Debian::class, OS\Debian::VERSION_JESSIE, 700)->install(self::createState());
+        $this->createDependency(OS\Debian::class, OS\Debian::JESSIE, 700)->install(self::createState());
         self::assertSame(['https://packages.microsoft.com/keys/microsoft.asc'], $this->downloads);
         self::assertSame(["deb https://packages.microsoft.com/debian/8/prod thecodename main\n"], array_values($this->writtenFiles));
         self::assertCount(2, $this->commands);

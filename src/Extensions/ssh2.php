@@ -84,7 +84,7 @@ final class ssh2 extends Extension implements
         }
 
         // Newer versions require libssh2 1.6, but these systems provide libssh2 1.4.3 or 1.5.0
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::JESSIE) {
             return '1.3.1';
         }
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::XENIAL) {

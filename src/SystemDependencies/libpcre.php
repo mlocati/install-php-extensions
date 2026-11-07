@@ -39,7 +39,7 @@ final class libpcre extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_BOOKWORM) {
+            if ($this->os->getNumericVersion() <= OS\Debian::BOOKWORM) {
                 return new Packages(
                     [],
                     ['libpcre3-dev']

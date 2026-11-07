@@ -17,12 +17,12 @@ final class LetsEncryptFixerTest extends TestCase
     public static function provideFixCases()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_JESSIE, false, false],
-            [OS\Debian::class, OS\Debian::VERSION_JESSIE, true, true],
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, false, false],
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, true, true],
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER, false, false],
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER, true, false],
+            [OS\Debian::class, OS\Debian::JESSIE, false, false],
+            [OS\Debian::class, OS\Debian::JESSIE, true, true],
+            [OS\Debian::class, OS\Debian::STRETCH, false, false],
+            [OS\Debian::class, OS\Debian::STRETCH, true, true],
+            [OS\Debian::class, OS\Debian::BUSTER, false, false],
+            [OS\Debian::class, OS\Debian::BUSTER, true, false],
             [OS\Alpine::class, 307, false, false],
             [OS\Alpine::class, 307, true, true],
             [OS\Alpine::class, 308, false, false],
@@ -88,7 +88,7 @@ final class LetsEncryptFixerTest extends TestCase
     public static function provideFixNotApplicableCases()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER],
+            [OS\Debian::class, OS\Debian::BUSTER],
             [OS\Alpine::class, 309],
             [OS\Windows::class, 100026200],
         ];

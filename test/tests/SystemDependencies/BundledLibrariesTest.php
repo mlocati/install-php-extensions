@@ -100,8 +100,8 @@ final class BundledLibrariesTest extends TestCase
     public function testLibodbc()
     {
         $php = self::createPHP();
-        self::assertPackages(['libodbc1'], ['unixodbc-dev'], (new libodbc($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), new Values()))->getSystemPackages(self::createState()));
-        self::assertPackages(['libodbc2'], ['unixodbc-dev'], (new libodbc($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE), new Values()))->getSystemPackages(self::createState()));
+        self::assertPackages(['libodbc1'], ['unixodbc-dev'], (new libodbc($php, self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), new Values()))->getSystemPackages(self::createState()));
+        self::assertPackages(['libodbc2'], ['unixodbc-dev'], (new libodbc($php, self::createOS(OS\Debian::class, OS\Debian::TRIXIE), new Values()))->getSystemPackages(self::createState()));
         self::assertPackages(['unixodbc'], ['unixodbc-dev'], (new libodbc($php, self::createOS(OS\Alpine::class, 321), new Values()))->getSystemPackages(self::createState()));
     }
 
@@ -111,8 +111,8 @@ final class BundledLibrariesTest extends TestCase
     public function testLibldap()
     {
         $php = self::createPHP();
-        self::assertPackages([], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_JESSIE), new Values()))->getSystemPackages(self::createState()));
-        self::assertPackages(['libldap-common'], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_STRETCH), new Values()))->getSystemPackages(self::createState()));
+        self::assertPackages([], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Debian::class, OS\Debian::JESSIE), new Values()))->getSystemPackages(self::createState()));
+        self::assertPackages(['libldap-common'], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Debian::class, OS\Debian::STRETCH), new Values()))->getSystemPackages(self::createState()));
         self::assertPackages(['libldap-2.4-2'], ['libldap2-dev', 'libsasl2-dev'], (new libldap($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::TRUSTY), new Values()))->getSystemPackages(self::createState()));
         self::assertPackages(['libldap-2.4-2'], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::XENIAL), new Values()))->getSystemPackages(self::createState()));
         self::assertPackages(['libldap-common', 'libldap-2.4-2'], ['libldap2-dev'], (new libldap($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::FOCAL), new Values()))->getSystemPackages(self::createState()));
@@ -135,7 +135,7 @@ final class BundledLibrariesTest extends TestCase
      */
     public function testLibaspellLanguages()
     {
-        $os = self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM);
+        $os = self::createOS(OS\Debian::class, OS\Debian::BOOKWORM);
         $state = self::createState();
         $validator = new Validator(new \IPE\Logger());
         $dependency = new libaspell(self::createPHP(), $os, $validator->validate([], libaspell::getOptions(), false, libaspell::HANDLE));
@@ -167,9 +167,9 @@ final class BundledLibrariesTest extends TestCase
         $state = self::createState();
         self::assertPackages(['enchant'], ['enchant-dev'], self::createLibenchant(OS\Alpine::class, 311, 704)->getSystemPackages($state));
         self::assertPackages(['glib', 'aspell-libs', 'libhunspell'], ['glib-dev', 'aspell-dev', 'hunspell-dev'], self::createLibenchant(OS\Alpine::class, 312, 704)->getSystemPackages($state));
-        self::assertPackages(['libenchant1c2a'], ['libenchant-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::VERSION_BUSTER, 704)->getSystemPackages($state));
-        self::assertPackages(['aspell-en', 'libhunspell-1.7-0'], ['libglib2.0-dev', 'libaspell-dev', 'libhunspell-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 704)->getSystemPackages($state));
-        self::assertTrue(self::createLibenchant(OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 704, ['/usr/local/lib/libenchant.so'])->getSystemPackages($state)->isEmpty());
+        self::assertPackages(['libenchant1c2a'], ['libenchant-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::BUSTER, 704)->getSystemPackages($state));
+        self::assertPackages(['aspell-en', 'libhunspell-1.7-0'], ['libglib2.0-dev', 'libaspell-dev', 'libhunspell-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::BULLSEYE, 704)->getSystemPackages($state));
+        self::assertTrue(self::createLibenchant(OS\Debian::class, OS\Debian::BULLSEYE, 704, ['/usr/local/lib/libenchant.so'])->getSystemPackages($state)->isEmpty());
     }
 
     /**
@@ -179,10 +179,10 @@ final class BundledLibrariesTest extends TestCase
     {
         $php = self::createPHP();
         $state = self::createState();
-        self::assertPackages(['libargon2-0'], ['libargon2-0-dev'], (new libargon2($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_STRETCH), new Values()))->getSystemPackages($state));
-        self::assertPackages(['libargon2-1'], ['libargon2-dev'], (new libargon2($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE), new Values()))->getSystemPackages($state));
+        self::assertPackages(['libargon2-0'], ['libargon2-0-dev'], (new libargon2($php, self::createOS(OS\Debian::class, OS\Debian::STRETCH), new Values()))->getSystemPackages($state));
+        self::assertPackages(['libargon2-1'], ['libargon2-dev'], (new libargon2($php, self::createOS(OS\Debian::class, OS\Debian::TRIXIE), new Values()))->getSystemPackages($state));
         self::assertPackages(['argon2-libs'], ['argon2-dev'], (new libargon2($php, self::createOS(OS\Alpine::class, 308), new Values()))->getSystemPackages($state));
-        self::assertUnsupportedOS(new libargon2($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_JESSIE), new Values()));
+        self::assertUnsupportedOS(new libargon2($php, self::createOS(OS\Debian::class, OS\Debian::JESSIE), new Values()));
         self::assertUnsupportedOS(new libargon2($php, self::createOS(OS\Alpine::class, 307), new Values()));
     }
 
@@ -193,8 +193,8 @@ final class BundledLibrariesTest extends TestCase
     {
         $php = self::createPHP();
         $state = self::createState();
-        self::assertPackages(['libpam0g'], ['libpam0g-dev'], (new libpam($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), new Values()))->getSystemPackages($state));
-        self::assertPackages(['libpam0g'], ['libpam0g-dev', 'libaudit-dev'], (new libpam($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE), new Values()))->getSystemPackages($state));
+        self::assertPackages(['libpam0g'], ['libpam0g-dev'], (new libpam($php, self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), new Values()))->getSystemPackages($state));
+        self::assertPackages(['libpam0g'], ['libpam0g-dev', 'libaudit-dev'], (new libpam($php, self::createOS(OS\Debian::class, OS\Debian::TRIXIE), new Values()))->getSystemPackages($state));
     }
 
     /**
@@ -214,10 +214,10 @@ final class BundledLibrariesTest extends TestCase
     {
         $php = self::createPHP();
         $state = self::createState();
-        $jessie = self::createOS(OS\Debian::class, OS\Debian::VERSION_JESSIE);
-        $stretch = self::createOS(OS\Debian::class, OS\Debian::VERSION_STRETCH);
-        $buster = self::createOS(OS\Debian::class, OS\Debian::VERSION_BUSTER);
-        $trixie = self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE);
+        $jessie = self::createOS(OS\Debian::class, OS\Debian::JESSIE);
+        $stretch = self::createOS(OS\Debian::class, OS\Debian::STRETCH);
+        $buster = self::createOS(OS\Debian::class, OS\Debian::BUSTER);
+        $trixie = self::createOS(OS\Debian::class, OS\Debian::TRIXIE);
         self::assertPackages(['libfreetype6'], ['libfreetype6-dev'], (new libfreetype2($php, $buster, new Values()))->getSystemPackages($state));
         self::assertPackages(['libfreetype6'], ['libfreetype-dev'], (new libfreetype2($php, $trixie, new Values()))->getSystemPackages($state));
         self::assertPackages(['librdkafka1'], ['librdkafka-dev'], (new librdkafka($php, $trixie, new Values()))->getSystemPackages($state));
@@ -255,9 +255,9 @@ final class BundledLibrariesTest extends TestCase
         $php = self::createPHP();
         $state = self::createState();
         self::assertPackages(['enchant2'], ['enchant2-dev'], (new libenchant2($php, self::createOS(OS\Alpine::class, 312), new Values()))->getSystemPackages($state));
-        self::assertPackages(['libenchant-2-2'], ['libenchant-2-dev'], (new libenchant2($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_BULLSEYE), new Values()))->getSystemPackages($state));
+        self::assertPackages(['libenchant-2-2'], ['libenchant-2-dev'], (new libenchant2($php, self::createOS(OS\Debian::class, OS\Debian::BULLSEYE), new Values()))->getSystemPackages($state));
         self::assertUnsupportedOS(new libenchant2($php, self::createOS(OS\Alpine::class, 311), new Values()));
-        self::assertUnsupportedOS(new libenchant2($php, self::createOS(OS\Debian::class, OS\Debian::VERSION_BUSTER), new Values()));
+        self::assertUnsupportedOS(new libenchant2($php, self::createOS(OS\Debian::class, OS\Debian::BUSTER), new Values()));
     }
 
     /**
@@ -269,9 +269,9 @@ final class BundledLibrariesTest extends TestCase
             [OS\Alpine::class, 311, 800, libenchant::HANDLE],
             [OS\Alpine::class, 312, 704, libenchant::HANDLE],
             [OS\Alpine::class, 312, 800, libenchant2::HANDLE],
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER, 800, libenchant::HANDLE],
-            [OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 704, libenchant::HANDLE],
-            [OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 800, libenchant2::HANDLE],
+            [OS\Debian::class, OS\Debian::BUSTER, 800, libenchant::HANDLE],
+            [OS\Debian::class, OS\Debian::BULLSEYE, 704, libenchant::HANDLE],
+            [OS\Debian::class, OS\Debian::BULLSEYE, 800, libenchant2::HANDLE],
         ];
         foreach ($cases as $case) {
             $extension = new enchant(self::createPHP($case[2]), self::createOS($case[0], $case[1]));
@@ -312,8 +312,8 @@ final class BundledLibrariesTest extends TestCase
     public function testLibfbclient()
     {
         $state = self::createState();
-        self::assertPackages(['libfbclient2'], ['firebird-dev', 'libib-util'], self::createLibfbclient(OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 804)->getSystemPackages($state));
-        self::assertSame([], self::createLibfbclient(OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 804)->getRequiredDependencies());
+        self::assertPackages(['libfbclient2'], ['firebird-dev', 'libib-util'], self::createLibfbclient(OS\Debian::class, OS\Debian::BOOKWORM, 804)->getSystemPackages($state));
+        self::assertSame([], self::createLibfbclient(OS\Debian::class, OS\Debian::BOOKWORM, 804)->getRequiredDependencies());
         self::assertPackages([], ['icu-dev', 'ncurses-dev'], self::createLibfbclient(OS\Alpine::class, 321, 803)->getSystemPackages($state));
         self::assertSame([], self::createLibfbclient(OS\Alpine::class, 321, 803)->getRequiredDependencies());
         self::assertPackages(['libstdc++'], ['icu-dev', 'ncurses-dev', 'zlib-dev'], self::createLibfbclient(OS\Alpine::class, 321, 804)->getSystemPackages($state));
@@ -330,9 +330,9 @@ final class BundledLibrariesTest extends TestCase
     {
         $state = self::createState();
         self::assertPackages(['c-client'], ['krb5-dev', 'imap-dev'], self::createLibcclient(OS\Alpine::class, 321)->getSystemPackages($state));
-        self::assertPackages(['libc-client2007e'], ['libkrb5-dev', 'libc-client-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::VERSION_BOOKWORM)->getSystemPackages($state));
-        self::assertPackages(['sgml-base'], ['libkrb5-dev', 'libpam0g-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::VERSION_TRIXIE)->getSystemPackages($state));
-        self::assertPackages(['sgml-base'], ['libkrb5-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::VERSION_TRIXIE, ['/usr/lib/libc-client.so.2007e', '/usr/include/c-client/utf8.h'])->getSystemPackages($state));
-        self::assertSame(['lib-openssl'], self::createLibcclient(OS\Debian::class, OS\Debian::VERSION_TRIXIE)->getRequiredDependencies());
+        self::assertPackages(['libc-client2007e'], ['libkrb5-dev', 'libc-client-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::BOOKWORM)->getSystemPackages($state));
+        self::assertPackages(['sgml-base'], ['libkrb5-dev', 'libpam0g-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::TRIXIE)->getSystemPackages($state));
+        self::assertPackages(['sgml-base'], ['libkrb5-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::TRIXIE, ['/usr/lib/libc-client.so.2007e', '/usr/include/c-client/utf8.h'])->getSystemPackages($state));
+        self::assertSame(['lib-openssl'], self::createLibcclient(OS\Debian::class, OS\Debian::TRIXIE)->getRequiredDependencies());
     }
 }

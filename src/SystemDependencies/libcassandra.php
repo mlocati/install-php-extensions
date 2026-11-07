@@ -48,7 +48,7 @@ final class libcassandra extends CompiledLibrary
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+            if ($this->os->getNumericVersion() <= OS\Debian::JESSIE) {
                 // libuv1 is missing
                 throw $this->createNotProvidedException();
             }

@@ -102,7 +102,7 @@ final class OnDebian extends APT
      */
     protected function createAptGetCommand(array $arguments)
     {
-        if ($this->os->getNumericVersion() !== OS\Debian::VERSION_JESSIE) {
+        if ($this->os->getNumericVersion() !== OS\Debian::JESSIE) {
             return parent::createAptGetCommand($arguments);
         }
         // apt-get is very slow when the limit is very high: a shell is required since PHP can't change the limit before 7.0
@@ -173,20 +173,20 @@ final class OnDebian extends APT
     private function firstRefresh()
     {
         $version = $this->os->getNumericVersion();
-        if ($version > OS\Debian::VERSION_BULLSEYE) {
+        if ($version > OS\Debian::BULLSEYE) {
             return false;
         }
         // Only bullseye-updates is available in the Debian archive
-        $hasUpdates = $version === OS\Debian::VERSION_BULLSEYE;
+        $hasUpdates = $version === OS\Debian::BULLSEYE;
         $securityUrl = $this->archiveUrls['security'];
-        if ($version === OS\Debian::VERSION_BULLSEYE && $securityUrl === self::ARCHIVEURL_SECURITY) {
+        if ($version === OS\Debian::BULLSEYE && $securityUrl === self::ARCHIVEURL_SECURITY) {
             $securityUrl = self::ARCHIVEURL_SECURITY_BULLSEYE;
         }
         $fs = $this->os->getFilesystem();
         $process = [
             '/etc/apt/sources.list' => $this->os->getCodename(),
         ];
-        if ($this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH && $fs->exists('/etc/apt/sources.list.d/buster.list')) {
+        if ($this->os->getNumericVersion() === OS\Debian::STRETCH && $fs->exists('/etc/apt/sources.list.d/buster.list')) {
             $process['/etc/apt/sources.list.d/buster.list'] = 'buster';
         }
         foreach ($process as $file => $codename) {
@@ -206,7 +206,7 @@ final class OnDebian extends APT
             $fs->writeFile($file, $newConfig);
             $fs->run(Command::raw("echo '\\nNEW CONTENT:' && grep -vE '^[ \\t]*#' {$quotedFile} && printf '\\n\\n'")->withOutput(Command::OUTPUT_SHOW));
         }
-        if ($version === OS\Debian::VERSION_BULLSEYE) {
+        if ($version === OS\Debian::BULLSEYE) {
             // The Release file of the security snapshot is expired
             $fs->writeFile('/etc/apt/apt.conf.d/99-ipe-no-check-valid-until', "Acquire::Check-Valid-Until \"false\";\n");
         }

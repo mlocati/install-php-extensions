@@ -16,49 +16,49 @@ class Debian implements Posix
      * @public
      * @var positive-int
      */
-    const VERSION_JESSIE = 8;
+    const JESSIE = 8;
 
     /**
      * @public
      * @var positive-int
      */
-    const VERSION_STRETCH = 9;
+    const STRETCH = 9;
 
     /**
      * @public
      * @var positive-int
      */
-    const VERSION_BUSTER = 10;
+    const BUSTER = 10;
 
     /**
      * @public
      * @var positive-int
      */
-    const VERSION_BULLSEYE = 11;
+    const BULLSEYE = 11;
 
     /**
      * @public
      * @var positive-int
      */
-    const VERSION_BOOKWORM = 12;
+    const BOOKWORM = 12;
 
     /**
      * @public
      * @var positive-int
      */
-    const VERSION_TRIXIE = 13;
+    const TRIXIE = 13;
 
     /**
      * @public
      * @var positive-int
      */
-    const VERSION_FORKY = 14;
+    const FORKY = 14;
 
     /**
      * @public
      * @var positive-int
      */
-    const VERSION_DUKE = 15;
+    const DUKE = 15;
 
     /**
      * @var \IPE\Filesystem
