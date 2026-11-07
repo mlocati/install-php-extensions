@@ -173,8 +173,8 @@ final class OracleinstantclientTest extends TestCase
     {
         $state = self::createState();
         self::assertSame(['libaio', 'libc6-compat', 'libnsl'], $this->createDependency(self::createOS(OS\Alpine::class))->getSystemPackages($state)->getPersistent());
-        self::assertSame(['libaio1t64'], $this->createDependency(self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE))->getSystemPackages($state)->getPersistent());
-        self::assertSame(['^libaio[0-9]*$'], $this->createDependency(self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE - 1))->getSystemPackages($state)->getPersistent());
+        self::assertSame(['libaio1t64'], $this->createDependency(self::createOS(OS\Debian::class, OS\Debian::TRIXIE))->getSystemPackages($state)->getPersistent());
+        self::assertSame(['^libaio[0-9]*$'], $this->createDependency(self::createOS(OS\Debian::class, OS\Debian::TRIXIE - 1))->getSystemPackages($state)->getPersistent());
         self::assertSame([unzip::HANDLE], $this->createDependency(self::createOS(OS\Debian::class))->getRequiredDependencies());
         $this->expectException(Exception\UnsupportedOS::class);
         $this->createDependency(M::mock(OS\Posix::class)->shouldIgnoreMissing())->getSystemPackages($state);
@@ -220,7 +220,7 @@ final class OracleinstantclientTest extends TestCase
     public function testInstallOnDebian()
     {
         $directory = '/usr/lib/x86_64-linux-gnu';
-        $os = self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE, OS\Architecture::X64, $this->createFilesystem(["{$directory}/libaio.so.1t64"]));
+        $os = self::createOS(OS\Debian::class, OS\Debian::TRIXIE, OS\Architecture::X64, $this->createFilesystem(["{$directory}/libaio.so.1t64"]));
         $dependency = $this->createDependency($os);
         $state = self::createState();
         $dependency->install($state);
@@ -245,7 +245,7 @@ final class OracleinstantclientTest extends TestCase
      */
     public function testBasicPackage()
     {
-        $os = self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE - 1, OS\Architecture::X64, $this->createFilesystem());
+        $os = self::createOS(OS\Debian::class, OS\Debian::TRIXIE - 1, OS\Architecture::X64, $this->createFilesystem());
         $this->createDependency($os, true)->install(self::createState());
         self::assertStringContainsString('/instantclient-basic-linux.x64-', $this->downloads[0]);
         self::assertNotContains('gcc', $this->commands);

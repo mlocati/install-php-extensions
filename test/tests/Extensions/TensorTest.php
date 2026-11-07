@@ -49,8 +49,8 @@ final class TensorTest extends TestCase
     public static function provideCompilerFlags()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, true],
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER, false],
+            [OS\Debian::class, OS\Debian::STRETCH, true],
+            [OS\Debian::class, OS\Debian::BUSTER, false],
             [OS\Alpine::class, 312, false],
         ];
     }

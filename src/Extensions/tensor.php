@@ -111,7 +111,7 @@ final class tensor extends Extension implements
     public function getCompilerFlags(Extension\BuildContext $context)
     {
         // On Debian Stretch, /usr/include/cblas.h comes from libblas-dev and doesn't declare the OpenBLAS functions
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::STRETCH) {
             return '-Wno-incompatible-pointer-types -I/usr/include/openblas';
         }
 

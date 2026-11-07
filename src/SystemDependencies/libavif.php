@@ -154,7 +154,7 @@ class libavif extends CompiledLibrary
             return $os->getNumericVersion() >= (self::requiresVersion1($php) ? 319 : 315);
         }
         if ($os instanceof OS\Debian) {
-            return $os->getNumericVersion() >= (self::requiresVersion1($php) ? OS\Debian::VERSION_TRIXIE : OS\Debian::VERSION_BOOKWORM);
+            return $os->getNumericVersion() >= (self::requiresVersion1($php) ? OS\Debian::TRIXIE : OS\Debian::BOOKWORM);
         }
         if ($os instanceof OS\Ubuntu) {
             return $os->getNumericVersion() >= (self::requiresVersion1($php) ? OS\Ubuntu::NOBLE : OS\Ubuntu::JAMMY);

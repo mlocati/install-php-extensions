@@ -100,7 +100,7 @@ final class amqp extends Extension implements
      */
     public function getDefaultVersionRequirements()
     {
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::JESSIE) {
             // This system provides librabbitmq 0.5.2
             return '1.9.3';
         }

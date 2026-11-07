@@ -168,7 +168,7 @@ final class redis extends Extension implements
     private function systemProvidesZstd()
     {
         if ($this->os instanceof OS\Debian) {
-            return $this->os->getNumericVersion() > OS\Debian::VERSION_STRETCH;
+            return $this->os->getNumericVersion() > OS\Debian::STRETCH;
         }
         if ($this->os instanceof OS\Ubuntu) {
             return $this->os->getNumericVersion() > OS\Ubuntu::XENIAL;

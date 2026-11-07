@@ -65,9 +65,9 @@ final class LibcclientTest extends TestCase
     public static function provideSystemPackagesCases()
     {
         return [
-            [OS\Debian::VERSION_STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018', ['libc-client2007e'], ['libkrb5-dev', 'libpam0g-dev']],
-            [OS\Debian::VERSION_STRETCH, 'OpenSSL 1.1.0j  20 Nov 2018', ['libc-client2007e'], ['libkrb5-dev', 'libc-client-dev']],
-            [OS\Debian::VERSION_BOOKWORM, 'OpenSSL 3.0.15 3 Sep 2024', ['libc-client2007e'], ['libkrb5-dev', 'libc-client-dev']],
+            [OS\Debian::STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018', ['libc-client2007e'], ['libkrb5-dev', 'libpam0g-dev']],
+            [OS\Debian::STRETCH, 'OpenSSL 1.1.0j  20 Nov 2018', ['libc-client2007e'], ['libkrb5-dev', 'libc-client-dev']],
+            [OS\Debian::BOOKWORM, 'OpenSSL 3.0.15 3 Sep 2024', ['libc-client2007e'], ['libkrb5-dev', 'libc-client-dev']],
         ];
     }
 
@@ -93,7 +93,7 @@ final class LibcclientTest extends TestCase
      */
     public function testStretchWithOpenSSL10IgnoresLibsslDev()
     {
-        $dependency = $this->createDependency(OS\Debian::VERSION_STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018', ['libc-client2007e-dev_8%3a2007f~dfsg-5+deb9u1_amd64.deb']);
+        $dependency = $this->createDependency(OS\Debian::STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018', ['libc-client2007e-dev_8%3a2007f~dfsg-5+deb9u1_amd64.deb']);
         $dependency->install(self::createState());
         $dependency->finalize(self::createState());
         $commands = $this->describeCommands();
@@ -115,7 +115,7 @@ final class LibcclientTest extends TestCase
      */
     public function testStretchWithOpenSSL10FailsWithoutDownloadedPackage()
     {
-        $dependency = $this->createDependency(OS\Debian::VERSION_STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018');
+        $dependency = $this->createDependency(OS\Debian::STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018');
         $this->expectException(Exception\IO::class);
         $this->expectExceptionMessage('Failed to download libc-client2007e-dev');
         $dependency->install(self::createState());
@@ -126,7 +126,7 @@ final class LibcclientTest extends TestCase
      */
     public function testStretchWithOpenSSL11UsesAPT()
     {
-        $dependency = $this->createDependency(OS\Debian::VERSION_STRETCH, 'OpenSSL 1.1.0j  20 Nov 2018');
+        $dependency = $this->createDependency(OS\Debian::STRETCH, 'OpenSSL 1.1.0j  20 Nov 2018');
         $dependency->install(self::createState());
         $dependency->finalize(self::createState());
         self::assertSame([], $this->describeCommands());

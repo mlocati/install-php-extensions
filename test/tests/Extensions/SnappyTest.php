@@ -17,9 +17,9 @@ final class SnappyTest extends TestCase
     public static function provideDefaultVersions()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, snappy::VERSION],
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER, '0.2.1'],
-            [OS\Debian::class, OS\Debian::VERSION_BULLSEYE, snappy::VERSION],
+            [OS\Debian::class, OS\Debian::STRETCH, snappy::VERSION],
+            [OS\Debian::class, OS\Debian::BUSTER, '0.2.1'],
+            [OS\Debian::class, OS\Debian::BULLSEYE, snappy::VERSION],
             [OS\Alpine::class, 310, '0.2.1'],
             [OS\Alpine::class, 311, '0.2.1'],
             [OS\Alpine::class, 312, snappy::VERSION],

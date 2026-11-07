@@ -81,16 +81,16 @@ final class grpc extends Extension implements
         }
         if ($this->os instanceof OS\Debian) {
             $osVersion = $this->os->getNumericVersion();
-            if ($osVersion <= OS\Debian::VERSION_JESSIE) {
+            if ($osVersion <= OS\Debian::JESSIE) {
                 return '1.46.3';
             }
-            if ($osVersion <= OS\Debian::VERSION_STRETCH) {
+            if ($osVersion <= OS\Debian::STRETCH) {
                 // Newer versions require GCC 7
                 return '1.52.1';
             }
 
             // Newer versions require GCC 10
-            return $osVersion <= OS\Debian::VERSION_BUSTER ? '1.84.0' : '';
+            return $osVersion <= OS\Debian::BUSTER ? '1.84.0' : '';
         }
         if ($this->os instanceof OS\Ubuntu) {
             $osVersion = $this->os->getNumericVersion();

@@ -57,25 +57,25 @@ final class liblapack extends SystemDependency
         if ($this->os instanceof OS\Debian) {
             $osVersion = $this->os->getNumericVersion();
             $volatile = ['liblapack-dev', 'libopenblas-dev', 'liblapacke-dev'];
-            if ($osVersion <= OS\Debian::VERSION_STRETCH) {
+            if ($osVersion <= OS\Debian::STRETCH) {
                 return new Packages(
                     ['liblapacke', 'gfortran-6', 'libopenblas-base'],
                     array_merge($volatile, ['libgfortran-6-dev'])
                 );
             }
-            if ($osVersion <= OS\Debian::VERSION_BUSTER) {
+            if ($osVersion <= OS\Debian::BUSTER) {
                 return new Packages(
                     ['liblapacke', 'gfortran-8', 'libopenblas-base'],
                     array_merge($volatile, ['libgfortran-8-dev'])
                 );
             }
-            if ($osVersion <= OS\Debian::VERSION_BULLSEYE) {
+            if ($osVersion <= OS\Debian::BULLSEYE) {
                 return new Packages(
                     ['liblapacke', 'gfortran-10', 'libopenblas-base'],
                     array_merge($volatile, ['libgfortran-10-dev'])
                 );
             }
-            if ($osVersion <= OS\Debian::VERSION_BOOKWORM) {
+            if ($osVersion <= OS\Debian::BOOKWORM) {
                 return new Packages(
                     ['liblapacke', 'gfortran-12', 'libopenblas0'],
                     array_merge($volatile, ['libgfortran-12-dev'])

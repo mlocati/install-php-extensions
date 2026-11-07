@@ -91,7 +91,7 @@ final class rdkafka extends Extension implements
             return '3.0.5';
         }
         // This system provides a librdkafka older than 0.11
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_STRETCH) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::STRETCH) {
             return '3.1.3';
         }
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::XENIAL) {

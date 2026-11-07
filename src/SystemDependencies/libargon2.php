@@ -44,10 +44,10 @@ final class libargon2 extends SystemDependency
         }
         if ($this->os instanceof OS\Debian) {
             $version = $this->os->getNumericVersion();
-            if ($version <= OS\Debian::VERSION_JESSIE) {
+            if ($version <= OS\Debian::JESSIE) {
                 throw $this->createNotProvidedException();
             }
-            if ($version <= OS\Debian::VERSION_STRETCH) {
+            if ($version <= OS\Debian::STRETCH) {
                 return new Packages(
                     ['libargon2-0'],
                     ['libargon2-0-dev']

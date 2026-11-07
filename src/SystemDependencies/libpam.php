@@ -39,7 +39,7 @@ final class libpam extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_BOOKWORM) {
+            if ($this->os->getNumericVersion() <= OS\Debian::BOOKWORM) {
                 return new Packages(
                     ['libpam0g'],
                     ['libpam0g-dev']

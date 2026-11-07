@@ -43,20 +43,20 @@ final class SwooleTest extends TestCase
     public static function provideDefaultVersions()
     {
         return [
-            [505, OS\Debian::class, OS\Debian::VERSION_JESSIE, 64, '2.0.10'],
+            [505, OS\Debian::class, OS\Debian::JESSIE, 64, '2.0.10'],
             [506, OS\Alpine::class, 308, 64, '2.0.11'],
-            [700, OS\Debian::class, OS\Debian::VERSION_STRETCH, 64, '4.3.6'],
-            [701, OS\Debian::class, OS\Debian::VERSION_BUSTER, 64, '4.5.10'],
-            [704, OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 64, '4.8.11'],
-            [704, OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 32, '4.8.11'],
-            [802, OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 32, '5.0.3'],
+            [700, OS\Debian::class, OS\Debian::STRETCH, 64, '4.3.6'],
+            [701, OS\Debian::class, OS\Debian::BUSTER, 64, '4.5.10'],
+            [704, OS\Debian::class, OS\Debian::BULLSEYE, 64, '4.8.11'],
+            [704, OS\Debian::class, OS\Debian::BULLSEYE, 32, '4.8.11'],
+            [802, OS\Debian::class, OS\Debian::BOOKWORM, 32, '5.0.3'],
             [802, OS\Alpine::class, 320, 32, '5.0.3'],
             [800, OS\Alpine::class, 312, 64, '5.1.2'],
             [801, OS\Alpine::class, 315, 64, '5.1.8'],
-            [800, OS\Debian::class, OS\Debian::VERSION_BULLSEYE, 64, '5.1.3'],
-            [801, OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 64, '6.1.7'],
+            [800, OS\Debian::class, OS\Debian::BULLSEYE, 64, '5.1.3'],
+            [801, OS\Debian::class, OS\Debian::BOOKWORM, 64, '6.1.7'],
             [802, OS\Alpine::class, 321, 64, ''],
-            [804, OS\Debian::class, OS\Debian::VERSION_TRIXIE, 64, ''],
+            [804, OS\Debian::class, OS\Debian::TRIXIE, 64, ''],
         ];
     }
 
@@ -82,7 +82,7 @@ final class SwooleTest extends TestCase
     public function testNoDefaultVersionFor32BitsWithRecentPHP()
     {
         $this->expectException(Exception\UnsupportedExtension::class);
-        self::createExtension(803, OS\Debian::class, OS\Debian::VERSION_TRIXIE, false, 32)->getDefaultVersionRequirements();
+        self::createExtension(803, OS\Debian::class, OS\Debian::TRIXIE, false, 32)->getDefaultVersionRequirements();
     }
 
     /**
@@ -159,7 +159,7 @@ final class SwooleTest extends TestCase
      */
     public function testConfigureArguments($version, array $expected)
     {
-        self::assertSame($expected, self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE, true)->getConfigureArguments(self::createBuildContext($version)));
+        self::assertSame($expected, self::createExtension(804, OS\Debian::class, OS\Debian::TRIXIE, true)->getConfigureArguments(self::createBuildContext($version)));
     }
 
     /**
@@ -167,7 +167,7 @@ final class SwooleTest extends TestCase
      */
     public function testThreadSupportRequiresZTS()
     {
-        self::assertNotContains('--enable-swoole-thread', self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE)->getConfigureArguments(self::createBuildContext('6.2.0')));
+        self::assertNotContains('--enable-swoole-thread', self::createExtension(804, OS\Debian::class, OS\Debian::TRIXIE)->getConfigureArguments(self::createBuildContext('6.2.0')));
     }
 
     /**
@@ -176,9 +176,9 @@ final class SwooleTest extends TestCase
     public static function provideIOUring()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, '6.2.0', false],
-            [OS\Debian::class, OS\Debian::VERSION_TRIXIE, '5.1.0', false],
-            [OS\Debian::class, OS\Debian::VERSION_TRIXIE, '6.0.0', true],
+            [OS\Debian::class, OS\Debian::BOOKWORM, '6.2.0', false],
+            [OS\Debian::class, OS\Debian::TRIXIE, '5.1.0', false],
+            [OS\Debian::class, OS\Debian::TRIXIE, '6.0.0', true],
             [OS\Alpine::class, 319, '6.0.0', false],
             [OS\Alpine::class, 320, '6.0.0', true],
             [OS\Alpine::class, 320, '6.2.0', false],
@@ -211,7 +211,7 @@ final class SwooleTest extends TestCase
      */
     public function testDatabasesAndCompressionDependOnTheEnvironment()
     {
-        $old = self::createExtension(801, OS\Debian::class, OS\Debian::VERSION_BUSTER);
+        $old = self::createExtension(801, OS\Debian::class, OS\Debian::BUSTER);
         $arguments = $old->getConfigureArguments(self::createBuildContext('6.1.0'));
         self::assertNotContains('--enable-zstd', $arguments);
         self::assertContains('--enable-swoole-sqlite', $arguments);
@@ -229,10 +229,10 @@ final class SwooleTest extends TestCase
      */
     public function testSocketsSupport()
     {
-        $without = self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE);
+        $without = self::createExtension(804, OS\Debian::class, OS\Debian::TRIXIE);
         self::assertNotContains('--enable-sockets', $without->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertSame(['sockets'], $without->getOptionalExtensions('6.2.0'));
-        $with = self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE, false, 64, ['Core', 'sockets']);
+        $with = self::createExtension(804, OS\Debian::class, OS\Debian::TRIXIE, false, 64, ['Core', 'sockets']);
         self::assertContains('--enable-sockets', $with->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertSame([], $with->getConfigureArguments(self::createBuildContext('2.0.10')));
     }

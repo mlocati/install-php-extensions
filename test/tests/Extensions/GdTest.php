@@ -73,8 +73,8 @@ final class GdTest extends TestCase
     public static function provideAvailability()
     {
         return [
-            [OS\Debian::VERSION_BOOKWORM, true],
-            [OS\Debian::VERSION_BULLSEYE, false],
+            [OS\Debian::BOOKWORM, true],
+            [OS\Debian::BULLSEYE, false],
         ];
     }
 

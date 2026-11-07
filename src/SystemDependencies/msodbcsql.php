@@ -99,7 +99,7 @@ final class msodbcsql extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_STRETCH) {
+            if ($this->os->getNumericVersion() <= OS\Debian::STRETCH) {
                 return new Packages(
                     // APT supports HTTPS by itself since Debian 10: before that, apt-get update would always fail without this package since the Microsoft repository stays configured
                     ['unixodbc', 'apt-transport-https'],
@@ -235,9 +235,9 @@ final class msodbcsql extends SystemDependency
         $this->installFromMicrosoftRepository(
             $os,
             "debian/{$version}/prod {$os->getCodename()}",
-            $version >= OS\Debian::VERSION_TRIXIE ? 'microsoft-2025.asc' : 'microsoft.asc',
+            $version >= OS\Debian::TRIXIE ? 'microsoft-2025.asc' : 'microsoft.asc',
             // The APT of Debian 8 doesn't support signed-by
-            $version >= OS\Debian::VERSION_STRETCH,
+            $version >= OS\Debian::STRETCH,
             $this->getDebianPackage($os),
             $state
         );
@@ -331,7 +331,7 @@ final class msodbcsql extends SystemDependency
         }
 
         // Up to Debian 13 both the drivers 17 and 18 are available: let's install just one
-        return $os->getNumericVersion() <= OS\Debian::VERSION_TRIXIE ? 'msodbcsql18' : '^msodbcsql[0-9]+$';
+        return $os->getNumericVersion() <= OS\Debian::TRIXIE ? 'msodbcsql18' : '^msodbcsql[0-9]+$';
     }
 
     /**

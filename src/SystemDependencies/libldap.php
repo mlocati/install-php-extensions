@@ -39,7 +39,7 @@ final class libldap extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE) {
+            if ($this->os->getNumericVersion() <= OS\Debian::JESSIE) {
                 return new Packages(
                     [],
                     ['libldap2-dev']

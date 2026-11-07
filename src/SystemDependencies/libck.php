@@ -36,10 +36,10 @@ class libck extends SystemDependency
             return new Packages(['ck']);
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_STRETCH) {
+            if ($this->os->getNumericVersion() <= OS\Debian::STRETCH) {
                 return new Packages(['libck0']);
             }
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_BUSTER) {
+            if ($this->os->getNumericVersion() <= OS\Debian::BUSTER) {
                 throw $this->createNotProvidedException();
             }
 

@@ -17,10 +17,10 @@ final class Lz4Test extends TestCase
     public static function provideDefaultVersions()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, 704, '0.4.4'],
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 704, lz4::VERSION],
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 800, '0.4.4'],
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, 801, lz4::VERSION],
+            [OS\Debian::class, OS\Debian::STRETCH, 704, '0.4.4'],
+            [OS\Debian::class, OS\Debian::BOOKWORM, 704, lz4::VERSION],
+            [OS\Debian::class, OS\Debian::BOOKWORM, 800, '0.4.4'],
+            [OS\Debian::class, OS\Debian::BOOKWORM, 801, lz4::VERSION],
             [OS\Ubuntu::class, OS\Ubuntu::BIONIC, 801, '0.4.4'],
             [OS\Ubuntu::class, OS\Ubuntu::FOCAL, 801, lz4::VERSION],
             [OS\Alpine::class, 313, 800, '0.4.4'],

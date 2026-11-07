@@ -74,8 +74,8 @@ final class BundledPatchesTest extends TestCase
     public function testDba()
     {
         $original = 'PHP_DBA_DB_CHECK(4, db-5.1 db-5.0 db)';
-        self::assertPatch(dba::class, self::createPHP('5.5.38'), self::createOS(OS\Debian::class, OS\Debian::VERSION_JESSIE), $original, 'PHP_DBA_DB_CHECK(4, db-5.3 db-5.1 db-5.0 db)');
-        self::assertPatch(dba::class, self::createPHP('5.6.40'), self::createOS(OS\Debian::class, OS\Debian::VERSION_JESSIE), $original, null);
+        self::assertPatch(dba::class, self::createPHP('5.5.38'), self::createOS(OS\Debian::class, OS\Debian::JESSIE), $original, 'PHP_DBA_DB_CHECK(4, db-5.3 db-5.1 db-5.0 db)');
+        self::assertPatch(dba::class, self::createPHP('5.6.40'), self::createOS(OS\Debian::class, OS\Debian::JESSIE), $original, null);
     }
 
     /**
@@ -89,7 +89,7 @@ final class BundledPatchesTest extends TestCase
         self::assertPatch(intl::class, self::createPHP('8.1.33'), self::createOS(OS\Alpine::class, 322), $original, null);
         self::assertPatch(intl::class, self::createPHP('8.1.32'), self::createOS(OS\Alpine::class, 321), $original, null);
         self::assertPatch(intl::class, self::createPHP('8.2.1'), self::createOS(OS\Alpine::class, 322), $original, null);
-        self::assertPatch(intl::class, self::createPHP('8.1.32'), self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE), $original, null);
+        self::assertPatch(intl::class, self::createPHP('8.1.32'), self::createOS(OS\Debian::class, OS\Debian::TRIXIE), $original, null);
     }
 
     /**
@@ -101,9 +101,9 @@ final class BundledPatchesTest extends TestCase
         $original = implode("\n", $lines);
         $expected = $lines;
         array_splice($expected, 69, 0, ['#ifndef _GNU_SOURCE', '#define _GNU_SOURCE', '#endif']);
-        self::assertPatch(sockets::class, self::createPHP('8.1.2'), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), $original, implode("\n", $expected));
-        self::assertPatch(sockets::class, self::createPHP('8.0.15'), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), $original, implode("\n", $expected));
-        self::assertPatch(sockets::class, self::createPHP('8.1.3'), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), $original, null);
+        self::assertPatch(sockets::class, self::createPHP('8.1.2'), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), $original, implode("\n", $expected));
+        self::assertPatch(sockets::class, self::createPHP('8.0.15'), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), $original, implode("\n", $expected));
+        self::assertPatch(sockets::class, self::createPHP('8.1.3'), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), $original, null);
     }
 
     /**

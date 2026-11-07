@@ -39,7 +39,7 @@ final class libfreetype2 extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_BUSTER) {
+            if ($this->os->getNumericVersion() <= OS\Debian::BUSTER) {
                 return new Packages(
                     ['libfreetype6'],
                     ['libfreetype6-dev']

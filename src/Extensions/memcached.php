@@ -120,7 +120,7 @@ final class memcached extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         $result = [SystemDependencies\libmemcached::HANDLE, SystemDependencies\libzlib::HANDLE];
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::VERSION_BOOKWORM) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::BOOKWORM) {
             $result[] = SystemDependencies\libopenssl::HANDLE;
         }
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() >= OS\Ubuntu::NOBLE) {
