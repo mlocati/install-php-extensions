@@ -82,8 +82,15 @@ final class tensor extends Extension implements
         if ($phpVersion <= 703) {
             return '2.2.3';
         }
+        if ($phpVersion <= 704) {
+            return '3.0.5';
+        }
+        // 3.1.0 uses ZSTR_MAX_LEN, which is available since PHP 8.0.10
+        if ($phpVersion <= 800 && version_compare($this->php->getBaseVersion(), '8.0.10') < 0) {
+            return '3.0.5';
+        }
 
-        return $phpVersion <= 704 ? '3.0.5' : '';
+        return '';
     }
 
     /**
