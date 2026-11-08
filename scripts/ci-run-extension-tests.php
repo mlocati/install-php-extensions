@@ -126,6 +126,7 @@ function runTest(string $description, string $image, string $phar, array $extens
                 '--apt-debian-fix-archived=yes',
                 '--fix-letsencrypt=yes',
                 '--unsupported-extensions=skip',
+                '--download-retry=3',
                 '--save-report-to=/ipe/output/report.json',
             ],
             $options,

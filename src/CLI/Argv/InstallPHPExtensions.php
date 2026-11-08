@@ -5,6 +5,7 @@ namespace IPE\CLI\Argv;
 use IPE\CLI\Argv;
 use IPE\Extension;
 use IPE\Extension\Asked\Resolver;
+use IPE\Filesystem\Downloader;
 use IPE\Installer;
 use IPE\Installer\BuildOptions;
 use IPE\SystemDependency;
@@ -50,7 +51,9 @@ final class InstallPHPExtensions extends Argv
             new Option\Definition\StringValue('apt-debian-archiveurl-security', 'The security URL for APT for archived Debian systems', APT\OnDebian::ARCHIVEURL_SECURITY),
             new Option\Definition\StringValue('apt-debian-archiveurl-updates', 'The updates URL for APT for archived Debian systems', APT\OnDebian::ARCHIVEURL_UPDATES),
             new Option\Definition\Flag('no-proxy', "Don't use the proxy configured in the HTTP_PROXY (or http_proxy) environment variable"),
-            new Option\Definition\Flag('insecure', "Don't verify the TLS certificates of the servers when downloading files"),
+            new Option\Definition\Flag('download-insecure', "Don't verify the TLS certificates of the servers when downloading files"),
+            new Option\Definition\IntValue('download-retry', 'How many times a failed download should be retried', 0, 0),
+            new Option\Definition\IntValue('download-delay', 'The number of seconds to wait before retrying a failed download', Downloader\Retrying::DEFAULT_DELAY, 0),
             (new Option\Definition\BoolValue('fix-letsencrypt', "Fix the root CA certificate of Let's Encrypt on old systems"))->setDefaultDescription('yes in the official Docker PHP images, no otherwise'),
             new Option\Definition\StringValue('cache-dir', 'The path to an existing writable directory for dowloaded files cache'),
             new Option\Definition\StringValue('cache-maxage', "The maximum age of cached files (e.g. '30' or '30s' for 30 seconds, '8h' for 8 hours, '7d' for 7 days). With 0 they never expire, so new versions of the extensions won't be detected", '0', '/^\d+[smhd]?$/D'),

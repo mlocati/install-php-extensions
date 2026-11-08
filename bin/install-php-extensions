@@ -217,7 +217,9 @@ try {
                 'cacheDir' => $options->get('cache-dir'),
                 'cacheMaxAge' => $options->get('cache-maxage'),
                 'proxy' => $options->get('no-proxy') ? '' : (getenv('HTTP_PROXY') ?: getenv('http_proxy') ?: ''),
-                'insecure' => $options->getFlag('insecure'),
+                'insecure' => $options->getFlag('download-insecure'),
+                'retries' => $options->getInt('download-retry') ?: 0,
+                'retryDelay' => $options->getInt('download-delay') ?: 0,
             ];
         })
     ;
