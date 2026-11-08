@@ -50,11 +50,6 @@ final class ddtrace extends Extension implements
      */
     private $phpScript;
 
-    /**
-     * @var string
-     */
-    private $versionRequirements = '';
-
     public function __construct(PHPInfo $php, OS $os, Downloader $downloader, PHPScript $phpScript)
     {
         parent::__construct($php, $os);
@@ -148,7 +143,6 @@ final class ddtrace extends Extension implements
         if ($versionRequirements !== '' && !preg_match('/^\d+(\.\d+)*$/D', $versionRequirements)) {
             throw new Exception\UnsupportedExtension("The extension ddtrace can only be installed by specifying an exact version number (you asked for '{$versionRequirements}')");
         }
-        $this->versionRequirements = $versionRequirements;
 
         return '';
     }
@@ -168,11 +162,13 @@ final class ddtrace extends Extension implements
      *
      * @see \IPE\Extension\ProvidesBinaryInstaller::runBinaryInstaller()
      */
-    public function runBinaryInstaller($rootDir, Option\Values $options)
+    public function runBinaryInstaller(Extension\BuildContext $context)
     {
+        $version = $context->getVersion();
+        $options = $context->getOptionValues();
         $base = 'https://github.com/DataDog/dd-trace-php/releases/';
-        $url = $base . ($this->versionRequirements === '' ? 'latest/download' : "download/{$this->versionRequirements}") . '/datadog-setup.php';
-        $setup = "{$rootDir}/datadog-setup.php";
+        $url = $base . ($version === '' ? 'latest/download' : "download/{$version}") . '/datadog-setup.php';
+        $setup = "{$context->getSourceDirectory()}/datadog-setup.php";
         $this->downloader->saveAs($url, $setup);
         $arguments = ['--php-bin=php'];
         if ($options->hasCustomValue(self::OPTION_APPSEC)) {

@@ -194,8 +194,10 @@ final class newrelic extends Extension implements
      *
      * @see \IPE\Extension\ProvidesBinaryInstaller::runBinaryInstaller()
      */
-    public function runBinaryInstaller($rootDir, Option\Values $options)
+    public function runBinaryInstaller(Extension\BuildContext $context)
     {
+        $rootDir = $context->getSourceDirectory();
+        $options = $context->getOptionValues();
         $fs = $this->os->getFilesystem();
         self::runInstaller($fs, $rootDir, 'install');
         if ($options->hasCustomValue(self::OPTION_INSTALL_DAEMON)) {

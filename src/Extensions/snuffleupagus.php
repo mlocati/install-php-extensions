@@ -12,6 +12,7 @@ use IPE\SystemDependencies;
 final class snuffleupagus extends Extension\GitHubExtension implements
     Extension\DeclaresOptions,
     Extension\DeclaresThreadSafetySupport,
+    Extension\ProvidesConfigureArguments,
     Extension\ProvidesIniSettings,
     Extension\RequiresPHPScriptArguments
 {
@@ -106,8 +107,10 @@ final class snuffleupagus extends Extension\GitHubExtension implements
      *
      * @see \IPE\Extension\CompiledFromVendorArchive::prepareVendorSource()
      */
-    public function prepareVendorSource($rootDir, $version, Option\Values $options)
+    public function prepareVendorSource(Extension\BuildContext $context)
     {
+        $rootDir = $context->getSourceDirectory();
+        $version = $context->getVersion();
         $fs = $this->os->getFilesystem();
         $rules = $fs->readFile("{$rootDir}/config/default.rules");
         // This option has been introduced in 0.8.0 and removed in 0.14.0
@@ -115,7 +118,7 @@ final class snuffleupagus extends Extension\GitHubExtension implements
             $rules .= "\n# Disable \"PHP version is not officially maintained anymore\" message\nsp.global.show_old_php_warning.disable();\n";
         }
         $ipeRoot = self::getCLIRootDir();
-        if ($ipeRoot !== '' && $options->hasCustomValue(self::OPTION_ALLOW_IPE)) {
+        if ($ipeRoot !== '' && $context->getOptionValues()->hasCustomValue(self::OPTION_ALLOW_IPE)) {
             // The first matching rule wins
             $rules = self::buildIPEExceptions($rules, $ipeRoot) . $rules;
         }
@@ -127,9 +130,9 @@ final class snuffleupagus extends Extension\GitHubExtension implements
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\CompiledFromVendorArchive::getVendorConfigureArguments()
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getVendorConfigureArguments($rootDir, $version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         return ['--enable-snuffleupagus'];
     }

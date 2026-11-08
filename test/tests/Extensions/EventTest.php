@@ -3,7 +3,6 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Extensions\event;
-use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
 use IPE\PHPInfo\SSLLibrary;
@@ -47,7 +46,7 @@ final class EventTest extends TestCase
         $os = M::mock($osClass);
         self::assertInstanceOf(OS::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
-        $arguments = (new event($php, $os))->getConfigureArguments('', new Values());
+        $arguments = (new event($php, $os))->getConfigureArguments(self::createBuildContext());
         self::assertContains($expected, $arguments);
         self::assertNotContains($expected === '--with-event-openssl' ? '--without-event-openssl' : '--with-event-openssl', $arguments);
     }

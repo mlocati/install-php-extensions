@@ -122,8 +122,10 @@ final class BinaryInstallerTest extends TestCase
         $values = new Values();
         $extension = M::mock(Extension::class . ', ' . Extension\ProvidesBinaryInstaller::class);
         $extension->shouldReceive('getHandle')->andReturn('vendor');
-        $extension->shouldReceive('runBinaryInstaller')->once()->with('/src', $values);
-        $resolved = new Resolved($extension, '/src', '', Resolved::ORIGIN_BINARY, null, $values);
+        $extension->shouldReceive('runBinaryInstaller')->once()->with(M::on(static function (Extension\BuildContext $context) use ($values) {
+            return $context->getSourceDirectory() === '/src' && $context->getVersion() === '1.2.3' && $context->getOptionValues() === $values;
+        }));
+        $resolved = new Resolved($extension, '/src', '1.2.3', Resolved::ORIGIN_BINARY, null, $values);
         self::assertNull(self::createInstaller($fs)->install($resolved));
     }
 

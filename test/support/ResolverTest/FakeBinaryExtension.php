@@ -90,7 +90,7 @@ class FakeBinaryExtension extends Extension\PrecompiledExtension
      *
      * @see \IPE\Extension\PrecompiledExtension::getBinaryIniSettings()
      */
-    public function getBinaryIniSettings($rootDir)
+    public function getBinaryIniSettings(Extension\BuildContext $context)
     {
         return "fakebinary.setting=1\n";
     }

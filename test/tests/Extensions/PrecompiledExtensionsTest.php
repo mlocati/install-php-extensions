@@ -3,17 +3,20 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Exception;
+use IPE\Extension\Registry;
 use IPE\Extension\UnsupportedEnvironment;
 use IPE\Extensions;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\Filesystem\Downloader;
+use IPE\Installer\BuildTools;
 use IPE\Installer\State;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
 use IPE\Service\Container;
 use IPE\Service\JSON;
+use IPE\Service\PHPScript;
 use IPE\SystemDependencies;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
@@ -109,7 +112,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $os = self::createOS(OS\Debian::class, 12, self::createFilesystem(['/src/README']));
         $extension = new Extensions\blackfire($php, $os, $downloader);
         self::assertSame('', $extension->findBinaryModule('/src', ''));
-        self::assertSame("blackfire.agent_socket=tcp://blackfire:8307\n", $extension->getBinaryIniSettings('/src'));
+        self::assertSame("blackfire.agent_socket=tcp://blackfire:8307\n", $extension->getBinaryIniSettings(self::createBuildContext('', null, '/src')));
         self::assertFalse($extension->isZendExtension());
     }
 
@@ -284,7 +287,7 @@ final class PrecompiledExtensionsTest extends TestCase
         );
         $fs = self::createFilesystem(['/src/relay.ini']);
         $fs->shouldReceive('readFile')->with('/src/relay.ini')->andReturn("; comment\n  extension = relay.so\nrelay.key = x\n");
-        self::assertSame("; comment\nrelay.key = x\n", (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), $downloader))->getBinaryIniSettings('/src'));
+        self::assertSame("; comment\nrelay.key = x\n", (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), $downloader))->getBinaryIniSettings(self::createBuildContext('', null, '/src')));
     }
 
     /**
@@ -442,7 +445,7 @@ final class PrecompiledExtensionsTest extends TestCase
         });
         $fs->shouldReceive('listDirectoryContents')->with('/tmp')->andReturn(['/tmp/nrinstall-1.tar', '/tmp/other.tar']);
         $fs->shouldReceive('deleteFile')->once()->with('/tmp/nrinstall-1.tar');
-        (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class), new \IPE\Logger()))->runBinaryInstaller('/src', new Values([], [Extensions\newrelic::OPTION_INSTALL_DAEMON => true]));
+        (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class), new \IPE\Logger()))->runBinaryInstaller(self::createBuildContext('', new Values([], [Extensions\newrelic::OPTION_INSTALL_DAEMON => true]), '/src'));
         self::assertCount(2, $commands);
         self::assertSame('./newrelic-install', $commands[0]->getCommand());
         self::assertSame(['install'], $commands[0]->getArguments());
@@ -458,7 +461,104 @@ final class PrecompiledExtensionsTest extends TestCase
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('run')->andReturn([1, '']);
         $this->expectException(Exception\IO::class);
-        (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class), new \IPE\Logger()))->runBinaryInstaller('/src', new Values());
+        (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class), new \IPE\Logger()))->runBinaryInstaller(self::createBuildContext('', null, '/src'));
+    }
+
+    /**
+     * @return array<array{string, string}> the ddtrace version, and the expected URL of the setup script
+     */
+    public static function provideDDTraceSetupURLs()
+    {
+        return [
+            ['', 'https://github.com/DataDog/dd-trace-php/releases/latest/download/datadog-setup.php'],
+            ['1.14.0', 'https://github.com/DataDog/dd-trace-php/releases/download/1.14.0/datadog-setup.php'],
+        ];
+    }
+
+    /**
+     * @dataProvider provideDDTraceSetupURLs
+     *
+     * @param string $version
+     * @param string $expectedURL
+     *
+     * @return void
+     */
+    public function testDDTraceInstaller($version, $expectedURL)
+    {
+        $commands = [];
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('run')->andReturnUsing(static function (Command $command) use (&$commands) {
+            $commands[] = $command;
+
+            return [0, ''];
+        });
+        $downloader = M::mock(Downloader::class);
+        $downloader->shouldReceive('saveAs')->once()->with($expectedURL, '/src/datadog-setup.php');
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
+        $registry = M::mock(Registry::class);
+        $registry->shouldReceive('getExtensionClasses')->andReturn([]);
+        $ddtrace = new Extensions\ddtrace($php, self::createOS(OS\Debian::class, 12, $fs), $downloader, new PHPScript($php, $registry));
+        $ddtrace->runBinaryInstaller(self::createBuildContext($version, new Values([], [Extensions\ddtrace::OPTION_PROFILING => true]), '/src'));
+        self::assertCount(1, $commands);
+        self::assertSame(['/src/datadog-setup.php', '--php-bin=php', '--enable-profiling'], $commands[0]->getArguments());
+    }
+
+    /**
+     * @return array<array{string, bool}> the pdo_snowflake version, and whether the build script needs PLATFORM
+     */
+    public static function providePdoSnowflakePlatforms()
+    {
+        return [
+            ['0.2.4', true],
+            ['0.2.5', false],
+            ['2.0.0', false],
+        ];
+    }
+
+    /**
+     * @dataProvider providePdoSnowflakePlatforms
+     *
+     * @param string $version
+     * @param bool $needsPlatform
+     *
+     * @return void
+     */
+    public function testPdoSnowflakeBuildModule($version, $needsPlatform)
+    {
+        $commands = [];
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
+        $fs->shouldReceive('run')->andReturnUsing(static function (Command $command) use (&$commands) {
+            switch ($command->getCommand()) {
+                case '/usr/local/bin/php-config':
+                    return [0, "8.4.27\n"];
+                case 'uname':
+                    $commands[] = $command;
+
+                    return [0, "Linux\n"];
+                default:
+                    $commands[] = $command;
+
+                    return [0, ''];
+            }
+        });
+        $fs->shouldReceive('createDirectory')->once();
+        $fs->shouldReceive('copyFile')->once()->with('/src/libsnowflakeclient/cacert.pem', Extensions\pdo_snowflake::CACERT_FILE);
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
+        $php->shouldReceive('getVersion')->andReturn('8.4.27');
+        $pdoSnowflake = new Extensions\pdo_snowflake($php, self::createOS(OS\Debian::class, 12, $fs));
+        self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), new BuildTools($php, $fs, new \IPE\Logger()), 2));
+        self::assertCount($needsPlatform ? 2 : 1, $commands);
+        $build = $commands[count($commands) - 1];
+        self::assertSame('bash', $build->getCommand());
+        $expectedEnvironment = ['PHP_HOME' => '/usr/local'];
+        if ($needsPlatform) {
+            $expectedEnvironment['PLATFORM'] = 'linux';
+        }
+        self::assertSame($expectedEnvironment, $build->getEnvironment());
     }
 
     /**

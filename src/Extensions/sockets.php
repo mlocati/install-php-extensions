@@ -85,8 +85,9 @@ final class sockets extends Extension implements
      *
      * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
      */
-    public function patchSourceCode($sourceDirectory)
+    public function patchSourceCode(Extension\BuildContext $context)
     {
+        $sourceDirectory = $context->getSourceDirectory();
         $fs = $this->os->getFilesystem();
         if (in_array($this->php->getBaseVersion(), ['8.0.15', '8.1.2'], true)) {
             // These PHP versions don't define _GNU_SOURCE when checking if the system has struct ucred.

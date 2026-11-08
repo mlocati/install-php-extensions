@@ -114,7 +114,7 @@ final class amqp extends Extension implements
      *
      * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
      */
-    public function getCompilerFlags()
+    public function getCompilerFlags(Extension\BuildContext $context)
     {
         // amqp uses strtoimax() without including inttypes.h, which the headers of PHP include only since PHP 5.6
         if ($this->php->getMajorMinorVersion() <= 505) {

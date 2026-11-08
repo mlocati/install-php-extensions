@@ -95,9 +95,9 @@ final class FakeVendorArchiveExtension extends Extension implements
      *
      * @see \IPE\Extension\CompiledFromVendorArchive::prepareVendorSource()
      */
-    public function prepareVendorSource($rootDir, $version, Option\Values $options)
+    public function prepareVendorSource(Extension\BuildContext $context)
     {
-        return "{$rootDir}/src";
+        return "{$context->getSourceDirectory()}/src";
     }
 
     /**
@@ -105,8 +105,8 @@ final class FakeVendorArchiveExtension extends Extension implements
      *
      * @see \IPE\Extension\CompiledFromVendorArchive::getVendorConfigureArguments()
      */
-    public function getVendorConfigureArguments($rootDir, $version, Option\Values $options)
+    public function getVendorConfigureArguments(Extension\BuildContext $context)
     {
-        return ["--with-lib={$rootDir}/lib"];
+        return ["--with-lib={$context->getSourceDirectory()}/lib"];
     }
 }

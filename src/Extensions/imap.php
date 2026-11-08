@@ -122,7 +122,7 @@ final class imap extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         // libc-client is not in the multiarch directory of Debian
         return ['--with-kerberos', '--with-imap-ssl', '--with-libdir=lib'];

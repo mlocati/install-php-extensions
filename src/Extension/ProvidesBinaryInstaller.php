@@ -2,8 +2,6 @@
 
 namespace IPE\Extension;
 
-use IPE\Option;
-
 /**
  * Interface for extensions whose archive contains an installer provided by the vendor, which also takes care of enabling the extension.
  */
@@ -21,11 +19,11 @@ interface ProvidesBinaryInstaller extends AvailableAsBinary
     public function canRunBinaryInstaller($rootDir);
 
     /**
-     * @param non-empty-string $rootDir the root directory of the archive
+     * @param \IPE\Extension\BuildContext $context its source directory is the root directory of the archive
      *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    public function runBinaryInstaller($rootDir, Option\Values $options);
+    public function runBinaryInstaller(BuildContext $context);
 }

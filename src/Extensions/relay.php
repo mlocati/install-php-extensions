@@ -176,10 +176,10 @@ final class relay extends Extension\PrecompiledExtension implements
      *
      * @see \IPE\Extension\PrecompiledExtension::getBinaryIniSettings()
      */
-    public function getBinaryIniSettings($rootDir)
+    public function getBinaryIniSettings(Extension\BuildContext $context)
     {
         $fs = $this->os->getFilesystem();
-        $file = $rootDir . $fs->getDirectorySeparator() . 'relay.ini';
+        $file = $context->getSourceDirectory() . $fs->getDirectorySeparator() . 'relay.ini';
 
         return $fs->isFile($file) ? (string) preg_replace('/^[ \t]*extension[ \t]*=.*$\r?\n?/m', '', $fs->readFile($file)) : '';
     }

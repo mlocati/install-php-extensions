@@ -96,7 +96,7 @@ final class blackfire extends Extension\PrecompiledExtension implements Extensio
      *
      * @see \IPE\Extension\PrecompiledExtension::getBinaryIniSettings()
      */
-    public function getBinaryIniSettings($rootDir)
+    public function getBinaryIniSettings(Extension\BuildContext $context)
     {
         return "blackfire.agent_socket=tcp://blackfire:8307\n";
     }

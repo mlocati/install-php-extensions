@@ -3,7 +3,6 @@
 namespace IPE\Extension;
 
 use IPE\Installer\BuildTools;
-use IPE\Option;
 
 /**
  * Interface for extensions whose source code can't be compiled with phpize, configure and make.
@@ -12,12 +11,12 @@ use IPE\Option;
 interface BuildsModule extends AvailableAsBinary
 {
     /**
-     * @param non-empty-string $rootDir the root directory of the archive
+     * @param \IPE\Extension\BuildContext $context its source directory is the root directory of the archive
      * @param positive-int $parallelJobs
      *
      * @throws \IPE\Exception\IO
      *
      * @return non-empty-string the path to the compiled module
      */
-    public function buildModule($rootDir, Option\Values $options, BuildTools $buildTools, $parallelJobs);
+    public function buildModule(BuildContext $context, BuildTools $buildTools, $parallelJobs);
 }

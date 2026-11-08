@@ -3,14 +3,13 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
-use IPE\Option;
 use IPE\OS;
 use IPE\SystemDependencies;
 
 /**
  * @see https://github.com/kjdev/php-ext-snappy
  */
-final class snappy extends Extension\GitHubExtension
+final class snappy extends Extension\GitHubExtension implements Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -57,9 +56,9 @@ final class snappy extends Extension\GitHubExtension
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\CompiledFromVendorArchive::getVendorConfigureArguments()
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getVendorConfigureArguments($rootDir, $version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         return ['--with-snappy-includedir=/usr'];
     }

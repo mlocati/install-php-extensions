@@ -34,13 +34,13 @@ interface ProvidesBinaryModule extends AvailableAsBinary
     /**
      * Get the additional settings to be written to the ini file that enables the module.
      *
-     * @param non-empty-string $rootDir the root directory of the archive
+     * @param \IPE\Extension\BuildContext $context its source directory is the root directory of the archive
      *
      * @throws \IPE\Exception\IO
      *
      * @return string
      */
-    public function getBinaryIniSettings($rootDir);
+    public function getBinaryIniSettings(BuildContext $context);
 
     /**
      * Must the module be loaded with zend_extension instead of extension?

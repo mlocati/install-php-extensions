@@ -95,7 +95,7 @@ final class rrd extends Extension implements
      *
      * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
      */
-    public function getCompilerFlags()
+    public function getCompilerFlags(Extension\BuildContext $context)
     {
         return '-Wno-incompatible-pointer-types';
     }
@@ -105,11 +105,11 @@ final class rrd extends Extension implements
      *
      * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
      */
-    public function patchSourceCode($sourceDirectory)
+    public function patchSourceCode(Extension\BuildContext $context)
     {
         // Old versions call rrdc_disconnect() without including its header
         $fs = $this->os->getFilesystem();
-        $file = "{$sourceDirectory}/rrd.c";
+        $file = "{$context->getSourceDirectory()}/rrd.c";
         $code = $fs->readFile($file);
         if (strpos($code, 'rrd_client.h') === false) {
             $fs->writeFile($file, Regex::replace('/^#include\s*<rrd\.h>/m', "$0\n#include <rrd_client.h>", $code, 1));

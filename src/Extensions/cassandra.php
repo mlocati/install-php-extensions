@@ -119,8 +119,9 @@ final class cassandra extends Extension implements
      *
      * @see \IPE\Extension\BuildsModule::buildModule()
      */
-    public function buildModule($rootDir, Option\Values $options, BuildTools $buildTools, $parallelJobs)
+    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools, $parallelJobs)
     {
+        $rootDir = $context->getSourceDirectory();
         if ($this->usesScyllaDBDriver()) {
             $this->buildScyllaDBDriver($rootDir, $buildTools, $parallelJobs);
         } else {

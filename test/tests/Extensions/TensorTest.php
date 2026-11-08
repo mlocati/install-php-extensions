@@ -69,7 +69,7 @@ final class TensorTest extends TestCase
         $os = M::mock($osClass);
         self::assertInstanceOf(OS::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
-        $flags = (new tensor(M::mock(PHPInfo::class), $os))->getCompilerFlags();
+        $flags = (new tensor(M::mock(PHPInfo::class), $os))->getCompilerFlags(self::createBuildContext());
         self::assertStringContainsString('-Wno-incompatible-pointer-types', $flags);
         self::assertSame($expected, strpos($flags, '-I/usr/include/openblas') !== false);
     }

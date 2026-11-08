@@ -38,7 +38,7 @@ abstract class PrecompiledExtension extends Extension implements ProvidesBinaryM
      *
      * @see \IPE\Extension\ProvidesBinaryModule::getBinaryIniSettings()
      */
-    public function getBinaryIniSettings($rootDir)
+    public function getBinaryIniSettings(BuildContext $context)
     {
         return '';
     }
