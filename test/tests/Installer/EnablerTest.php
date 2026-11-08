@@ -12,6 +12,7 @@ use IPE\Installer\CompiledExtension;
 use IPE\Installer\Enabler;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\PHPInfo\SSLLibrary;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -32,6 +33,7 @@ final class EnablerTest extends TestCase
         $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
         $php->shouldReceive('getMajorMinorVersion')->andReturn($majorMinorVersion);
         $php->shouldReceive('getIniScanDir')->andReturn(self::INI_DIR);
+        $php->shouldReceive('getSSLLibrary')->andReturn(null)->byDefault();
 
         return $php;
     }
@@ -173,6 +175,39 @@ final class EnablerTest extends TestCase
         $php->shouldReceive('addInstalledExtensions')->once()->with(['blackfire']);
 
         self::assertSame(['blackfire'], (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('blackfire')));
+    }
+
+    /**
+     * @return array<array{\IPE\PHPInfo\SSLLibrary|null, bool}> the SSL library already known, and whether it must be detected
+     */
+    public static function provideSSLLibraryCases()
+    {
+        return [
+            [null, true],
+            [new SSLLibrary(SSLLibrary::TYPE_OPENSSL, '1.1.1w'), false],
+        ];
+    }
+
+    /**
+     * @dataProvider provideSSLLibraryCases
+     *
+     * @param \IPE\PHPInfo\SSLLibrary|null $knownLibrary
+     * @param bool $detect
+     *
+     * @return void
+     */
+    public function testEnablingOpensslDetectsTheSSLLibrary($knownLibrary, $detect)
+    {
+        $fs = self::createFilesystem();
+        self::expectModuleListings($fs, "[PHP Modules]\nCore\njson\nopenssl\n\n[Zend Modules]\n");
+        $fs->shouldReceive('writeFile');
+        $fs->shouldReceive('deleteFile');
+        $php = self::createPHPInfo();
+        $php->shouldReceive('addInstalledExtensions')->once()->with(['openssl']);
+        $php->shouldReceive('getSSLLibrary')->andReturn($knownLibrary);
+        $php->shouldReceive('detectSSLLibrary')->times($detect ? 1 : 0)->with($fs)->andReturnSelf();
+
+        self::assertSame(['openssl'], (new Enabler($php, $fs, new \IPE\Logger()))->enable(self::createCompiledExtension('openssl')));
     }
 
     /**

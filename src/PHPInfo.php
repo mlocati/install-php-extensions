@@ -83,6 +83,11 @@ class PHPInfo
     private $configureCommand;
 
     /**
+     * @var \IPE\PHPInfo\SSLLibrary|null
+     */
+    private $sslLibrary;
+
+    /**
      * @var string[]
      */
     private $installedExtensions = [];
@@ -125,6 +130,7 @@ class PHPInfo
             throw new Exception\IO('Failed to collect the general PHP info');
         }
         $result->parseGeneralInfo($info, PHP_CONFIG_FILE_SCAN_DIR, $fs);
+        $result->sslLibrary = defined('OPENSSL_VERSION_TEXT') ? PHPInfo\SSLLibrary::fromVersionText(OPENSSL_VERSION_TEXT) : null;
         $installedExtensions = [];
         foreach ([false, true] as $zendExtensionFlag) {
             $installedExtensions = array_merge($installedExtensions, get_loaded_extensions($zendExtensionFlag));
@@ -197,6 +203,7 @@ class PHPInfo
         }
         $result->parseGeneralInfo($info, $lines[6], $fs);
         $result->setInstalledExtensions(array_slice($lines, 7));
+        $result->detectSSLLibrary($fs);
 
         return $result;
     }
@@ -260,6 +267,37 @@ class PHPInfo
     public function getConfigureCommand()
     {
         return $this->configureCommand;
+    }
+
+    /**
+     * Get the SSL library PHP has been built with.
+     *
+     * @return \IPE\PHPInfo\SSLLibrary|null NULL if the openssl extension is not loaded, or if its library is not recognized
+     */
+    public function getSSLLibrary()
+    {
+        return $this->sslLibrary;
+    }
+
+    /**
+     * Detect the SSL library by running PHP (for example, because the openssl extension has been enabled).
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return $this
+     */
+    public function detectSSLLibrary(Filesystem $fs)
+    {
+        list($rc, $output) = $fs->run(Filesystem\Command::create(
+            $this->phpBin,
+            array_merge(self::getSafeRunArguments($fs), ['-r', "echo defined('OPENSSL_VERSION_TEXT') ? OPENSSL_VERSION_TEXT : '';"])
+        )->withOutput(Filesystem\Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0) {
+            throw new Exception\IO('Failed to detect the SSL library of PHP.');
+        }
+        $this->sslLibrary = PHPInfo\SSLLibrary::fromVersionText($output);
+
+        return $this;
     }
 
     /**
