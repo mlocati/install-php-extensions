@@ -136,9 +136,17 @@ final class pdo_snowflake extends Extension implements
     public function buildModule($rootDir, Option\Values $options, BuildTools $buildTools, $parallelJobs)
     {
         $fs = $this->os->getFilesystem();
+        list($rc, $kernelName) = $fs->run(Command::create('uname')->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0) {
+            throw new Exception\IO('Failed to detect the kernel name');
+        }
+        // Before 1.0.0 the build script doesn't set PLATFORM (like scripts/_init.sh does), so it doesn't link the static libraries
         $command = Command::create('bash', ['scripts/build_pdo_snowflake.sh'])
             ->withWorkingDirectory($rootDir)
-            ->withEnvironment(['PHP_HOME' => dirname(dirname($buildTools->getPhpConfig()))])
+            ->withEnvironment([
+                'PHP_HOME' => dirname(dirname($buildTools->getPhpConfig())),
+                'PLATFORM' => strtolower(trim($kernelName)),
+            ])
             ->withOutput(Command::OUTPUT_SHOW)
         ;
         list($rc) = $fs->run($command);
