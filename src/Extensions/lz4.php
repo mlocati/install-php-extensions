@@ -3,14 +3,15 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
-use IPE\Option;
 use IPE\OS;
 use IPE\SystemDependencies;
 
 /**
  * @see https://github.com/kjdev/php-ext-lz4
  */
-final class lz4 extends Extension\GitHubExtension implements Extension\DeclaresUnsupportedEnvironments
+final class lz4 extends Extension\GitHubExtension implements
+    Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -70,9 +71,9 @@ final class lz4 extends Extension\GitHubExtension implements Extension\DeclaresU
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\CompiledFromVendorArchive::getVendorConfigureArguments()
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getVendorConfigureArguments($rootDir, $version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         return ['--with-lz4-includedir=/usr'];
     }

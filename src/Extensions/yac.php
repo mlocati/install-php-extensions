@@ -3,7 +3,6 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
-use IPE\Option;
 
 final class yac extends Extension implements
     Extension\AvailableAsComposerPackage,
@@ -113,8 +112,9 @@ final class yac extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
+        $version = $context->getVersion();
         if ($version === '' || version_compare($version, '2.2.0') < 0 || version_compare($version, '3.0.0') >= 0) {
             return [];
         }

@@ -67,12 +67,12 @@ final class Compiler
         if ($this->fs->getDirectorySeparator() !== '/') {
             throw new Exception\UnsupportedOS('Compiling extensions is only supported on POSIX-like systems');
         }
-        $sourceDir = $resolved->getPath();
         $known = $resolved->getKnownExtension();
+        $sourceDir = $this->ensureConfigM4($resolved->getPath());
+        $context = new Extension\BuildContext($sourceDir, $resolved->getVersion(), $resolved->getOptionValues());
         if ($known instanceof Extension\PatchesSourceCode) {
-            $known->patchSourceCode($sourceDir);
+            $known->patchSourceCode($context);
         }
-        $sourceDir = $this->ensureConfigM4($sourceDir);
         $phpize = $this->buildTools->getPhpize();
         if ($this->fs->isFile("{$sourceDir}/configure")) {
             $this->logger->info('Cleaning up a previous build');
@@ -81,11 +81,11 @@ final class Compiler
         $this->logger->info('Running phpize');
         $this->runStep('phpize', $phpize, [], $sourceDir);
         if ($known instanceof Extension\PatchesConfigureScript) {
-            $known->patchConfigureScript($sourceDir);
+            $known->patchConfigureScript($context);
         }
-        $configureArguments = $this->buildConfigureArguments($resolved);
+        $configureArguments = $this->buildConfigureArguments($known, $context);
         $this->logger->info('Running configure' . ($configureArguments === [] ? '' : ' with ' . implode(' ', $configureArguments)));
-        $this->runStep('configure', './configure', $configureArguments, $sourceDir, $this->buildConfigureEnvironment($known));
+        $this->runStep('configure', './configure', $configureArguments, $sourceDir, $this->buildConfigureEnvironment($known, $context));
         $make = $this->buildTools->getMake();
         $jobs = $this->buildOptions->getParallelJobs() ?: $this->buildTools->getProcessorCount();
         $makeEnvironment = $this->buildMakeEnvironment();
@@ -157,17 +157,18 @@ final class Compiler
     /**
      * The php-config and libdir of the running PHP, unless the extension or the user specified them, plus the arguments of the extension and of the user.
      *
+     * @param \IPE\Extension|null $known
+     *
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\UnsupportedOS
      *
      * @return list<non-empty-string>
      */
-    private function buildConfigureArguments(Resolved $resolved)
+    private function buildConfigureArguments($known, Extension\BuildContext $context)
     {
-        $values = $resolved->getOptionValues();
-        $known = $resolved->getKnownExtension();
+        $values = $context->getOptionValues();
         if ($known instanceof Extension\ProvidesConfigureArguments) {
-            $values = $values->withConfigureArgumentsBefore($known->getConfigureArguments($resolved->getVersion(), $values));
+            $values = $values->withConfigureArgumentsBefore($known->getConfigureArguments($context));
         }
         $arguments = [];
         $phpConfig = $this->buildTools->getPhpConfig();
@@ -190,10 +191,10 @@ final class Compiler
      *
      * @return array<non-empty-string, string>
      */
-    private function buildConfigureEnvironment($known)
+    private function buildConfigureEnvironment($known, Extension\BuildContext $context)
     {
         $flags = ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? '-O0 -g' : '-g -O2') . ' -fstack-protector-strong';
-        $extraFlags = $known instanceof Extension\ProvidesCompilerFlags ? $known->getCompilerFlags() : '';
+        $extraFlags = $known instanceof Extension\ProvidesCompilerFlags ? $known->getCompilerFlags($context) : '';
         if ($extraFlags !== '') {
             $flags .= ' ' . $extraFlags;
         }

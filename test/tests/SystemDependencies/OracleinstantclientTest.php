@@ -301,9 +301,9 @@ final class OracleinstantclientTest extends TestCase
     {
         $os = self::createOS(OS\Debian::class);
         $options = new Values();
-        self::assertSame(['--with-pdo-oci=instantclient,' . self::LIBRARY_PATH . ',12.1'], (new pdo_oci(self::createPHP(64, 506), $os))->getConfigureArguments('', $options));
-        self::assertSame(['--with-pdo-oci=instantclient,' . self::LIBRARY_PATH], (new pdo_oci(self::createPHP(64, 700), $os))->getConfigureArguments('', $options));
-        self::assertSame(['--with-oci8=instantclient,' . self::LIBRARY_PATH], (new oci8(self::createPHP(64, 506), $os))->getConfigureArguments('', $options));
+        self::assertSame(['--with-pdo-oci=instantclient,' . self::LIBRARY_PATH . ',12.1'], (new pdo_oci(self::createPHP(64, 506), $os))->getConfigureArguments(self::createBuildContext('', $options)));
+        self::assertSame(['--with-pdo-oci=instantclient,' . self::LIBRARY_PATH], (new pdo_oci(self::createPHP(64, 700), $os))->getConfigureArguments(self::createBuildContext('', $options)));
+        self::assertSame(['--with-oci8=instantclient,' . self::LIBRARY_PATH], (new oci8(self::createPHP(64, 506), $os))->getConfigureArguments(self::createBuildContext('', $options)));
     }
 
     /**
@@ -314,8 +314,8 @@ final class OracleinstantclientTest extends TestCase
         $php = self::createPHP();
         $os = self::createOS(OS\Debian::class);
         $options = new Values();
-        self::assertSame(['--with-oci8=instantclient,' . self::LIBRARY_PATH], (new oci8($php, $os))->getConfigureArguments('', $options));
-        self::assertSame(['--with-pdo-oci=instantclient,' . self::LIBRARY_PATH], (new pdo_oci($php, $os))->getConfigureArguments('', $options));
+        self::assertSame(['--with-oci8=instantclient,' . self::LIBRARY_PATH], (new oci8($php, $os))->getConfigureArguments(self::createBuildContext('', $options)));
+        self::assertSame(['--with-pdo-oci=instantclient,' . self::LIBRARY_PATH], (new pdo_oci($php, $os))->getConfigureArguments(self::createBuildContext('', $options)));
         foreach ([[oci8::getOptions(), 'with-oci8'], [pdo_oci::getOptions(), 'with-pdo-oci']] as list($declared, $name)) {
             self::assertCount(1, $declared);
             self::assertInstanceOf(ConfigureOption::class, $declared[0]);
@@ -324,6 +324,6 @@ final class OracleinstantclientTest extends TestCase
             self::assertFalse($declared[0]->hasDefault());
         }
         $this->expectException(Exception\UnsupportedOS::class);
-        (new oci8($php, M::mock(OS\Windows::class)->shouldIgnoreMissing()))->getConfigureArguments('', $options);
+        (new oci8($php, M::mock(OS\Windows::class)->shouldIgnoreMissing()))->getConfigureArguments(self::createBuildContext('', $options));
     }
 }

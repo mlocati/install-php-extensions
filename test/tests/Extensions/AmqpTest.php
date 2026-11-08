@@ -35,6 +35,6 @@ final class AmqpTest extends TestCase
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $os = M::mock(OS::class);
-        self::assertSame($expected, (new amqp($php, $os))->getCompilerFlags());
+        self::assertSame($expected, (new amqp($php, $os))->getCompilerFlags(self::createBuildContext()));
     }
 }

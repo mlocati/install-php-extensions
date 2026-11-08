@@ -85,7 +85,7 @@ final class dba extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         return ['--with-db4'];
     }
@@ -97,8 +97,9 @@ final class dba extends Extension implements
      *
      * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
      */
-    public function patchSourceCode($sourceDirectory)
+    public function patchSourceCode(Extension\BuildContext $context)
     {
+        $sourceDirectory = $context->getSourceDirectory();
         $fs = $this->os->getFilesystem();
         if ($this->php->getMajorMinorVersion() <= 505) {
             $fs->writeFile("{$sourceDirectory}/config.m4", str_replace('PHP_DBA_DB_CHECK(4, db-5.1 ', 'PHP_DBA_DB_CHECK(4, db-5.3 db-5.1 ', $fs->readFile("{$sourceDirectory}/config.m4")));

@@ -94,7 +94,7 @@ final class stomp extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         return [$this->os instanceof OS\Alpine ? '--with-openssl-dir=/usr' : '--with-openssl-dir=yes'];
     }

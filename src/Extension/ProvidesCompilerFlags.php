@@ -10,5 +10,5 @@ interface ProvidesCompilerFlags
     /**
      * @return string an empty string if no flags are needed
      */
-    public function getCompilerFlags();
+    public function getCompilerFlags(BuildContext $context);
 }

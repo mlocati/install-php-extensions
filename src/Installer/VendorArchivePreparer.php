@@ -54,8 +54,9 @@ final class VendorArchivePreparer
         $archive = $resolved->getPath() . $this->fs->getDirectorySeparator() . self::ARCHIVE_FILENAME;
         $rootDir = $this->archiveExtractor->extractTo($archive, $state->getVolatileDir()->createSubdir(), ArchiveFormat::ZIP);
         $this->fs->deleteFile($archive);
-        $sourceDir = $extension->prepareVendorSource($rootDir, $version, $resolved->getOptionValues());
-        $configureArguments = $extension->getVendorConfigureArguments($rootDir, $version, $resolved->getOptionValues());
+        $context = new Extension\BuildContext($rootDir, $version, $resolved->getOptionValues());
+        $sourceDir = $extension->prepareVendorSource($context);
+        $configureArguments = $extension->getVendorConfigureArguments($context);
 
         return $resolved->withSource($sourceDir, $resolved->getOptionValues()->withConfigureArgumentsBefore($configureArguments));
     }

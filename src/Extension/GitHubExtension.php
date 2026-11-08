@@ -44,9 +44,9 @@ abstract class GitHubExtension extends Extension implements CompiledFromVendorAr
      *
      * @see \IPE\Extension\CompiledFromVendorArchive::prepareVendorSource()
      */
-    public function prepareVendorSource($rootDir, $version, Option\Values $options)
+    public function prepareVendorSource(BuildContext $context)
     {
-        return $rootDir;
+        return $context->getSourceDirectory();
     }
 
     /**
@@ -54,7 +54,7 @@ abstract class GitHubExtension extends Extension implements CompiledFromVendorAr
      *
      * @see \IPE\Extension\CompiledFromVendorArchive::getVendorConfigureArguments()
      */
-    public function getVendorConfigureArguments($rootDir, $version, Option\Values $options)
+    public function getVendorConfigureArguments(BuildContext $context)
     {
         return [];
     }

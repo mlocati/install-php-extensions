@@ -86,7 +86,7 @@ abstract class OracleDatabase extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(BuildContext $context)
     {
         if (!$this->os instanceof OS\Posix) {
             throw new Exception\UnsupportedOS(static::getHandle() . " can't be installed on {$this->os->getDisplayName()}");

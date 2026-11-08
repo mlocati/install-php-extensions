@@ -36,23 +36,23 @@ interface CompiledFromVendorArchive
     /**
      * Install the libraries provided by the extracted archive, and fix its source code if needed.
      *
-     * @param non-empty-string $rootDir the root directory of the extracted archive
-     * @param non-empty-string $version
+     * @param \IPE\Extension\BuildContext $context its source directory is the root directory of the extracted archive, and its version is never empty
      *
      * @throws \IPE\Exception\InvalidOptionValues
      * @throws \IPE\Exception\IO
      *
      * @return non-empty-string the directory containing the source code of the extension
      */
-    public function prepareVendorSource($rootDir, $version, Option\Values $options);
+    public function prepareVendorSource(BuildContext $context);
 
     /**
-     * @param non-empty-string $rootDir the root directory of the extracted archive
-     * @param non-empty-string $version
+     * Get the configure arguments that depend on the extracted archive (the others can be provided with ProvidesConfigureArguments).
+     *
+     * @param \IPE\Extension\BuildContext $context its source directory is the root directory of the extracted archive, and its version is never empty
      *
      * @throws \IPE\Exception\InvalidOptionValues
      *
      * @return list<non-empty-string>
      */
-    public function getVendorConfigureArguments($rootDir, $version, Option\Values $options);
+    public function getVendorConfigureArguments(BuildContext $context);
 }

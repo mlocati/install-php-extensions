@@ -183,7 +183,7 @@ EOT;
     {
         $extension = self::createExtension();
         $options = self::createOptions('PE');
-        self::assertSame(['--with-saxon=/src/SaxonCPE'], $extension->getVendorConfigureArguments('/src', '12.3', $options));
-        self::assertSame(['--with-saxonc=/src/SaxonCPE', '--with-saxonc-core=/src/SaxonCCorePE'], $extension->getVendorConfigureArguments('/src', '13.0.0', $options));
+        self::assertSame(['--with-saxon=/src/SaxonCPE'], $extension->getVendorConfigureArguments(self::createBuildContext('12.3', $options, '/src')));
+        self::assertSame(['--with-saxonc=/src/SaxonCPE', '--with-saxonc-core=/src/SaxonCCorePE'], $extension->getVendorConfigureArguments(self::createBuildContext('13.0.0', $options, '/src')));
     }
 }

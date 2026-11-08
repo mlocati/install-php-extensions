@@ -111,7 +111,7 @@ EOT;
         $os->shouldReceive('getFilesystem')->andReturn($fs);
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getIniScanDir')->andReturn('/ini');
-        self::assertSame('/src/src', (new snuffleupagus($php, $os))->prepareVendorSource('/src', '0.14.0', $options));
+        self::assertSame('/src/src', (new snuffleupagus($php, $os))->prepareVendorSource(self::createBuildContext('0.14.0', $options, '/src')));
         self::assertIsString($written);
 
         return $written;

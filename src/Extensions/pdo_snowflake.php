@@ -131,20 +131,23 @@ final class pdo_snowflake extends Extension implements
      *
      * @see \IPE\Extension\BuildsModule::buildModule()
      */
-    public function buildModule($rootDir, Option\Values $options, BuildTools $buildTools, $parallelJobs)
+    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools, $parallelJobs)
     {
         $fs = $this->os->getFilesystem();
-        list($rc, $kernelName) = $fs->run(Command::create('uname')->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
-        if ($rc !== 0) {
-            throw new Exception\IO('Failed to detect the kernel name');
+        $rootDir = $context->getSourceDirectory();
+        $environment = ['PHP_HOME' => dirname(dirname($buildTools->getPhpConfig()))];
+        $version = $context->getVersion();
+        // Before 0.2.5 the build script doesn't set PLATFORM (like scripts/_init.sh does), so it doesn't link the static libraries
+        if ($version !== '' && version_compare($version, '0.2.5') < 0) {
+            list($rc, $kernelName) = $fs->run(Command::create('uname')->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+            if ($rc !== 0) {
+                throw new Exception\IO('Failed to detect the kernel name');
+            }
+            $environment['PLATFORM'] = strtolower(trim($kernelName));
         }
-        // Before 1.0.0 the build script doesn't set PLATFORM (like scripts/_init.sh does), so it doesn't link the static libraries
         $command = Command::create('bash', ['scripts/build_pdo_snowflake.sh'])
             ->withWorkingDirectory($rootDir)
-            ->withEnvironment([
-                'PHP_HOME' => dirname(dirname($buildTools->getPhpConfig())),
-                'PLATFORM' => strtolower(trim($kernelName)),
-            ])
+            ->withEnvironment($environment)
             ->withOutput(Command::OUTPUT_SHOW)
         ;
         list($rc) = $fs->run($command);

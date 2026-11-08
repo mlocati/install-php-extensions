@@ -204,8 +204,10 @@ final class saxon extends Extension implements
      *
      * @see \IPE\Extension\CompiledFromVendorArchive::prepareVendorSource()
      */
-    public function prepareVendorSource($rootDir, $version, Option\Values $options)
+    public function prepareVendorSource(Extension\BuildContext $context)
     {
+        $rootDir = $context->getSourceDirectory();
+        $version = $context->getVersion();
         $fs = $this->os->getFilesystem();
         // The -P option is here because the archives contain the symbolic links of the shared libraries
         self::runFind($fs, $rootDir, ['(', '-type', 'f', '-o', '-type', 'l', ')', '(', '-name', 'libsaxonc-*.so*', '-o', '-name', 'libsaxon-*.so*', ')', '-exec', 'cp', '-P', '{}', '/usr/lib/', ';']);
@@ -229,10 +231,11 @@ final class saxon extends Extension implements
      *
      * @see \IPE\Extension\CompiledFromVendorArchive::getVendorConfigureArguments()
      */
-    public function getVendorConfigureArguments($rootDir, $version, Option\Values $options)
+    public function getVendorConfigureArguments(Extension\BuildContext $context)
     {
-        $edition = self::getEdition($options);
-        if (version_compare($version, '13.0.0') >= 0) {
+        $rootDir = $context->getSourceDirectory();
+        $edition = self::getEdition($context->getOptionValues());
+        if (version_compare($context->getVersion(), '13.0.0') >= 0) {
             return ["--with-saxonc={$rootDir}/SaxonC{$edition}", "--with-saxonc-core={$rootDir}/SaxonCCore{$edition}"];
         }
 

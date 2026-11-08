@@ -108,7 +108,7 @@ final class tensor extends Extension implements
      *
      * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
      */
-    public function getCompilerFlags()
+    public function getCompilerFlags(Extension\BuildContext $context)
     {
         // On Debian Stretch, /usr/include/cblas.h comes from libblas-dev and doesn't declare the OpenBLAS functions
         if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH) {
@@ -123,7 +123,7 @@ final class tensor extends Extension implements
      *
      * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
      */
-    public function patchSourceCode($sourceDirectory)
+    public function patchSourceCode(Extension\BuildContext $context)
     {
         // config.m4 needs the unversioned libraries, but some systems only provide the versioned ones
         $script = 'for f in /usr/lib/liblapacke.so.3 /usr/lib/*/libblas.so.3; do if [ -f "$f" ] && [ ! -e "${f%.3}" ]; then ln -s "$f" "${f%.3}"; fi; done';

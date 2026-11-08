@@ -56,14 +56,15 @@ final class BinaryInstaller
         }
         $moduleName = $extension::getHandle();
         $modulePath = "{$this->php->getExtensionDir()}/{$moduleName}.so";
+        $context = new Extension\BuildContext($resolved->getPath(), $resolved->getVersion(), $resolved->getOptionValues());
         if ($extension instanceof Extension\ProvidesBinaryInstaller) {
-            $extension->runBinaryInstaller($resolved->getPath(), $resolved->getOptionValues());
+            $extension->runBinaryInstaller($context);
             $this->stripSymbols($modulePath, $resolved->getPath());
 
             return null;
         }
         if ($extension instanceof Extension\BuildsModule) {
-            $source = $extension->buildModule($resolved->getPath(), $resolved->getOptionValues(), $this->buildTools, $this->buildOptions->getParallelJobs() ?: $this->buildTools->getProcessorCount());
+            $source = $extension->buildModule($context, $this->buildTools, $this->buildOptions->getParallelJobs() ?: $this->buildTools->getProcessorCount());
             if ($source !== $modulePath) {
                 $this->fs->copyFile($source, $modulePath);
             }
@@ -82,7 +83,7 @@ final class BinaryInstaller
         $extension->postProcessBinaryModule($modulePath);
         $this->stripSymbols($modulePath, $resolved->getPath());
 
-        return new CompiledExtension($resolved, $moduleName, $modulePath, $extension->isZendExtension(), $extension->getBinaryIniSettings($resolved->getPath()));
+        return new CompiledExtension($resolved, $moduleName, $modulePath, $extension->isZendExtension(), $extension->getBinaryIniSettings($context));
     }
 
     /**

@@ -96,7 +96,7 @@ final class sybase_ct extends Extension implements
      *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getConfigureArguments($version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         return ['--with-sybase-ct=/usr'];
     }

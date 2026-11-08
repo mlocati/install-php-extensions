@@ -3,7 +3,6 @@
 namespace IPE\Test\Support\ResolverTest;
 
 use IPE\Extension;
-use IPE\Option;
 use IPE\OS;
 use IPE\PHPInfo;
 
@@ -81,7 +80,7 @@ final class FakeBinaryInstallerExtension extends Extension implements Extension\
      *
      * @see \IPE\Extension\ProvidesBinaryInstaller::runBinaryInstaller()
      */
-    public function runBinaryInstaller($rootDir, Option\Values $options)
+    public function runBinaryInstaller(Extension\BuildContext $context)
     {
     }
 }

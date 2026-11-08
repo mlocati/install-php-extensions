@@ -65,7 +65,7 @@ final class BundledPatchesTest extends TestCase
             $fs->shouldReceive('writeFile')->once()->with(self::SOURCE_DIR . '/config.m4', $expected);
         }
         $os->shouldReceive('getFilesystem')->andReturn($fs);
-        (new $class($php, $os))->patchSourceCode(self::SOURCE_DIR);
+        (new $class($php, $os))->patchSourceCode(self::createBuildContext('', null, self::SOURCE_DIR));
     }
 
     /**
@@ -117,6 +117,6 @@ final class BundledPatchesTest extends TestCase
         $fs->shouldReceive('writeFile')->once()->with(self::SOURCE_DIR . '/configure', "keep\n#test \"\$PHP_IODBC\" = \"no\" && PHP_IODBC=yes\nkeep too\n");
         $os = M::mock(OS::class);
         $os->shouldReceive('getFilesystem')->andReturn($fs);
-        (new odbc(self::createPHP('8.4.1'), $os))->patchConfigureScript(self::SOURCE_DIR);
+        (new odbc(self::createPHP('8.4.1'), $os))->patchConfigureScript(self::createBuildContext('', null, self::SOURCE_DIR));
     }
 }

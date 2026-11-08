@@ -3,13 +3,12 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
-use IPE\Option;
 use IPE\SystemDependencies;
 
 /**
  * @see https://github.com/vlydev/php-yajl-stream
  */
-final class yajl_stream extends Extension\GitHubExtension
+final class yajl_stream extends Extension\GitHubExtension implements Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -56,9 +55,9 @@ final class yajl_stream extends Extension\GitHubExtension
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\CompiledFromVendorArchive::getVendorConfigureArguments()
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
-    public function getVendorConfigureArguments($rootDir, $version, Option\Values $options)
+    public function getConfigureArguments(Extension\BuildContext $context)
     {
         return ['--with-yajl-stream'];
     }

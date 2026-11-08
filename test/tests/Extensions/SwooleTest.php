@@ -122,7 +122,7 @@ final class SwooleTest extends TestCase
         self::assertInstanceOf(OS::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn(320);
         $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);
-        $arguments = (new swoole($php, $os))->getConfigureArguments($version, new Values());
+        $arguments = (new swoole($php, $os))->getConfigureArguments(self::createBuildContext($version));
         self::assertSame($expected, array_values(array_filter($arguments, static function ($argument) {
             return strpos($argument, '--build=') === 0;
         })));
@@ -159,7 +159,7 @@ final class SwooleTest extends TestCase
      */
     public function testConfigureArguments($version, array $expected)
     {
-        self::assertSame($expected, self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE, true)->getConfigureArguments($version, new Values()));
+        self::assertSame($expected, self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE, true)->getConfigureArguments(self::createBuildContext($version)));
     }
 
     /**
@@ -167,7 +167,7 @@ final class SwooleTest extends TestCase
      */
     public function testThreadSupportRequiresZTS()
     {
-        self::assertNotContains('--enable-swoole-thread', self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE)->getConfigureArguments('6.2.0', new Values()));
+        self::assertNotContains('--enable-swoole-thread', self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE)->getConfigureArguments(self::createBuildContext('6.2.0')));
     }
 
     /**
@@ -199,10 +199,10 @@ final class SwooleTest extends TestCase
     public function testIOUring($osClass, $osVersion, $version, $expected)
     {
         $extension = self::createExtension(804, $osClass, $osVersion);
-        self::assertSame($expected, in_array('--enable-iouring', $extension->getConfigureArguments($version, new Values()), true));
+        self::assertSame($expected, in_array('--enable-iouring', $extension->getConfigureArguments(self::createBuildContext($version)), true));
         self::assertSame($expected, in_array(SystemDependencies\liburing::HANDLE, $extension->getRequiredSystemDependencies($version, new Values()), true));
         $without = new Values([], [swoole::OPTION_WITHOUT_IOURING => true]);
-        self::assertNotContains('--enable-iouring', $extension->getConfigureArguments($version, $without));
+        self::assertNotContains('--enable-iouring', $extension->getConfigureArguments(self::createBuildContext($version, $without)));
         self::assertNotContains(SystemDependencies\liburing::HANDLE, $extension->getRequiredSystemDependencies($version, $without));
     }
 
@@ -212,15 +212,15 @@ final class SwooleTest extends TestCase
     public function testDatabasesAndCompressionDependOnTheEnvironment()
     {
         $old = self::createExtension(801, OS\Debian::class, OS\Debian::VERSION_BUSTER);
-        $arguments = $old->getConfigureArguments('6.1.0', new Values());
+        $arguments = $old->getConfigureArguments(self::createBuildContext('6.1.0'));
         self::assertNotContains('--enable-zstd', $arguments);
         self::assertContains('--enable-swoole-sqlite', $arguments);
         $dependencies = $old->getRequiredSystemDependencies('6.1.0', new Values());
         self::assertNotContains(SystemDependencies\libzstd::HANDLE, $dependencies);
         self::assertContains(SystemDependencies\libsqlite::HANDLE, $dependencies);
         self::assertContains(SystemDependencies\libzlib::HANDLE, $dependencies);
-        self::assertNotContains('--with-swoole-firebird', self::createExtension(803, OS\Alpine::class, 322)->getConfigureArguments('6.2.0', new Values()));
-        self::assertContains('--with-swoole-firebird', self::createExtension(804, OS\Alpine::class, 322)->getConfigureArguments('6.2.0', new Values()));
+        self::assertNotContains('--with-swoole-firebird', self::createExtension(803, OS\Alpine::class, 322)->getConfigureArguments(self::createBuildContext('6.2.0')));
+        self::assertContains('--with-swoole-firebird', self::createExtension(804, OS\Alpine::class, 322)->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertContains(SystemDependencies\libfbclient::HANDLE, self::createExtension(804, OS\Alpine::class, 322)->getRequiredSystemDependencies('6.2.0', new Values()));
     }
 
@@ -230,10 +230,10 @@ final class SwooleTest extends TestCase
     public function testSocketsSupport()
     {
         $without = self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE);
-        self::assertNotContains('--enable-sockets', $without->getConfigureArguments('6.2.0', new Values()));
+        self::assertNotContains('--enable-sockets', $without->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertSame(['sockets'], $without->getOptionalExtensions('6.2.0'));
         $with = self::createExtension(804, OS\Debian::class, OS\Debian::VERSION_TRIXIE, false, 64, ['Core', 'sockets']);
-        self::assertContains('--enable-sockets', $with->getConfigureArguments('6.2.0', new Values()));
-        self::assertSame([], $with->getConfigureArguments('2.0.10', new Values()));
+        self::assertContains('--enable-sockets', $with->getConfigureArguments(self::createBuildContext('6.2.0')));
+        self::assertSame([], $with->getConfigureArguments(self::createBuildContext('2.0.10')));
     }
 }
