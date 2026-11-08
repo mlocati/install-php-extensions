@@ -91,9 +91,7 @@ final class pdo_snowflake extends Extension implements
         if ($phpVersion <= 701) {
             return '0.2.4';
         }
-        if ($phpVersion <= 702) {
-            return '1.0.0';
-        }
+        // On PHP 7.2, 1.0.0 doesn't link libuuid
         if ($phpVersion <= 704) {
             return '2.0.0';
         }
