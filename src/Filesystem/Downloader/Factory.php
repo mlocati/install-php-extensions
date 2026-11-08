@@ -13,7 +13,7 @@ class Factory
     private $logger;
 
     /**
-     * @var array{cacheDir?: string, cacheMaxAge?: non-negative-int|non-empty-string, proxy?: string, insecure?: bool}
+     * @var array{cacheDir?: string, cacheMaxAge?: non-negative-int|non-empty-string, proxy?: string, insecure?: bool, retries?: non-negative-int, retryDelay?: non-negative-int}
      */
     private $config;
 
@@ -23,7 +23,7 @@ class Factory
     private $fs;
 
     /**
-     * @param array{cacheDir?: string, cacheMaxAge?: non-negative-int|non-empty-string, proxy?: string, insecure?: bool} $config
+     * @param array{cacheDir?: string, cacheMaxAge?: non-negative-int|non-empty-string, proxy?: string, insecure?: bool, retries?: non-negative-int, retryDelay?: non-negative-int} $config
      */
     public function __construct(Filesystem $fs, \IPE\Logger $logger, array $config = [])
     {
@@ -40,6 +40,10 @@ class Factory
     public function buildDownloader()
     {
         $downloader = $this->detectActualDownloader();
+        $retries = isset($this->config['retries']) ? $this->config['retries'] : 0;
+        if ($retries !== 0) {
+            $downloader = new Retrying($downloader, $this->logger, $retries, isset($this->config['retryDelay']) ? $this->config['retryDelay'] : Retrying::DEFAULT_DELAY);
+        }
         if (!array_key_exists('cacheDir', $this->config) || $this->config['cacheDir'] === '') {
             return $downloader;
         }

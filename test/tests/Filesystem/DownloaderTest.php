@@ -227,6 +227,24 @@ final class DownloaderTest extends TestCase
     /**
      * @return void
      */
+    public function testRetryingDownloader()
+    {
+        if (!self::isAnyDownloaderAvailable()) {
+            self::markTestSkipped('No downloader available');
+        }
+        $downloader = (new Downloader\Factory(self::$fs, new \IPE\Logger(), ['retries' => 0]))->buildDownloader();
+        self::assertNotInstanceOf(Downloader\Retrying::class, $downloader);
+        $downloader = (new Downloader\Factory(self::$fs, new \IPE\Logger(), ['retries' => 2, 'retryDelay' => 0]))->buildDownloader();
+        self::assertInstanceOf(Downloader\Retrying::class, $downloader);
+        self::assertSame('This the content of file #1!', $downloader->getContent('http://127.0.0.1:' . IPE_TEST_WEBSERVER_PORT . '/file1'));
+        $cache = self::$fs->createVolatileDirectory();
+        $downloader = (new Downloader\Factory(self::$fs, new \IPE\Logger(), ['retries' => 2, 'cacheDir' => $cache->getPath()]))->buildDownloader();
+        self::assertInstanceOf(Downloader\Cached::class, $downloader);
+    }
+
+    /**
+     * @return void
+     */
     public function testCachedDownloader()
     {
         if (!self::isAnyDownloaderAvailable()) {
