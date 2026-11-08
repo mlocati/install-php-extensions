@@ -63,6 +63,11 @@ function run(array $arguments): array
     return [$rc, $output === false ? '' : rtrim($output)];
 }
 
+function printIndented(string $text): void
+{
+    echo '   ', str_replace("\n", "\n   ", rtrim($text)), "\n";
+}
+
 function printGroup(string $title, string $contents): void
 {
     echo "::group::{$title}\n", rtrim($contents), "\n::endgroup::\n";
@@ -143,7 +148,7 @@ function runTest(string $description, string $image, string $phar, array $extens
         foreach (is_array($report) && is_array($report['skippedExtensions'] ?? null) ? $report['skippedExtensions'] : [] as $skippedExtension) {
             if (is_array($skippedExtension) && is_string($skippedExtension['name'] ?? null)) {
                 $skipped[] = $skippedExtension['name'];
-                echo "   {$skippedExtension['name']} has been skipped: ", is_string($skippedExtension['message'] ?? null) ? $skippedExtension['message'] : '', "\n";
+                printIndented(is_string($skippedExtension['message'] ?? null) ? $skippedExtension['message'] : "{$skippedExtension['name']} has been skipped");
             }
         }
         $installed = array_values(array_filter($extensions, static fn (string $extension): bool => !in_array(explode(':', $extension, 2)[0], $skipped, true)));
@@ -157,7 +162,7 @@ function runTest(string $description, string $image, string $phar, array $extens
             }
             // LD_BIND_NOW: with lazy binding, missing symbols are detected only when they are used
             [$rc, $output] = run(['docker', 'exec', '--env', 'LD_BIND_NOW=1', '--env', 'TEST_IPE_OPTIONS=' . json_encode($options, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), CONTAINER_NAME, 'php', "/ipe/test/{$handle}.php"]);
-            echo '   ', rtrim($output), "\n";
+            printIndented($output);
             if ($rc !== 0) {
                 printError('Test failed', "{$handle} in {$description} ({$image})");
 
@@ -237,7 +242,8 @@ function main(array $argv): int
             }
             $start = time();
             $result = runTest($description, $image, $phar, $test['extensions'], $test['options']);
-            echo "   {$result} in ", time() - $start, " seconds ({$image})\n";
+            $seconds = time() - $start;
+            printIndented('Time: ' . ($seconds < 60 ? "{$seconds} seconds" : sprintf('%.1f minutes', $seconds / 60)));
             $summary[$result][] = "{$description} ({$image})";
         }
     } catch (\Throwable $x) {
