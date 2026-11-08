@@ -78,6 +78,13 @@ final class libcclient extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
+            if (libopenssl::isPHPUsingOpenSSL10OnStretch($this->php, $this->os)) {
+                // The dependencies of libc-client2007e-dev, without libssl-dev (it conflicts with libssl1.0-dev)
+                return new Packages(
+                    ['libc-client2007e'],
+                    ['libkrb5-dev', 'libpam0g-dev']
+                );
+            }
             $version = $this->os->getNumericVersion();
             if ($version <= OS\Debian::VERSION_BOOKWORM) {
                 return new Packages(
@@ -111,7 +118,9 @@ final class libcclient extends SystemDependency
         if (!$this->os instanceof OS\Debian) {
             return;
         }
-        if ($this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE) {
+        if (libopenssl::isPHPUsingOpenSSL10OnStretch($this->php, $this->os)) {
+            $this->installDevPackageWithoutLibssl($state);
+        } elseif ($this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE) {
             $this->installPackagesOfBookworm($state);
         }
     }
@@ -163,6 +172,27 @@ final class libcclient extends SystemDependency
             $this->installPackage(self::PACKAGE_DEV . "_{$debianVersion}_{$architecture}.deb", $state);
             $this->removeDevPackage = true;
         }
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    private function installDevPackageWithoutLibssl(State $state)
+    {
+        $fs = $this->os->getFilesystem();
+        $dir = $state->getVolatileDir()->createSubdir();
+        list($rc) = $fs->run(Command::create('apt-get', ['download', self::PACKAGE_DEV])->withWorkingDirectory($dir)->withOutput(Command::OUTPUT_SHOW));
+        $files = $rc === 0 ? $fs->listDirectoryContents($dir) : [];
+        if (count($files) !== 1) {
+            throw new Exception\IO('Failed to download ' . self::PACKAGE_DEV);
+        }
+        list($rc) = $fs->run(Command::create('dpkg', ['-i', '--ignore-depends=libssl-dev', "{$dir}/{$files[0]}"])->withOutput(Command::OUTPUT_SHOW));
+        if ($rc !== 0) {
+            throw new Exception\IO('Failed to install ' . self::PACKAGE_DEV);
+        }
+        $this->removeDevPackage = true;
     }
 
     /**

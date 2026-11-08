@@ -4,6 +4,7 @@ namespace IPE\SystemDependencies;
 
 use IPE\Installer\State;
 use IPE\OS;
+use IPE\PHPInfo;
 use IPE\PHPInfo\SSLLibrary;
 use IPE\SystemDependency;
 use IPE\SystemPackager\Packages;
@@ -59,8 +60,7 @@ class libopenssl extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            // The PHP 5 of the Docker images of Debian Stretch uses OpenSSL 1.0, the system uses OpenSSL 1.1
-            if ($this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH && $this->isPHPUsing(SSLLibrary::TYPE_OPENSSL, '1.0')) {
+            if (self::isPHPUsingOpenSSL10OnStretch($this->php, $this->os)) {
                 return new Packages(
                     ['libssl1.0.2'],
                     ['libssl1.0-dev']
@@ -101,16 +101,18 @@ class libopenssl extends SystemDependency
     }
 
     /**
-     * @param \IPE\PHPInfo\SSLLibrary::TYPE_* $type
-     * @param string $majorMinorVersion
+     * The PHP 5 of the Docker images of Debian Stretch uses OpenSSL 1.0, the system uses OpenSSL 1.1.
      *
      * @return bool
      */
-    private function isPHPUsing($type, $majorMinorVersion)
+    public static function isPHPUsingOpenSSL10OnStretch(PHPInfo $php, OS $os)
     {
-        $library = $this->php->getSSLLibrary();
+        if (!$os instanceof OS\Debian || $os->getNumericVersion() !== OS\Debian::VERSION_STRETCH) {
+            return false;
+        }
+        $library = $php->getSSLLibrary();
 
-        return $library !== null && $library->getType() === $type && $library->getMajorMinorVersion() === $majorMinorVersion;
+        return $library !== null && $library->getType() === SSLLibrary::TYPE_OPENSSL && $library->getMajorMinorVersion() === '1.0';
     }
 
     /**
