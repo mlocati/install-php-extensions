@@ -5,6 +5,7 @@ namespace IPE\Extensions;
 use IPE\Extension;
 use IPE\Filesystem\Command;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class tensor extends Extension implements
@@ -81,8 +82,15 @@ final class tensor extends Extension implements
         if ($phpVersion <= 703) {
             return '2.2.3';
         }
+        if ($phpVersion <= 704) {
+            return '3.0.5';
+        }
+        // 3.1.0 uses ZSTR_MAX_LEN, which is available since PHP 8.0.10
+        if ($phpVersion <= 800 && version_compare($this->php->getBaseVersion(), '8.0.10') < 0) {
+            return '3.0.5';
+        }
 
-        return $phpVersion <= 704 ? '3.0.5' : '';
+        return '';
     }
 
     /**
@@ -102,6 +110,11 @@ final class tensor extends Extension implements
      */
     public function getCompilerFlags()
     {
+        // On Debian Stretch, /usr/include/cblas.h comes from libblas-dev and doesn't declare the OpenBLAS functions
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH) {
+            return '-Wno-incompatible-pointer-types -I/usr/include/openblas';
+        }
+
         return '-Wno-incompatible-pointer-types';
     }
 
