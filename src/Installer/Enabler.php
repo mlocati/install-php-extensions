@@ -154,7 +154,7 @@ final class Enabler
         $iniFile = "{$iniScanDir}/{$iniBasename}.ini";
         $this->logger->debug("Creating {$iniFile}", ['content' => $iniContent]);
         $this->fs->writeFile($iniFile, $iniContent);
-        $this->php->addInstalledExtensions($newModules);
+        $this->addLoadedModules($newModules);
         $this->enabledIniFiles[$compiled->getModuleName()] = [$iniFile, $iniContent];
 
         return $newModules;
@@ -179,7 +179,7 @@ final class Enabler
             // The module may not load in this environment
             $newModules = [$compiled->getModuleName()];
         }
-        $this->php->addInstalledExtensions($newModules);
+        $this->addLoadedModules($newModules);
         $this->enabledIniFiles[$compiled->getModuleName()] = [$iniFile, $iniContent];
 
         return $newModules;
@@ -311,7 +311,7 @@ final class Enabler
         if ($names === []) {
             throw new Exception\IO('The extension ' . $extension::getHandle() . ' does not load' . ($errors === '' ? '' : ":\n{$errors}"));
         }
-        $this->php->addInstalledExtensions($names);
+        $this->addLoadedModules($names);
 
         return $names;
     }
@@ -421,6 +421,21 @@ final class Enabler
     {
         // With lazy binding (the default), missing symbols are detected only when they are used
         return $this->runPHP(['-r', 'return;'], ['LD_BIND_NOW' => '1']);
+    }
+
+    /**
+     * @param non-empty-list<non-empty-string> $names the names of the modules that PHP now loads
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    private function addLoadedModules(array $names)
+    {
+        $this->php->addInstalledExtensions($names);
+        if ($this->php->getSSLLibrary() === null && in_array('openssl', array_map('strtolower', $names), true)) {
+            $this->php->detectSSLLibrary($this->fs);
+        }
     }
 
     /**

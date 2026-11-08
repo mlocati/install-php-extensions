@@ -2,9 +2,9 @@
 
 namespace IPE\SystemDependencies;
 
-use IPE\Filesystem\Command;
 use IPE\Installer\State;
 use IPE\OS;
+use IPE\PHPInfo\SSLLibrary;
 use IPE\SystemDependency;
 use IPE\SystemPackager\Packages;
 
@@ -35,7 +35,22 @@ class libopenssl extends SystemDependency
     {
         if ($this->os instanceof OS\Alpine) {
             if ($this->os->getNumericVersion() <= 316) {
-                return $this->getOldAlpinePackages();
+                // The older versions of Alpine offer more SSL libraries: we need the one used by PHP
+                $library = $this->php->getSSLLibrary();
+                if ($library !== null) {
+                    return $this->getAlpinePackagesFor($library);
+                }
+                if ($this->os->getNumericVersion() <= 308) {
+                    return new Packages(
+                        ['libssl1.0'],
+                        ['openssl-dev']
+                    );
+                }
+
+                return new Packages(
+                    ['libssl1.1'],
+                    ['openssl-dev']
+                );
             }
 
             return new Packages(
@@ -44,6 +59,14 @@ class libopenssl extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
+            // The PHP 5 of the Docker images of Debian Stretch uses OpenSSL 1.0, the system uses OpenSSL 1.1
+            if ($this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH && $this->isPHPUsing(SSLLibrary::TYPE_OPENSSL, '1.0')) {
+                return new Packages(
+                    ['libssl1.0.2'],
+                    ['libssl1.0-dev']
+                );
+            }
+
             return new Packages(
                 [$this->getDebianPackage($this->os)],
                 ['libssl-dev']
@@ -54,30 +77,40 @@ class libopenssl extends SystemDependency
     }
 
     /**
-     * The older versions of Alpine may use different SSL libraries: we need the one used by PHP.
-     *
-     * @throws \IPE\Exception\IO
-     *
      * @return \IPE\SystemPackager\Packages
      */
-    private function getOldAlpinePackages()
+    private function getAlpinePackagesFor(SSLLibrary $library)
     {
-        list(, $output) = $this->os->getFilesystem()->run(Command::create($this->php->getPHPBin(), ['-d', 'display_errors=stderr', '-r', 'echo defined("OPENSSL_VERSION_TEXT") ? OPENSSL_VERSION_TEXT : "";'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
-        $matches = null;
-        if (preg_match('/^OpenSSL (?<major>\d+)\.(?<minor>\d+)/', $output, $matches)) {
+        if ($library->getType() === SSLLibrary::TYPE_LIBRESSL) {
             return new Packages(
-                ['libssl' . ((int) $matches['major'] <= 1 ? "{$matches['major']}.{$matches['minor']}" : $matches['major'])],
-                ['openssl-dev']
-            );
-        }
-        if (preg_match('/^LibreSSL (?<version>\d+\.\d+)/', $output, $matches)) {
-            return new Packages(
-                ["libressl{$matches['version']}-libssl"],
+                ["libressl{$library->getMajorMinorVersion()}-libssl"],
                 ['libressl-dev']
             );
         }
+        if ($library->getMajorVersion() <= 1) {
+            return new Packages(
+                ["libssl{$library->getMajorMinorVersion()}"],
+                ['openssl-dev']
+            );
+        }
 
-        return new Packages();
+        return new Packages(
+            ["libssl{$library->getMajorVersion()}"],
+            ['openssl-dev']
+        );
+    }
+
+    /**
+     * @param \IPE\PHPInfo\SSLLibrary::TYPE_* $type
+     * @param string $majorMinorVersion
+     *
+     * @return bool
+     */
+    private function isPHPUsing($type, $majorMinorVersion)
+    {
+        $library = $this->php->getSSLLibrary();
+
+        return $library !== null && $library->getType() === $type && $library->getMajorMinorVersion() === $majorMinorVersion;
     }
 
     /**

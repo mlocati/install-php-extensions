@@ -6,6 +6,7 @@ use IPE\Exception;
 use IPE\Filesystem;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\PHPInfo\SSLLibrary;
 use IPE\Test\Support\PHPInfoTest\FakeExtension;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
@@ -43,6 +44,9 @@ final class PHPInfoTest extends TestCase
         self::assertGreaterThan(20000000, $current->getAPIVersion());
         $current->addInstalledExtensions(['Another One']);
         self::assertContains('Another One', $current->getInstalledExtensions());
+        $sslLibrary = $current->getSSLLibrary();
+        self::assertSame($current, $current->detectSSLLibrary($fs));
+        self::assertEquals($sslLibrary, $current->getSSLLibrary());
     }
 
     /**
@@ -71,7 +75,8 @@ final class PHPInfoTest extends TestCase
                 'PHP API => 20240924',
                 'PHP Extension => 20240924',
                 '',
-            ])]
+            ])],
+            [0, 'OpenSSL 3.0.15 3 Sep 2024']
         );
         $php = PHPInfo::fromPHPBin('/usr/local/bin/php', $fs);
         self::assertSame('8.4.14', $php->getVersion());
@@ -84,6 +89,10 @@ final class PHPInfoTest extends TestCase
         self::assertSame('/usr/local/etc/php/conf.d', $php->getIniScanDir());
         self::assertSame(['/usr/local/etc/php/conf.d'], $php->getIniScanDirs());
         self::assertSame(['Core', 'json'], $php->getInstalledExtensions());
+        $sslLibrary = $php->getSSLLibrary();
+        self::assertNotNull($sslLibrary);
+        self::assertSame(SSLLibrary::TYPE_OPENSSL, $sslLibrary->getType());
+        self::assertSame('3.0.15', $sslLibrary->getVersion());
     }
 
     /**
@@ -136,7 +145,8 @@ final class PHPInfoTest extends TestCase
                 'Scan this dir for additional .ini files => ' . ($scanDirs === '' ? '(none)' : $scanDirs),
                 'PHP API => 20240924',
                 '',
-            ])]
+            ])],
+            [0, '']
         );
         $php = PHPInfo::fromPHPBin('/usr/local/bin/php', $fs);
         self::assertSame($expectedDir, $php->getIniScanDir());
@@ -158,10 +168,13 @@ final class PHPInfoTest extends TestCase
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
             [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/lib/php/20240924', '', 'Core', ''])],
-            [0, "PHP API => 20240924\n"]
+            [0, "PHP API => 20240924\n"],
+            [0, '']
         );
         $php = PHPInfo::fromPHPBin('php8.4', $fs);
         self::assertSame('/usr/bin/php8.4', $php->getPHPBin());
+        self::assertNull($php->getSSLLibrary());
+        self::assertSame(['Core'], $php->getInstalledExtensions());
     }
 
     /**
@@ -231,7 +244,8 @@ final class PHPInfoTest extends TestCase
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
             [0, implode("\n", [$version, '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '', ''])],
-            [0, "PHP API => 20240924\n"]
+            [0, "PHP API => 20240924\n"],
+            [0, '']
         );
         try {
             $php = PHPInfo::fromPHPBin('/usr/bin/php', $fs);
