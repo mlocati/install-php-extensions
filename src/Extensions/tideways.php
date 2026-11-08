@@ -76,6 +76,10 @@ final class tideways extends Extension\PrecompiledExtension implements Extension
     public function getBinaryArchiveURL($versionRequirements)
     {
         $this->checkNoVersion($versionRequirements);
+        // The module uses zend_weakrefs_hash_add(), available since PHP 8.0.13
+        if ($this->php->getMajorMinorVersion() === 800 && version_compare($this->php->getBaseVersion(), '8.0.13') < 0) {
+            throw new Exception\IO\NotFound("Tideways doesn't provide a binary for PHP 8.0 before 8.0.13");
+        }
         if ($this->os instanceof OS\Alpine) {
             $platform = 'linux-alpine';
         } elseif ($this->os instanceof OS\Debian) {

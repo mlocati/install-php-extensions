@@ -27,15 +27,19 @@ final class PrecompiledExtensionsTest extends TestCase
      * @param int $version
      * @param bool $threadSafe
      * @param int $bits
+     * @param string $fullVersion empty string for <major>.<minor>.27
      *
      * @return \IPE\PHPInfo
      */
-    private static function createPHP($version = 804, $threadSafe = false, $bits = 64)
+    private static function createPHP($version = 804, $threadSafe = false, $bits = 64, $fullVersion = '')
     {
+        if ($fullVersion === '') {
+            $fullVersion = (int) floor($version / 100) . '.' . ($version % 100) . '.27';
+        }
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getMajorMinorVersion')->andReturn($version);
-        $php->shouldReceive('getVersion')->andReturn((int) floor($version / 100) . '.' . ($version % 100) . '.27');
-        $php->shouldReceive('getBaseVersion')->andReturn((int) floor($version / 100) . '.' . ($version % 100) . '.27');
+        $php->shouldReceive('getVersion')->andReturn($fullVersion);
+        $php->shouldReceive('getBaseVersion')->andReturn($fullVersion);
         $php->shouldReceive('isThreadSafe')->andReturn($threadSafe);
         $php->shouldReceive('getBits')->andReturn($bits);
 
@@ -199,6 +203,19 @@ final class PrecompiledExtensionsTest extends TestCase
         $os = self::createOS(OS\Debian::class, 12, null, OS\Architecture::OTHER, 'riscv64');
         $this->expectException(Exception\IO\NotFound::class);
         (new Extensions\tideways(self::createPHP(), $os, $downloader))->getBinaryArchiveURL('');
+    }
+
+    /**
+     * @return void
+     */
+    public function testTidewaysOldPHP80()
+    {
+        $downloader = M::mock(Downloader::class);
+        $downloader->shouldReceive('getContent')->andReturn(JSON::encode(['php' => ['links' => ['linux' => ['arm64' => 'https://example.com/tideways.tar.gz']]]]));
+        $os = self::createOS(OS\Debian::class, 12);
+        self::assertSame('https://example.com/tideways.tar.gz', (new Extensions\tideways(self::createPHP(800, false, 64, '8.0.13'), $os, $downloader))->getBinaryArchiveURL(''));
+        $this->expectException(Exception\IO\NotFound::class);
+        (new Extensions\tideways(self::createPHP(800, false, 64, '8.0.12'), $os, $downloader))->getBinaryArchiveURL('');
     }
 
     /**
