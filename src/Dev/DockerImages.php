@@ -131,8 +131,9 @@ final class DockerImages
                 'os' => ['alpine3.10', 'alpine3.11', 'alpine3.12', 'alpine3.13', 'alpine3.14', 'alpine3.15', 'alpine3.16', 'buster', 'bullseye'],
             ],
             '8.0' => [
-                'os' => ['alpine3.12', 'alpine3.13', 'alpine3.14', 'alpine3.15', 'alpine3.16', 'buster', 'bullseye'],
-                'withoutZTS' => ['alpine3.12', 'alpine3.13'],
+                'os' => ['alpine3.13', 'alpine3.14', 'alpine3.15', 'alpine3.16', 'buster', 'bullseye'],
+                'withoutZTS' => ['alpine3.13'],
+                'abandoned' => ['alpine3.12'],
             ],
             '8.1' => [
                 'os' => ['alpine3.14', 'alpine3.15', 'alpine3.16', 'alpine3.17', 'alpine3.18', 'alpine3.19', 'alpine3.20', 'alpine3.21', 'alpine3.22', 'buster', 'bullseye', 'bookworm', 'trixie'],
