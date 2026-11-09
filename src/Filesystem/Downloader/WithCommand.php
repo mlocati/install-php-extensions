@@ -33,10 +33,15 @@ abstract class WithCommand extends AbstractDownloader
     {
         $url = Url::validate($url);
         $this->logger->debug('Downloading with command', ['command' => $this->command, 'url' => $url]);
-        list($rc, $output) = $this->fs->run(Command::create(
+        $command = Command::create(
             $this->command,
             $this->buildDownloadArguments($url, str_replace('/', $this->fs->getDirectorySeparator(), $filename))
-        ));
+        );
+        $environment = $this->buildDownloadEnvironment();
+        if ($environment !== []) {
+            $command = $command->withEnvironment($environment);
+        }
+        list($rc, $output) = $this->fs->run($command);
         if ($rc !== 0) {
             $class = $this->getErrorResponseClass($rc, $output);
             throw new $class("Failed to download {$url} with {$this->command}:\n{$output}");
@@ -50,6 +55,14 @@ abstract class WithCommand extends AbstractDownloader
      * @return list<string>
      */
     abstract protected function buildDownloadArguments($url, $filename);
+
+    /**
+     * @return array<non-empty-string, string> the environment variables to be added when running the command
+     */
+    protected function buildDownloadEnvironment()
+    {
+        return [];
+    }
 
     /**
      * Get the class of the exception to be thrown when the command fails.

@@ -70,6 +70,9 @@ class Factory
         if (($downloader = WithStreamWrapper::createIfAvailable($this->config, $this->fs, $this->logger)) !== null) {
             return $downloader;
         }
+        if (($downloader = WithBusyBoxWgetCommand::createIfAvailable($this->config, $this->fs, $this->logger)) !== null) {
+            return $downloader;
+        }
 
         throw new Exception\IO('No downloader engine detected');
     }
