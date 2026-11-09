@@ -35,26 +35,37 @@ final class WithCurlCommand extends WithCommand
      */
     protected function buildDownloadArguments($url, $filename)
     {
-        $args = [];
+        $args = [
+            // Don't show the progress meter and the error messages...
+            '-s',
+            // ...but show the error messages
+            '-S',
+            // Follow the redirects
+            '-L',
+            // Fail on HTTP errors
+            '-f',
+            // User-Agent header
+            '-A', $this->buildUserAgent('CurlCommand'),
+            // Save to file
+            '--output', $filename,
+        ];
         if ($this->hasProxy()) {
+            // Use the proxy
             $args[] = '--proxy';
             $args[] = $this->getProxyUrl();
             if ($this->hasProxyAuthentication()) {
+                // Proxy credentials
                 $args[] = '--proxy-user';
                 $args[] = $this->getProxyUserPassword();
             }
         }
         if ($this->isInsecure()) {
+            // Don't validate the server certificate
             $args[] = '--insecure';
         }
+        $args[] = $url;
 
-        return array_merge($args, [
-            '-A', $this->buildUserAgent('CurlCommand'),
-            '-sSLf',
-            '--output',
-            $filename,
-            $url,
-        ]);
+        return $args;
     }
 
     /**
