@@ -260,13 +260,14 @@ function isQuickTestNeeded(?array $commits): bool
 }
 
 /**
- * The most recent Alpine and Debian.
+ * The most recent Alpine and Debian of the official Docker PHP images.
  *
  * @return list<string>
  */
 function getQuickTestOperatingSystems(): array
 {
-    $all = DockerImages::getOperatingSystems();
+    $officialImages = array_filter(DockerImages::getAll(), static fn (DockerImage $image): bool => $image->getBaseImage() === '');
+    $all = array_values(array_unique(array_map(static fn (DockerImage $image): string => $image->getOS(), $officialImages)));
     $alpine = array_values(array_filter($all, static fn (string $os): bool => str_starts_with($os, 'alpine')));
     $debian = array_values(array_diff($all, $alpine));
 

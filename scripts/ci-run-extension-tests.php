@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace IPE\Scripts\CI\RunExtensionTests;
 
 use IPE\CLI\Argv;
+use IPE\Dev\DockerImage;
 use IPE\Dev\DockerImages;
 
 set_error_handler(
@@ -97,14 +98,44 @@ function getRealPath(string $path): string
 }
 
 /**
+ * Pull the image, or build it from its base image.
+ *
+ * @throws \RuntimeException
+ *
+ * @return array{int, string} the exit code and the output
+ */
+function prepareImage(DockerImage $image): array
+{
+    if ($image->getBaseImage() === '') {
+        return run(['docker', 'pull', '--quiet', $image->getName()]);
+    }
+    $dir = sys_get_temp_dir() . '/' . uniqid('ipe-docker-build-');
+    if (!mkdir($dir)) {
+        throw new \RuntimeException("Failed to create the directory {$dir}");
+    }
+    try {
+        if (file_put_contents("{$dir}/Dockerfile", "FROM {$image->getBaseImage()}\nRUN " . implode(" \\\n    && ", $image->getSetupCommands()) . "\n") === false) {
+            throw new \RuntimeException("Failed to write {$dir}/Dockerfile");
+        }
+
+        return run(['docker', 'build', '--progress=plain', '--tag', $image->getName(), $dir]);
+    } finally {
+        unlink("{$dir}/Dockerfile");
+        rmdir($dir);
+    }
+}
+
+/**
  * @param non-empty-list<non-empty-string> $extensions
  * @param list<string> $options
  *
  * @throws \RuntimeException
  * @throws \JsonException
  */
-function runTest(string $description, string $image, string $phar, array $extensions, array $options): string
+function runTest(string $description, DockerImage $dockerImage, string $phar, array $extensions, array $options): string
 {
+    $image = $dockerImage->getName();
+    $php = $dockerImage->getPHPBinary();
     $outputDir = sys_get_temp_dir() . '/' . uniqid('ipe-extension-test-');
     if (!mkdir($outputDir)) {
         throw new \RuntimeException("Failed to create the directory {$outputDir}");
@@ -127,7 +158,7 @@ function runTest(string $description, string $image, string $phar, array $extens
         [$rc, $output] = run(array_merge(
             [
                 'docker', 'exec', CONTAINER_NAME,
-                'php', '/ipe/install-php-extensions',
+                $php, '/ipe/install-php-extensions',
                 '--apt-debian-fix-archived=yes',
                 '--fix-letsencrypt=yes',
                 '--unsupported-extensions=skip',
@@ -161,7 +192,7 @@ function runTest(string $description, string $image, string $phar, array $extens
                 continue;
             }
             // LD_BIND_NOW: with lazy binding, missing symbols are detected only when they are used
-            [$rc, $output] = run(['docker', 'exec', '--env', 'LD_BIND_NOW=1', '--env', 'TEST_IPE_OPTIONS=' . json_encode($options, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), CONTAINER_NAME, 'php', "/ipe/test/{$handle}.php"]);
+            [$rc, $output] = run(['docker', 'exec', '--env', 'LD_BIND_NOW=1', '--env', 'TEST_IPE_OPTIONS=' . json_encode($options, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), CONTAINER_NAME, $php, "/ipe/test/{$handle}.php"]);
             printIndented($output);
             if ($rc !== 0) {
                 printError('Test failed', "{$handle} in {$description} ({$image})");
@@ -186,7 +217,7 @@ function runTest(string $description, string $image, string $phar, array $extens
 /**
  * @throws \JsonException
  * @throws \RuntimeException
- * @return list<array{extensions: non-empty-list<non-empty-string>, options: list<string>, php: string, zts: bool, image: string}> the tests to be run on the operating system
+ * @return list<array{extensions: non-empty-list<non-empty-string>, options: list<string>, php: string, zts: bool, image: DockerImage}> the tests to be run on the operating system
  */
 function getTests(string $os): array
 {
@@ -207,8 +238,13 @@ function getTests(string $os): array
             throw new \RuntimeException('Invalid test in IPE_EXTENSION_TESTS: ' . json_encode($test, JSON_THROW_ON_ERROR));
         }
         foreach (DockerImages::find($test['php'], $test['zts']) as $image) {
-            if ($image->getOS() === $os) {
-                $result[] = ['extensions' => $extensions, 'options' => $options, 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image->getName()];
+            if ($image->getOS() !== $os) {
+                continue;
+            }
+            $result[] = ['extensions' => $extensions, 'options' => $options, 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image];
+            // The locally built images have PHP installed by the system packager: test also the compilation of the extensions
+            if ($image->getBaseImage() !== '' && !array_any($options, static fn (string $option): bool => str_starts_with($option, '--system-packages'))) {
+                $result[] = ['extensions' => $extensions, 'options' => array_merge($options, ['--system-packages=never']), 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image];
             }
         }
     }
@@ -229,19 +265,27 @@ function main(array $argv): int
     [, $os, $phar] = $argv;
     $summary = [RESULT_PASSED => [], RESULT_FAILED => [], RESULT_SKIPPED => []];
     try {
+        /** @var array<string, bool> $preparedImages */
+        $preparedImages = [];
         foreach (getTests($os) as $test) {
             $description = implode(' ', $test['extensions']) . ($test['options'] === [] ? '' : ' (' . implode(' ', $test['options']) . ')') . " on PHP {$test['php']}" . ($test['zts'] ? ' (ZTS)' : '');
-            $image = $test['image'];
+            $image = $test['image']->getName();
             echo "### {$description}\n";
-            [$rc, $output] = run(['docker', 'pull', '--quiet', $image]);
-            if ($rc !== 0) {
-                printGroup('docker pull output', $output);
-                printError('Failed to pull the Docker image', "{$description} ({$image})");
+            if (!isset($preparedImages[$image])) {
+                [$rc, $output] = prepareImage($test['image']);
+                $preparedImages[$image] = $rc === 0;
+                if ($rc !== 0) {
+                    $built = $test['image']->getBaseImage() !== '';
+                    printGroup($built ? 'docker build output' : 'docker pull output', $output);
+                    printError($built ? 'Failed to build the Docker image' : 'Failed to pull the Docker image', "{$description} ({$image})");
+                }
+            }
+            if (!$preparedImages[$image]) {
                 $summary[RESULT_FAILED][] = "{$description} ({$image})";
                 continue;
             }
             $start = time();
-            $result = runTest($description, $image, $phar, $test['extensions'], $test['options']);
+            $result = runTest($description, $test['image'], $phar, $test['extensions'], $test['options']);
             $seconds = time() - $start;
             printIndented('Time: ' . ($seconds < 60 ? "{$seconds} seconds" : sprintf('%.1f minutes', $seconds / 60)));
             $summary[$result][] = "{$description} ({$image})";
