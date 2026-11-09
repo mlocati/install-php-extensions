@@ -157,6 +157,15 @@ abstract class SystemPackager
     public abstract function formatPackageNameWithVersion($name, $version);
 
     /**
+     * Get the file with the CA certificates used by the system, and the package that provides it.
+     *
+     * @return array{non-empty-string, non-empty-string}|null NULL if the CA certificates can't be installed
+     *
+     * @example ['/etc/ssl/certs/ca-certificates.crt', 'ca-certificates']
+     */
+    public abstract function getCACertificates();
+
+    /**
      * Get the name of the package that provides phpize and php-config for PHP installed by a system package.
      *
      * @param \IPE\SystemPackager\Package $phpPackage the package that installed PHP

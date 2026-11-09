@@ -102,6 +102,18 @@ final class APK extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\SystemPackager::getCACertificates()
+     *
+     * @return array{non-empty-string, non-empty-string}
+     */
+    public function getCACertificates()
+    {
+        return ['/etc/ssl/certs/ca-certificates.crt', 'ca-certificates'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\SystemPackager::getPHPDevelopmentPackageName()
      */
     public function getPHPDevelopmentPackageName(Package $phpPackage)

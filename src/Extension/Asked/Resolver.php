@@ -16,6 +16,7 @@ use IPE\Filesystem\ArchiveExtractor;
 use IPE\Filesystem\ArchiveFetcher;
 use IPE\Filesystem\ArchiveFormat;
 use IPE\Filesystem\Downloader;
+use IPE\Installer\CACertificatesInstaller;
 use IPE\Installer\Enabler;
 use IPE\Installer\State;
 use IPE\Installer\VendorArchivePreparer;
@@ -109,6 +110,11 @@ abstract class Resolver
      */
     protected $phpSystemPackage;
 
+    /**
+     * @var \IPE\Installer\CACertificatesInstaller
+     */
+    protected $caCertificatesInstaller;
+
     public function __construct(
         PHPInfo $php,
         OS $os,
@@ -125,6 +131,7 @@ abstract class Resolver
         Extension\UnsupportedEnvironment $unsupportedEnvironment,
         Enabler $enabler,
         PHPSystemPackage $phpSystemPackage,
+        CACertificatesInstaller $caCertificatesInstaller,
         \IPE\Logger $logger
     ) {
         $this->logger = $logger;
@@ -143,6 +150,7 @@ abstract class Resolver
         $this->unsupportedEnvironment = $unsupportedEnvironment;
         $this->enabler = $enabler;
         $this->phpSystemPackage = $phpSystemPackage;
+        $this->caCertificatesInstaller = $caCertificatesInstaller;
     }
 
     /**
@@ -166,6 +174,9 @@ abstract class Resolver
             throw new Exception\UnsupportedOS("The extensions must be installed only from the system packages, but PHP hasn't been installed by the system packager");
         }
         $state->setSkippedExtensions([]);
+        if ($askedExtensions !== []) {
+            $this->caCertificatesInstaller->install($state);
+        }
         $resolved = [];
         $asked = [];
         foreach ($askedExtensions as $askedExtension) {

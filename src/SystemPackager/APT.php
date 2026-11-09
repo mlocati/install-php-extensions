@@ -59,6 +59,16 @@ class APT extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\SystemPackager::getCACertificates()
+     */
+    public function getCACertificates()
+    {
+        return ['/etc/ssl/certs/ca-certificates.crt', 'ca-certificates'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\SystemPackager::getPHPDevelopmentPackageName()
      */
     public function getPHPDevelopmentPackageName(Package $phpPackage)

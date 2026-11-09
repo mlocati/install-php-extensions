@@ -14,6 +14,7 @@ use IPE\Extension\Source;
 use IPE\Extension\Version;
 use IPE\Extensions;
 use IPE\Filesystem;
+use IPE\Installer\CACertificatesInstaller;
 use IPE\Installer\Enabler;
 use IPE\Installer\PHPSourceProvider;
 use IPE\Installer\State;
@@ -195,6 +196,8 @@ final class ResolverTest extends TestCase
             new Extension\UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger())),
             $enabler === null ? new Enabler($php, self::$fs, new \IPE\Logger(), new Enabler\Options()) : $enabler,
             $phpSystemPackage === null ? new PHPSystemPackage($php, $os) : $phpSystemPackage,
+            // Not a POSIX system, so it never installs anything
+            new CACertificatesInstaller(self::createOS(), new \IPE\Logger()),
             new \IPE\Logger()
         );
     }
