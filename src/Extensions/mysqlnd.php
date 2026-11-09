@@ -11,7 +11,7 @@ final class mysqlnd extends Extension implements
     Extension\DeclaresPriority,
     Extension\PatchesSourceCode,
     Extension\ProvidesConfigureArguments,
-    Extension\ProvidesPreprocessorFlags,
+    Extension\ProvidesConfigureEnvironment,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -112,12 +112,12 @@ final class mysqlnd extends Extension implements
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\ProvidesPreprocessorFlags::getPreprocessorFlags()
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
      */
-    public function getPreprocessorFlags(Extension\BuildContext $context)
+    public function getConfigureEnvironment(Extension\BuildContext $context)
     {
         // php_mysqlnd.c includes config.h only since recent patch releases (not in 8.1.2 nor in 8.2.0, for example): without this it doesn't export get_module
-        return '-DCOMPILE_DL_MYSQLND=1';
+        return ['CPPFLAGS' => '-DCOMPILE_DL_MYSQLND=1'];
     }
 
     /**

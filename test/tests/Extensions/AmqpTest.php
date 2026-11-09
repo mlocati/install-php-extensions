@@ -11,30 +11,30 @@ use Mockery as M;
 final class AmqpTest extends TestCase
 {
     /**
-     * @return array<array{int, string}> the PHP version, and the expected preprocessor flags
+     * @return array<array{int, array<string, string>}> the PHP version, and the expected configure environment
      */
-    public static function providePreprocessorFlags()
+    public static function provideConfigureEnvironment()
     {
         return [
-            [505, '-include inttypes.h'],
-            [506, ''],
-            [806, ''],
+            [505, ['CPPFLAGS' => '-include inttypes.h']],
+            [506, []],
+            [806, []],
         ];
     }
 
     /**
-     * @dataProvider providePreprocessorFlags
+     * @dataProvider provideConfigureEnvironment
      *
      * @param int $phpVersion
-     * @param string $expected
+     * @param array<string, string> $expected
      *
      * @return void
      */
-    public function testPreprocessorFlags($phpVersion, $expected)
+    public function testConfigureEnvironment($phpVersion, array $expected)
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $os = M::mock(OS::class);
-        self::assertSame($expected, (new amqp($php, $os))->getPreprocessorFlags(self::createBuildContext()));
+        self::assertSame($expected, (new amqp($php, $os))->getConfigureEnvironment(self::createBuildContext()));
     }
 }

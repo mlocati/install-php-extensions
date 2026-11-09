@@ -12,7 +12,7 @@ final class amqp extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresUnsupportedEnvironments,
-    Extension\ProvidesPreprocessorFlags,
+    Extension\ProvidesConfigureEnvironment,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -129,15 +129,15 @@ final class amqp extends Extension implements
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\ProvidesPreprocessorFlags::getPreprocessorFlags()
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
      */
-    public function getPreprocessorFlags(Extension\BuildContext $context)
+    public function getConfigureEnvironment(Extension\BuildContext $context)
     {
         // amqp uses strtoimax() without including inttypes.h, which the headers of PHP include only since PHP 5.6
         if ($this->php->getMajorMinorVersion() <= 505) {
-            return '-include inttypes.h';
+            return ['CPPFLAGS' => '-include inttypes.h'];
         }
 
-        return '';
+        return [];
     }
 }

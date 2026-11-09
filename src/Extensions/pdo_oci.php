@@ -7,7 +7,7 @@ use IPE\Extension;
 final class pdo_oci extends Extension\OracleDatabase implements
     Extension\AvailableAsComposerPackage,
     Extension\DependsOnExtensions,
-    Extension\ProvidesCompilerFlags
+    Extension\ProvidesConfigureEnvironment
 {
     /**
      * @public
@@ -110,11 +110,11 @@ final class pdo_oci extends Extension\OracleDatabase implements
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
      */
-    public function getCompilerFlags(Extension\BuildContext $context)
+    public function getConfigureEnvironment(Extension\BuildContext $context)
     {
         // GCC 14 turned this warning into an error, and PHP 7 declares the read handler of the LOB stream with the wrong return type
-        return $this->php->getMajorMinorVersion() < 800 ? '-Wno-incompatible-pointer-types' : '';
+        return $this->php->getMajorMinorVersion() < 800 ? ['CFLAGS' => '-Wno-incompatible-pointer-types'] : [];
     }
 }

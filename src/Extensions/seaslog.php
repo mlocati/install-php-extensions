@@ -6,7 +6,7 @@ use IPE\Extension;
 
 final class seaslog extends Extension implements
     Extension\AvailableOnPECL,
-    Extension\ProvidesCompilerFlags
+    Extension\ProvidesConfigureEnvironment
 {
     /**
      * @public
@@ -67,10 +67,10 @@ final class seaslog extends Extension implements
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
      */
-    public function getCompilerFlags(Extension\BuildContext $context)
+    public function getConfigureEnvironment(Extension\BuildContext $context)
     {
-        return '-Wno-incompatible-pointer-types';
+        return ['CFLAGS' => '-Wno-incompatible-pointer-types'];
     }
 }

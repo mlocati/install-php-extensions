@@ -185,7 +185,7 @@ final class Compiler
 
     /**
      * Debian's gcc doesn't enable the stack protector by default.
-     * Setting these variables replaces the default of configure (-g -O2), and the flags of the user come last so that they win.
+     * Setting these variables replaces the default of configure (-g -O2).
      *
      * @param \IPE\Extension|null $known
      *
@@ -196,20 +196,10 @@ final class Compiler
     private function buildConfigureEnvironment($known, Extension\BuildContext $context)
     {
         $flags = ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? '-O0 -g' : '-g -O2') . ' ' . $this->buildTools->getStackProtectorFlag();
-        $extraFlags = $known instanceof Extension\ProvidesCompilerFlags ? $known->getCompilerFlags($context) : '';
-        if ($extraFlags !== '') {
-            $flags .= ' ' . $extraFlags;
-        }
-        $result = [];
-        foreach (['CFLAGS', 'CXXFLAGS'] as $name) {
-            $userFlags = getenv($name);
-            $result[$name] = $userFlags === false || $userFlags === '' ? $flags : "{$flags} {$userFlags}";
-        }
-        $preprocessorFlags = $known instanceof Extension\ProvidesPreprocessorFlags ? $known->getPreprocessorFlags($context) : '';
-        if ($preprocessorFlags !== '') {
-            $userFlags = getenv('CPPFLAGS');
-            $result['CPPFLAGS'] = $userFlags === false || $userFlags === '' ? $preprocessorFlags : "{$preprocessorFlags} {$userFlags}";
-        }
+        $result = self::mergeFlags(
+            ['CFLAGS' => $flags, 'CXXFLAGS' => $flags],
+            $known instanceof Extension\ProvidesConfigureEnvironment ? $known->getConfigureEnvironment($context) : []
+        );
         if ($this->php->getMajorMinorVersion() < 704 && getenv('SED') === false) {
             // The phpize of PHP up to 7.3 uses $SED before looking for it: with autoconf 2.72 it's empty, so the include flags of pkg-config are lost
             $result['SED'] = 'sed';
@@ -227,7 +217,7 @@ final class Compiler
 
     /**
      * With GCC < 14 calling an undeclared function (for example, one removed in newer PHP versions) is just a warning: the module builds, but it fails at runtime.
-     * PHP uses EXTRA_CFLAGS and EXTRA_CXXFLAGS only to compile the sources of the extension (not in the configure checks), and the flags of the user come last so that they win.
+     * PHP uses EXTRA_CFLAGS and EXTRA_CXXFLAGS only to compile the sources of the extension (not in the configure checks).
      *
      * @param \IPE\Extension|null $known
      *
@@ -235,14 +225,27 @@ final class Compiler
      */
     private function buildMakeEnvironment($known, Extension\BuildContext $context)
     {
-        $environment = ['EXTRA_CFLAGS' => '-Werror=implicit-function-declaration'];
-        if ($known instanceof Extension\ProvidesMakeEnvironment) {
-            foreach ($known->getMakeEnvironment($context) as $name => $value) {
-                $environment[$name] = isset($environment[$name]) ? trim("{$environment[$name]} {$value}") : $value;
-            }
+        return self::mergeFlags(
+            ['EXTRA_CFLAGS' => '-Werror=implicit-function-declaration'],
+            $known instanceof Extension\ProvidesMakeEnvironment ? $known->getMakeEnvironment($context) : []
+        );
+    }
+
+    /**
+     * The flags of the extension come after the ones of IPE, and the ones of the user come last so that they win.
+     *
+     * @param array<non-empty-string, string> $ipeFlags
+     * @param array<non-empty-string, string> $extensionFlags
+     *
+     * @return array<non-empty-string, string> without empty values
+     */
+    private static function mergeFlags(array $ipeFlags, array $extensionFlags)
+    {
+        foreach ($extensionFlags as $name => $value) {
+            $ipeFlags[$name] = isset($ipeFlags[$name]) ? trim("{$ipeFlags[$name]} {$value}") : $value;
         }
         $result = [];
-        foreach ($environment as $name => $value) {
+        foreach ($ipeFlags as $name => $value) {
             $userFlags = getenv($name);
             if ($userFlags !== false && $userFlags !== '') {
                 $value = trim("{$value} {$userFlags}");
