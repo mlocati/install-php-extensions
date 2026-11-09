@@ -99,7 +99,8 @@ final class memcached extends Extension implements
      */
     public function getRequiredExtensions($version)
     {
-        return [];
+        // memcached provides a session handler: without session it can't be loaded
+        return [session::HANDLE];
     }
 
     /**

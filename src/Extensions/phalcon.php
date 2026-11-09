@@ -105,7 +105,13 @@ final class phalcon extends Extension implements
      */
     public function getRequiredExtensions($version)
     {
-        return $version !== '' && version_compare($version, '5.0.0') < 0 ? [psr::HANDLE] : [];
+        // Besides PDO, phalcon implements SessionHandlerInterface: without session it can't be loaded
+        $result = [pdo::HANDLE, session::HANDLE];
+        if ($version !== '' && version_compare($version, '5.0.0') < 0) {
+            $result[] = psr::HANDLE;
+        }
+
+        return $result;
     }
 
     /**

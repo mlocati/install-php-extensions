@@ -4,7 +4,9 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 
-final class pdo_oci extends Extension\OracleDatabase implements Extension\AvailableAsComposerPackage
+final class pdo_oci extends Extension\OracleDatabase implements
+    Extension\AvailableAsComposerPackage,
+    Extension\DependsOnExtensions
 {
     /**
      * @public
@@ -82,5 +84,25 @@ final class pdo_oci extends Extension\OracleDatabase implements Extension\Availa
     public static function getComposerPackageName()
     {
         return 'pecl/pdo_oci';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        return [pdo::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }

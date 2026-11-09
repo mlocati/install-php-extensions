@@ -4,7 +4,9 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 
-final class mysqli extends Extension implements Extension\BundledInPHPSource
+final class mysqli extends Extension implements
+    Extension\BundledInPHPSource,
+    Extension\DependsOnExtensions
 {
     /**
      * @public
@@ -62,5 +64,26 @@ final class mysqli extends Extension implements Extension\BundledInPHPSource
     public static function getBundledPHPVersions()
     {
         return '*';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // Built with mysqlnd (since PHP 8.2 it's the only option)
+        return [mysqlnd::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }

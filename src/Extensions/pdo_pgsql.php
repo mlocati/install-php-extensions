@@ -8,6 +8,7 @@ use IPE\SystemDependencies;
 
 final class pdo_pgsql extends Extension implements
     Extension\BundledInPHPSource,
+    Extension\DependsOnExtensions,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -76,5 +77,25 @@ final class pdo_pgsql extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libpq::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        return [pdo::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }

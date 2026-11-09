@@ -95,7 +95,8 @@ final class redis extends Extension implements
      */
     public function getRequiredExtensions($version)
     {
-        return [];
+        // redis provides a session handler: without session it can't be loaded
+        return [session::HANDLE];
     }
 
     /**

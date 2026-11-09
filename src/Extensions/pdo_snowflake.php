@@ -16,6 +16,7 @@ final class pdo_snowflake extends Extension implements
     Extension\BuildsModule,
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\DependsOnExtensions,
     Extension\ProvidesIniSettings,
     Extension\RequiresSystemDependencies
 {
@@ -169,5 +170,25 @@ final class pdo_snowflake extends Extension implements
     public function getIniSettings()
     {
         return 'pdo_snowflake.cacert=' . self::CACERT_FILE . "\n";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        return [pdo::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }

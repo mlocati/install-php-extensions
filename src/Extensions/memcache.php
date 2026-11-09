@@ -9,6 +9,7 @@ use IPE\SystemDependencies;
 final class memcache extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\DependsOnExtensions,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -90,5 +91,26 @@ final class memcache extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libzlib::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // memcache provides a session handler: without session it can't be loaded
+        return [session::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }
