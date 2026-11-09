@@ -334,13 +334,11 @@ final class LocalTest extends TestCase
         $fs = self::$fs;
         $script = IPE_TEST_TMPDIR . '/run-show.php';
         $autoload = var_export(IPE_ROOT_DIR . '/src/autoload.php', true);
-        $app = var_export(IPE_ROOT_DIR . '/src/app.php', true);
         $fs->writeFile(
             $script,
             <<<EOT
 <?php
 require {$autoload};
-require {$app};
 \$fs = new IPE\\Filesystem\\Local(new IPE\\Logger());
 list(\$rc) = \$fs->run(IPE\\Filesystem\\Command::create(PHP_BINARY, ['-n', '-r', 'echo 1 + 1;'])->withOutput(IPE\\Filesystem\\Command::OUTPUT_SHOW));
 echo "|rc={\$rc}";

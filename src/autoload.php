@@ -14,3 +14,6 @@ spl_autoload_register(
         }
     }
 );
+
+// Like the files in the autoload section of composer.json
+require_once __DIR__ . '/app.php';

@@ -31,7 +31,6 @@ const README_PATH = IPE_CLI_ROOT_DIR . '/README.md';
 const EXTENSION_NOTES_DIR = __DIR__ . '/extension-notes';
 
 require_once IPE_CLI_ROOT_DIR . '/src/autoload.php';
-require_once IPE_CLI_ROOT_DIR . '/src/app.php';
 
 /**
  * @return array<string, class-string<Extension>> the keys are the extension handles, sorted
