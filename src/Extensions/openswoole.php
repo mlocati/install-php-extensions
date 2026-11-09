@@ -136,10 +136,10 @@ final class openswoole extends Extension implements
             // The configure script requires the headers of the sockets extension
             $result[] = '--enable-sockets';
         }
-        if ($version === '' || version_compare($version, '4.8.0') >= 0) {
+        if (self::isVersionAtLeast($version, '4.8.0')) {
             $result[] = '--with-postgres';
         }
-        if ($version === '' || version_compare($version, '22.0.0') >= 0) {
+        if (self::isVersionAtLeast($version, '22.0.0')) {
             $result[] = '--enable-hook-curl';
         } else {
             $result[] = '--enable-swoole-json';

@@ -117,7 +117,7 @@ final class yar extends Extension implements
     public function getConfigureArguments(Extension\BuildContext $context)
     {
         $version = $context->getVersion();
-        if ($version !== '' && version_compare($version, '1.2.4') < 0) {
+        if (!self::isVersionAtLeast($version, '1.2.4')) {
             return [];
         }
 

@@ -151,25 +151,15 @@ final class grpc extends Extension implements
     {
         $cFlags = self::WARNING_FLAGS;
         $cxxFlags = self::WARNING_FLAGS;
-        if (self::isOlderThan($context, '1.46.0')) {
+        if (!self::isVersionAtLeast($context->getVersion(), '1.46.0')) {
             // config.m4 sets -Werror, and newer compilers have new warnings (for example, -Warray-parameter of GCC 11+ in boringssl)
             $cFlags .= ' -Wno-error';
         }
-        if (self::isOlderThan($context, '1.52.0')) {
+        if (!self::isVersionAtLeast($context->getVersion(), '1.52.0')) {
             // The bundled abseil uses uint8_t and std::numeric_limits without including their headers, and GCC 13+ doesn't include them implicitly anymore
             $cxxFlags .= ' -include cstdint -include limits';
         }
 
         return ['EXTRA_CFLAGS' => $cFlags, 'EXTRA_CXXFLAGS' => $cxxFlags];
-    }
-
-    /**
-     * @param string $version
-     *
-     * @return bool
-     */
-    private static function isOlderThan(Extension\BuildContext $context, $version)
-    {
-        return $context->getVersion() !== '' && version_compare($context->getVersion(), $version) < 0;
     }
 }

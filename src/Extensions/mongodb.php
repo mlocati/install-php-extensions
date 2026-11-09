@@ -141,7 +141,7 @@ final class mongodb extends Extension implements
     public function getConfigureArguments(Extension\BuildContext $context)
     {
         $version = $context->getVersion();
-        if ($version !== '' && version_compare($version, '1.17.0') < 0) {
+        if (!self::isVersionAtLeast($version, '1.17.0')) {
             return [];
         }
 

@@ -139,7 +139,7 @@ final class memcached extends Extension implements
     public function getConfigureArguments(Extension\BuildContext $context)
     {
         $version = $context->getVersion();
-        if ($version !== '' && version_compare($version, '3.0.0') < 0) {
+        if (!self::isVersionAtLeast($version, '3.0.0')) {
             if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
                 // The libmemcached of Ubuntu 14.04 is built without SASL support
                 return ['--disable-memcached-sasl'];

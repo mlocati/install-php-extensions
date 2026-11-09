@@ -110,7 +110,7 @@ final class event extends Extension implements
     public function getConfigureArguments(Extension\BuildContext $context)
     {
         $version = $context->getVersion();
-        if ($version !== '' && version_compare($version, '1.3.0') < 0) {
+        if (!self::isVersionAtLeast($version, '1.3.0')) {
             return [];
         }
         $result = ['--with-event-libevent-dir=/usr', '--with-event-pthreads', '--with-event-extra'];
@@ -121,7 +121,7 @@ final class event extends Extension implements
         } else {
             $result[] = '--with-event-openssl';
         }
-        if ($version === '' || version_compare($version, '1.7.6') >= 0) {
+        if (self::isVersionAtLeast($version, '1.7.6')) {
             // The sockets support requires the headers of the sockets extension
             $result[] = in_array(sockets::HANDLE, $this->php->getInstalledExtensions(), true) ? '--enable-event-sockets' : '--disable-event-sockets';
         }

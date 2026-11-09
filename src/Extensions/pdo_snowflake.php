@@ -140,7 +140,7 @@ final class pdo_snowflake extends Extension implements
         $environment = ['PHP_HOME' => dirname(dirname($buildTools->getPhpConfig()))];
         $version = $context->getVersion();
         // Before 0.2.5 the build script doesn't set PLATFORM (like scripts/_init.sh does), so it doesn't link the static libraries
-        if ($version !== '' && version_compare($version, '0.2.5') < 0) {
+        if (!self::isVersionAtLeast($version, '0.2.5')) {
             list($rc, $kernelName) = $fs->run(Command::create('uname')->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
             if ($rc !== 0) {
                 throw new Exception\IO('Failed to detect the kernel name');
