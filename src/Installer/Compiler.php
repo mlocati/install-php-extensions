@@ -88,7 +88,7 @@ final class Compiler
         $this->runStep('configure', './configure', $configureArguments, $sourceDir, $this->buildConfigureEnvironment($known, $context));
         $make = $this->buildTools->getMake();
         $jobs = $this->buildOptions->getParallelJobs() ?: $this->buildTools->getProcessorCount();
-        $makeEnvironment = $this->buildMakeEnvironment();
+        $makeEnvironment = $this->buildMakeEnvironment($known, $context);
         $this->logger->info("Running make (with {$jobs} parallel jobs)");
         $this->runStep('make', $make, ["-j{$jobs}"], $sourceDir, $makeEnvironment);
         $moduleName = $this->detectModuleName($resolved, "{$sourceDir}/modules");
@@ -210,22 +210,49 @@ final class Compiler
             $userFlags = getenv('CPPFLAGS');
             $result['CPPFLAGS'] = $userFlags === false || $userFlags === '' ? $preprocessorFlags : "{$preprocessorFlags} {$userFlags}";
         }
+        if ($this->php->getMajorMinorVersion() < 704 && getenv('SED') === false) {
+            // The phpize of PHP up to 7.3 uses $SED before looking for it: with autoconf 2.72 it's empty, so the include flags of pkg-config are lost
+            $result['SED'] = 'sed';
+        }
+        if ($this->php->getMajorMinorVersion() < 700) {
+            $includeDir = $this->buildTools->getIncludeDir();
+            if ($includeDir !== '' && $this->fs->isFile("{$includeDir}/ext/pdo/php_pdo_driver.h")) {
+                // PHP 5 looks for the PDO headers only in <prefix>/include/php, but Debian and Ubuntu packages put them in /usr/include/php/<API version>
+                $result['pdo_cv_inc_path'] = "{$includeDir}/ext";
+            }
+        }
 
         return $result;
     }
 
     /**
      * With GCC < 14 calling an undeclared function (for example, one removed in newer PHP versions) is just a warning: the module builds, but it fails at runtime.
-     * PHP uses EXTRA_CFLAGS only to compile the C sources of the extension (not in the configure checks, nor for C++), and the flags of the user come last so that they win.
+     * PHP uses EXTRA_CFLAGS and EXTRA_CXXFLAGS only to compile the sources of the extension (not in the configure checks), and the flags of the user come last so that they win.
+     *
+     * @param \IPE\Extension|null $known
      *
      * @return array<non-empty-string, string>
      */
-    private function buildMakeEnvironment()
+    private function buildMakeEnvironment($known, Extension\BuildContext $context)
     {
-        $flags = '-Werror=implicit-function-declaration';
-        $userFlags = getenv('EXTRA_CFLAGS');
+        $environment = ['EXTRA_CFLAGS' => '-Werror=implicit-function-declaration'];
+        if ($known instanceof Extension\ProvidesMakeEnvironment) {
+            foreach ($known->getMakeEnvironment($context) as $name => $value) {
+                $environment[$name] = isset($environment[$name]) ? trim("{$environment[$name]} {$value}") : $value;
+            }
+        }
+        $result = [];
+        foreach ($environment as $name => $value) {
+            $userFlags = getenv($name);
+            if ($userFlags !== false && $userFlags !== '') {
+                $value = trim("{$value} {$userFlags}");
+            }
+            if ($value !== '') {
+                $result[$name] = $value;
+            }
+        }
 
-        return ['EXTRA_CFLAGS' => $userFlags === false || $userFlags === '' ? $flags : "{$flags} {$userFlags}"];
+        return $result;
     }
 
     /**

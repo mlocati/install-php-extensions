@@ -6,6 +6,7 @@ use IPE\Extensions\dba;
 use IPE\Extensions\intl;
 use IPE\Extensions\odbc;
 use IPE\Extensions\sockets;
+use IPE\Extensions\tokenizer;
 use IPE\Filesystem;
 use IPE\OS;
 use IPE\PHPInfo;
@@ -104,6 +105,19 @@ final class BundledPatchesTest extends TestCase
         self::assertPatch(sockets::class, self::createPHP('8.1.2'), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), $original, implode("\n", $expected));
         self::assertPatch(sockets::class, self::createPHP('8.0.15'), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), $original, implode("\n", $expected));
         self::assertPatch(sockets::class, self::createPHP('8.1.3'), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), $original, null);
+    }
+
+    /**
+     * @return void
+     */
+    public function testTokenizer()
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('isFile')->once()->with(self::SOURCE_DIR . '/Makefile.frag')->andReturn(true);
+        $fs->shouldReceive('deleteFile')->once()->with(self::SOURCE_DIR . '/Makefile.frag');
+        $os = M::mock(OS::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        (new tokenizer(self::createPHP('8.3.0'), $os))->patchSourceCode(self::createBuildContext('', null, self::SOURCE_DIR));
     }
 
     /**

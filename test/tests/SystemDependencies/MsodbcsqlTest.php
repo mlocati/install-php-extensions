@@ -108,10 +108,10 @@ final class MsodbcsqlTest extends TestCase
         self::assertSame(['libstdc++', 'unixodbc'], $alpine->getPersistent());
         self::assertSame(['unixodbc-dev'], $alpine->getVolatile());
         $debian = $this->createDependency(OS\Debian::class, OS\Debian::BUSTER, 804)->getSystemPackages(M::mock(State::class));
-        self::assertSame(['unixodbc'], $debian->getPersistent());
+        self::assertSame(['unixodbc', 'libgssapi-krb5-2'], $debian->getPersistent());
         self::assertSame(['unixodbc-dev'], $debian->getVolatile());
         $old = $this->createDependency(OS\Debian::class, OS\Debian::STRETCH, 700)->getSystemPackages(M::mock(State::class));
-        self::assertSame(['unixodbc', 'apt-transport-https'], $old->getPersistent());
+        self::assertSame(['unixodbc', 'libgssapi-krb5-2', 'apt-transport-https'], $old->getPersistent());
         self::assertSame(['unixodbc-dev'], $old->getVolatile());
     }
 

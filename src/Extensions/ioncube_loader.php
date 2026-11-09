@@ -9,7 +9,9 @@ use IPE\OS;
 /**
  * @see https://www.ioncube.com/loaders.php
  */
-final class ioncube_loader extends Extension\PrecompiledExtension implements Extension\DeclaresDefaultVersion
+final class ioncube_loader extends Extension\PrecompiledExtension implements
+    Extension\DeclaresDefaultVersion,
+    Extension\DeclaresPriority
 {
     /**
      * @public
@@ -47,6 +49,17 @@ final class ioncube_loader extends Extension\PrecompiledExtension implements Ext
         return [
             'ionCube Loader',
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresPriority::getPriority()
+     */
+    public static function getPriority()
+    {
+        // It refuses to work if another Zend extension is loaded before it (Debian and Ubuntu use 10-opcache.ini, Alpine uses 00_opcache.ini)
+        return 0;
     }
 
     /**

@@ -1193,17 +1193,17 @@ final class ResolverTest extends TestCase
     /**
      * @return void
      */
-    public function testSystemPackageDoesNotRequireExtensions()
+    public function testSystemPackageRequiresExtensions()
     {
         $php = self::createPHP('8.3.0');
         $phpSystemPackage = self::createPHPSystemPackage(new SystemPackager\Package('php8.3-cli', '8.3.0-1', 'php8.3'), [
             'php8.3-fake-a' => [new SystemPackager\Package('php8.3-fake-a', '1.0-1', 'php-fake-a')],
         ]);
         $resolver = self::createResolver($php, null, [new FakeDependentExtensionA($php, self::createOS(), ['apcu'])], null, null, $phpSystemPackage);
-        // The packager installs the dependencies of the package
+        // Some packages don't depend on the packages of the extensions they need
         $resolved = $resolver->resolveAskedExtensions([new Asked\FromHandle('fake_a', '')], new State($php, self::$fs));
-        self::assertSame(['fake_a'], self::describe($resolved));
-        self::assertSame(Resolved::ORIGIN_SYSTEM_PACKAGE, $resolved[0]->getOrigin());
+        self::assertSame(['apcu', 'fake_a'], self::describe($resolved));
+        self::assertSame(Resolved::ORIGIN_SYSTEM_PACKAGE, $resolved[1]->getOrigin());
     }
 
     /**

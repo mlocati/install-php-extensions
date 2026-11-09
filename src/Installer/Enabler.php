@@ -444,7 +444,7 @@ class Enabler
         }
 
         return strtr($iniBasename, [
-            '{priority}' => (string) $priority,
+            '{priority}' => sprintf('%02d', $priority),
             '{name}' => $moduleName,
         ]);
     }

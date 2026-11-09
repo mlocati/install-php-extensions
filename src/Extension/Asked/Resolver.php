@@ -175,7 +175,7 @@ abstract class Resolver
         }
         $state->setSkippedExtensions([]);
         if ($askedExtensions !== []) {
-            $this->caCertificatesInstaller->install($state);
+            $this->caCertificatesInstaller->install();
         }
         $resolved = [];
         $asked = [];
@@ -439,10 +439,7 @@ abstract class Resolver
      */
     private function getRequiredExtensions(Resolved $resolved)
     {
-        // The system packages depend on the packages of the extensions they need
-        if ($resolved->getOrigin() === Resolved::ORIGIN_SYSTEM_PACKAGE) {
-            return [];
-        }
+        // Not skipped for the system packages: some don't depend on the packages of the extensions they need (for example, php8.2-http of Debian 12 doesn't require php8.2-raphf)
         $manifest = $resolved->getManifest();
         $result = $manifest === null ? [] : $manifest->getRequiredExtensions();
         $known = $resolved->getKnownExtension();

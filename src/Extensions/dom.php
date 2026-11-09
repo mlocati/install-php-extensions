@@ -8,6 +8,7 @@ use IPE\SystemDependencies;
 
 final class dom extends Extension implements
     Extension\BundledInPHPSource,
+    Extension\ProvidesCompilerFlags,
     Extension\ProvidesPreprocessorFlags,
     Extension\RequiresSystemDependencies
 {
@@ -94,5 +95,16 @@ final class dom extends Extension implements
         $fs = $this->os->getFilesystem();
 
         return '-I' . $fs->escapeShellArg("{$phpSourceDirectory}/ext/lexbor") . ' -I' . $fs->escapeShellArg($phpSourceDirectory);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
+     */
+    public function getCompilerFlags(Extension\BuildContext $context)
+    {
+        // GCC 14 turned this warning into an error, and before PHP 7.3 the callback passed to xmlHashScan() has the wrong signature
+        return $this->php->getMajorMinorVersion() < 703 ? '-Wno-incompatible-pointer-types' : '';
     }
 }

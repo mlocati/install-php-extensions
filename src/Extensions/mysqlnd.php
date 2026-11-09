@@ -9,6 +9,7 @@ use IPE\SystemDependencies;
 final class mysqlnd extends Extension implements
     Extension\BundledInPHPSource,
     Extension\DeclaresPriority,
+    Extension\PatchesSourceCode,
     Extension\ProvidesConfigureArguments,
     Extension\ProvidesPreprocessorFlags,
     Extension\RequiresSystemDependencies
@@ -100,14 +101,9 @@ final class mysqlnd extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        $phpVersion = $this->php->getMajorMinorVersion();
-        if ($phpVersion < 704) {
-            // phpize builds enable the extended SSL support implicitly, but OpenSSL is searched only if PHP_OPENSSL_DIR is yes or a path
+        if ($this->php->getMajorMinorVersion() < 804) {
+            // phpize builds enable the extended SSL support implicitly (php_config.h defines MYSQLND_HAVE_SSL), but OpenSSL is searched only if PHP_OPENSSL_DIR is yes or a path
             return ['PHP_OPENSSL_DIR=yes'];
-        }
-        if ($phpVersion < 804) {
-            // phpize builds enable the extended SSL support implicitly
-            return [];
         }
 
         return ['--with-mysqlnd-ssl'];
@@ -120,7 +116,23 @@ final class mysqlnd extends Extension implements
      */
     public function getPreprocessorFlags(Extension\BuildContext $context)
     {
-        // Before PHP 8.1 php_mysqlnd.c doesn't include config.h: without this it doesn't export get_module
-        return $this->php->getMajorMinorVersion() < 801 ? '-DCOMPILE_DL_MYSQLND=1' : '';
+        // php_mysqlnd.c includes config.h only since recent patch releases (not in 8.1.2 nor in 8.2.0, for example): without this it doesn't export get_module
+        return '-DCOMPILE_DL_MYSQLND=1';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
+     */
+    public function patchSourceCode(Extension\BuildContext $context)
+    {
+        if ($this->php->getMajorMinorVersion() >= 804) {
+            return;
+        }
+        // Otherwise phpize builds don't link the libraries (OpenSSL and zlib), and the module only loads if PHP has already loaded them
+        $configM4 = $context->getSourceDirectory() . '/config.m4';
+        $fs = $this->os->getFilesystem();
+        $fs->writeFile($configM4, $fs->readFile($configM4) . "\nPHP_SUBST([MYSQLND_SHARED_LIBADD])\n");
     }
 }

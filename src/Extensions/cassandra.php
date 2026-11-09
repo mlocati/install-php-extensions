@@ -19,6 +19,7 @@ use IPE\SystemDependencies;
 final class cassandra extends Extension implements
     Extension\BuildsModule,
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\DependsOnExtensions,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -86,11 +87,37 @@ final class cassandra extends Extension implements
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // The build scripts of the ScyllaDB driver use token_get_all()
+        return $this->usesScyllaDBDriver() ? [tokenizer::HANDLE] : [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\Extension\RequiresSystemDependencies::getRequiredSystemDependencies()
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        return [SystemDependencies\libcassandra::HANDLE];
+        if (!$this->usesScyllaDBDriver()) {
+            return [SystemDependencies\libcassandra::HANDLE];
+        }
+
+        // gen_stub.php downloads PHP-Parser with wget or curl
+        return [SystemDependencies\libcassandra::HANDLE, SystemDependencies\curl::HANDLE];
     }
 
     /**
@@ -165,7 +192,8 @@ final class cassandra extends Extension implements
      */
     private function buildScyllaDBDriver($directory, BuildTools $buildTools, $parallelJobs)
     {
-        $arguments = ['-B', 'cmake-build', '-DCMAKE_BUILD_TYPE=Release', '-DCUSTOM_PHP_CONFIG=' . $buildTools->getPhpConfig(), '-DPHP_SCYLLADB_BACKEND=cassandra'];
+        // FindPHP only looks for a command named php, which may be missing or another version (for example, with the php83 package of Alpine)
+        $arguments = ['-B', 'cmake-build', '-DCMAKE_BUILD_TYPE=Release', '-DCUSTOM_PHP_CONFIG=' . $buildTools->getPhpConfig(), '-DPHP_BINARY=' . $this->php->getPHPBin(), '-DPHP_SCYLLADB_BACKEND=cassandra'];
         // The default CPU type is x86-64-v2, which generates code that may not run on older CPUs
         $architecture = OS\Architecture::ofPHP($this->php, $this->os);
         if ($architecture === OS\Architecture::X64) {

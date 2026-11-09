@@ -137,7 +137,7 @@ final class ModsAvailable
     {
         $this->checkIniFileWritable($moduleName);
         $iniFile = $this->getIniFile($moduleName);
-        $this->fs->writeFile($iniFile, self::MARKER . ", which may overwrite this file: remove this line to prevent it\n; priority={$priority}\n{$content}");
+        $this->fs->writeFile($iniFile, self::MARKER . ", which may overwrite this file: remove this line to prevent it\n; priority=" . sprintf('%02d', $priority) . "\n{$content}");
 
         return $iniFile;
     }

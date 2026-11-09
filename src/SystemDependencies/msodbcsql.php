@@ -98,17 +98,18 @@ final class msodbcsql extends SystemDependency
                 ['unixodbc-dev']
             );
         }
+        // The driver uses libgssapi-krb5-2 without declaring it, and the build dependencies may pull it in: it must not be removed with them
         if ($this->os instanceof OS\Debian) {
             if ($this->os->getNumericVersion() <= OS\Debian::STRETCH) {
                 return new Packages(
                     // APT supports HTTPS by itself since Debian 10: before that, apt-get update would always fail without this package since the Microsoft repository stays configured
-                    ['unixodbc', 'apt-transport-https'],
+                    ['unixodbc', 'libgssapi-krb5-2', 'apt-transport-https'],
                     ['unixodbc-dev']
                 );
             }
 
             return new Packages(
-                ['unixodbc'],
+                ['unixodbc', 'libgssapi-krb5-2'],
                 ['unixodbc-dev']
             );
         }
@@ -116,13 +117,13 @@ final class msodbcsql extends SystemDependency
             if ($this->os->getNumericVersion() <= OS\Ubuntu::XENIAL) {
                 return new Packages(
                     // APT supports HTTPS by itself since Ubuntu 18.04
-                    ['unixodbc', 'apt-transport-https'],
+                    ['unixodbc', 'libgssapi-krb5-2', 'apt-transport-https'],
                     ['unixodbc-dev']
                 );
             }
 
             return new Packages(
-                ['unixodbc'],
+                ['unixodbc', 'libgssapi-krb5-2'],
                 ['unixodbc-dev']
             );
         }

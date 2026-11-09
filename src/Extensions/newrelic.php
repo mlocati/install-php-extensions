@@ -199,9 +199,13 @@ final class newrelic extends Extension implements
         $rootDir = $context->getSourceDirectory();
         $options = $context->getOptionValues();
         $fs = $this->os->getFilesystem();
-        self::runInstaller($fs, $rootDir, 'install');
+        // The installer looks for commands named php or php-config (some system packages only provide php84, for example), and it may find other PHP installations
+        $phpDir = "{$rootDir}/ipe-php";
+        $fs->createDirectory($phpDir);
+        $fs->createSymlink($this->php->getPHPBin(), "{$phpDir}/php");
+        self::runInstaller($fs, $rootDir, 'install', $phpDir);
         if ($options->hasCustomValue(self::OPTION_INSTALL_DAEMON)) {
-            self::runInstaller($fs, $rootDir, 'install_daemon');
+            self::runInstaller($fs, $rootDir, 'install_daemon', $phpDir);
         }
         if (!$options->hasCustomValue(self::OPTION_KEEP_LOG)) {
             foreach ($fs->listDirectoryContents('/tmp') as $item) {
@@ -216,16 +220,17 @@ final class newrelic extends Extension implements
     /**
      * @param non-empty-string $rootDir
      * @param non-empty-string $action
+     * @param non-empty-string $phpDir
      *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    private static function runInstaller(Filesystem $fs, $rootDir, $action)
+    private static function runInstaller(Filesystem $fs, $rootDir, $action, $phpDir)
     {
         $command = Command::create('./newrelic-install', [$action])
             ->withWorkingDirectory($rootDir)
-            ->withEnvironment(['NR_INSTALL_USE_CP_NOT_LN' => '1', 'NR_INSTALL_SILENT' => '1'])
+            ->withEnvironment(['NR_INSTALL_USE_CP_NOT_LN' => '1', 'NR_INSTALL_SILENT' => '1', 'NR_INSTALL_PHPLIST' => $phpDir])
             ->withOutput(Command::OUTPUT_SHOW)
         ;
         list($rc) = $fs->run($command);

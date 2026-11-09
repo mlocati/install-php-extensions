@@ -9,7 +9,10 @@ use IPE\OS;
 /**
  * @see https://docs.blackfire.io/up-and-running/installation
  */
-final class blackfire extends Extension\PrecompiledExtension implements Extension\ForbidsAccessToMissingBinaries
+final class blackfire extends Extension\PrecompiledExtension implements
+    Extension\DeclaresUnsupportedEnvironments,
+    Extension\DependsOnExtensions,
+    Extension\ForbidsAccessToMissingBinaries
 {
     /**
      * @public
@@ -47,6 +50,43 @@ final class blackfire extends Extension\PrecompiledExtension implements Extensio
         return [
             'blackfire',
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        // The probe uses __b64_pton without linking libresolv, and with glibc 2.34+ PHP doesn't load it
+        $reason = 'the probe for PHP 5 requires glibc 2.33 or older';
+
+        return [
+            'debian12..15-php5' => $reason,
+            'ubuntu22.04..26.10-php5' => $reason,
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // The probe uses the symbols of the session extension
+        return [session::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 
     /**

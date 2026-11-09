@@ -169,7 +169,19 @@ final class swoole extends Extension implements
      */
     public function getRequiredExtensions($version)
     {
-        return [];
+        // swoole.so uses the symbols of the extensions it hooks
+        $result = [];
+        if (self::isAtLeast($version, '2.1.2')) {
+            $result[] = mysqlnd::HANDLE;
+        }
+        if (self::isAtLeast($version, '4.6.0')) {
+            $result[] = curl::HANDLE;
+        }
+        if (self::isAtLeast($version, '5.0.0')) {
+            $result[] = pdo::HANDLE;
+        }
+
+        return $result;
     }
 
     /**

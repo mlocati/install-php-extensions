@@ -42,6 +42,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $php->shouldReceive('getBaseVersion')->andReturn($fullVersion);
         $php->shouldReceive('isThreadSafe')->andReturn($threadSafe);
         $php->shouldReceive('getBits')->andReturn($bits);
+        $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
 
         return $php;
     }
@@ -462,12 +463,14 @@ final class PrecompiledExtensionsTest extends TestCase
         });
         $fs->shouldReceive('listDirectoryContents')->with('/tmp')->andReturn(['/tmp/nrinstall-1.tar', '/tmp/other.tar']);
         $fs->shouldReceive('deleteFile')->once()->with('/tmp/nrinstall-1.tar');
+        $fs->shouldReceive('createDirectory')->once()->with('/src/ipe-php');
+        $fs->shouldReceive('createSymlink')->once()->with('/usr/local/bin/php', '/src/ipe-php/php');
         (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class), new \IPE\Logger()))->runBinaryInstaller(self::createBuildContext('', new Values([], [Extensions\newrelic::OPTION_INSTALL_DAEMON => true]), '/src'));
         self::assertCount(2, $commands);
         self::assertSame('./newrelic-install', $commands[0]->getCommand());
         self::assertSame(['install'], $commands[0]->getArguments());
         self::assertSame(['install_daemon'], $commands[1]->getArguments());
-        self::assertSame(['NR_INSTALL_USE_CP_NOT_LN' => '1', 'NR_INSTALL_SILENT' => '1'], $commands[0]->getEnvironment());
+        self::assertSame(['NR_INSTALL_USE_CP_NOT_LN' => '1', 'NR_INSTALL_SILENT' => '1', 'NR_INSTALL_PHPLIST' => '/src/ipe-php'], $commands[0]->getEnvironment());
     }
 
     /**
@@ -477,6 +480,8 @@ final class PrecompiledExtensionsTest extends TestCase
     {
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('run')->andReturn([1, '']);
+        $fs->shouldReceive('createDirectory');
+        $fs->shouldReceive('createSymlink');
         $this->expectException(Exception\IO::class);
         (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class), new \IPE\Logger()))->runBinaryInstaller(self::createBuildContext('', null, '/src'));
     }

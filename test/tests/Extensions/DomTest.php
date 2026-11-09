@@ -45,6 +45,18 @@ final class DomTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testCompilerFlags()
+    {
+        foreach ([702 => '-Wno-incompatible-pointer-types', 703 => ''] as $phpVersion => $expected) {
+            $php = M::mock(PHPInfo::class);
+            $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
+            self::assertSame($expected, (new dom($php, M::mock(OS::class)))->getCompilerFlags(self::createBuildContext()));
+        }
+    }
+
+    /**
      * Shows which strings have been escaped.
      *
      * @param string $argument

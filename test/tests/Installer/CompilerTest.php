@@ -25,13 +25,16 @@ final class CompilerTest extends TestCase
     const EXTENSION_DIR = '/usr/local/lib/php/extensions/no-debug-non-zts-20240924';
 
     /**
+     * @param int $majorMinorVersion
+     *
      * @return \IPE\PHPInfo&\Mockery\MockInterface
      */
-    private static function createPHPInfo()
+    private static function createPHPInfo($majorMinorVersion = 804)
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
         $php->shouldReceive('getVersion')->andReturn('8.4.14');
+        $php->shouldReceive('getMajorMinorVersion')->andReturn($majorMinorVersion);
         $php->shouldReceive('getAPIVersion')->andReturn(20240924);
         $php->shouldReceive('getExtensionDir')->andReturn(self::EXTENSION_DIR);
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--with-libdir=lib64'");
@@ -216,6 +219,46 @@ final class CompilerTest extends TestCase
     /**
      * @return void
      */
+    public function testSedOnOldPHP()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment() + ['SED' => 'sed'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $php = self::createPHPInfo(703);
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertSame('configure failed with exit code 1', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testPDOIncludesOnPHP5()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--include-dir'])))->andReturn([0, "/usr/include/php/20131226\n"]);
+        $fs->shouldReceive('isFile')->with('/usr/include/php/20131226/ext/pdo/php_pdo_driver.h')->andReturn(true);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment() + ['SED' => 'sed', 'pdo_cv_inc_path' => '/usr/include/php/20131226/ext'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $php = self::createPHPInfo(506);
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertSame('configure failed with exit code 1', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
     public function testFailingStep()
     {
         $fs = self::createFilesystem();
@@ -333,6 +376,31 @@ final class CompilerTest extends TestCase
             self::assertSame('make failed with exit code 2', $x->getMessage());
         } finally {
             putenv('EXTRA_CFLAGS');
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testMakeEnvironment()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
+        $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/bin/make', ['-j4'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['EXTRA_CFLAGS' => '-Werror=implicit-function-declaration -Wno-error', 'EXTRA_CXXFLAGS' => '-include cstdint -DUSER', 'EXTRA_LDFLAGS' => '-lresolv'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([2, '']);
+        $php = self::createPHPInfo();
+        $extension = M::mock(Extension::class . ', ' . Extension\ProvidesMakeEnvironment::class);
+        $extension->shouldReceive('getMakeEnvironment')->andReturn(['EXTRA_CFLAGS' => '-Wno-error', 'EXTRA_CXXFLAGS' => '-include cstdint', 'EXTRA_LDFLAGS' => '-lresolv']);
+        putenv('EXTRA_CXXFLAGS=-DUSER');
+        try {
+            (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved($extension, self::SOURCE_DIR, '1.0.0', Resolved::ORIGIN_BUNDLED));
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertSame('make failed with exit code 2', $x->getMessage());
+        } finally {
+            putenv('EXTRA_CXXFLAGS');
         }
     }
 

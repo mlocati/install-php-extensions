@@ -380,7 +380,7 @@ These options apply to all the extensions (the options of specific extensions ar
 
 `--ini-basename` sets the name of the ini files that enable the extensions (without `.ini`), with these placeholders:
 
-- `{priority}`: the priority of the extension, from 10 to 99 (80 for most extensions), so that the extensions are loaded in the right order
+- `{priority}`: the priority of the extension, with two digits from 00 to 99 (80 for most extensions), so that the extensions are loaded in the right order
 - `{name}`: the name of the extension
 
 Each placeholder must be used once, `{priority}` before `{name}`.

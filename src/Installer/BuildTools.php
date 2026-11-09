@@ -39,6 +39,11 @@ final class BuildTools
     private $phpConfig = null;
 
     /**
+     * @var string|null
+     */
+    private $includeDir = null;
+
+    /**
      * @var non-empty-string|null
      */
     private $make = null;
@@ -112,6 +117,31 @@ final class BuildTools
     }
 
     /**
+     * Get the directory of the PHP headers.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if it can't be determined
+     *
+     * @example '/usr/include/php/20131226'
+     */
+    public function getIncludeDir()
+    {
+        if ($this->includeDir === null) {
+            $this->includeDir = '';
+            $phpConfig = $this->getPhpConfig();
+            if ($phpConfig !== '') {
+                list($rc, $output) = $this->fs->run(Command::create($phpConfig, ['--include-dir']));
+                if ($rc === 0) {
+                    $this->includeDir = trim($output);
+                }
+            }
+        }
+
+        return $this->includeDir;
+    }
+
+    /**
      * Get the library directory PHP was configured with (--with-libdir).
      *
      * @throws \IPE\Exception\IO
@@ -127,8 +157,8 @@ final class BuildTools
         if (preg_match('/--with-libdir=(?<libdir>[^\s\'"]+)/', $this->php->getConfigureCommand(), $matches)) {
             return $matches['libdir'];
         }
-        // Debian stores the libraries in a multiarch directory: the configure scripts of PHP up to 7.0 often don't look there, and both the Docker images of PHP 5.5 and the system PHP packages don't specify it
-        if ($this->php->getMajorMinorVersion() > 700 || $this->fs->resolveCommand('gcc') === '') {
+        // Debian stores the libraries in a multiarch directory: the configure scripts of PHP up to 8.0 often don't look there (for example, the one of pdo_dblib), and both the Docker images of PHP 5.5 and the system PHP packages don't specify it
+        if ($this->php->getMajorMinorVersion() > 800 || $this->fs->resolveCommand('gcc') === '') {
             return '';
         }
         list($rc, $output) = $this->fs->run(Command::create('gcc', ['-print-multiarch']));

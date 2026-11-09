@@ -335,7 +335,7 @@ try {
         savePackageList($fs, $options->getString('save-volatile-packages-to'), $report->getSystemPackages()->getVolatile());
         saveReport($fs, $options->getString('save-report-to'), $report);
         if ($options->get('install-composer')) {
-            $app->make(Installer\CACertificatesInstaller::class)->install($state);
+            $app->make(Installer\CACertificatesInstaller::class)->install();
             $app->make(Service\ComposerInstaller::class)->install(
                 $options->getString('composer-path'),
                 $options->getString('composer-version')

@@ -99,7 +99,8 @@ final class openswoole extends Extension implements
      */
     public function getRequiredExtensions($version)
     {
-        return [];
+        // Because of --enable-mysqlnd and of the curl hooks
+        return [mysqlnd::HANDLE, curl::HANDLE];
     }
 
     /**
