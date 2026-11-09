@@ -183,7 +183,7 @@ abstract class CompiledLibrary extends SystemDependency
      */
     protected function getParallelJobs()
     {
-        return $this->buildOptions->getParallelJobs() ?: $this->buildTools->getProcessorCount();
+        return $this->buildTools->getParallelJobs($this->buildOptions);
     }
 
     /**

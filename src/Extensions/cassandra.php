@@ -5,6 +5,7 @@ namespace IPE\Extensions;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\Filesystem\Command;
+use IPE\Installer\BuildOptions;
 use IPE\Installer\BuildTools;
 use IPE\Option;
 use IPE\OS;
@@ -146,11 +147,12 @@ final class cassandra extends Extension implements
      *
      * @see \IPE\Extension\BuildsModule::buildModule()
      */
-    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools, $parallelJobs)
+    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools)
     {
         $rootDir = $context->getSourceDirectory();
+        $parallelJobs = $buildTools->getParallelJobs($context->getBuildOptions());
         if ($this->usesScyllaDBDriver()) {
-            $this->buildScyllaDBDriver($rootDir, $buildTools, $parallelJobs);
+            $this->buildScyllaDBDriver($rootDir, $buildTools, $context->getBuildOptions()->getType(), $parallelJobs);
         } else {
             $this->buildNanoDriver("{$rootDir}/ext", $buildTools, $parallelJobs);
         }
@@ -184,16 +186,17 @@ final class cassandra extends Extension implements
 
     /**
      * @param non-empty-string $directory
+     * @param string $buildType one of the \IPE\Installer\BuildOptions::TYPE_... constants
      * @param positive-int $parallelJobs
      *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    private function buildScyllaDBDriver($directory, BuildTools $buildTools, $parallelJobs)
+    private function buildScyllaDBDriver($directory, BuildTools $buildTools, $buildType, $parallelJobs)
     {
         // FindPHP only looks for a command named php, which may be missing or another version (for example, with the php83 package of Alpine)
-        $arguments = ['-B', 'cmake-build', '-DCMAKE_BUILD_TYPE=Release', '-DCUSTOM_PHP_CONFIG=' . $buildTools->getPhpConfig(), '-DPHP_BINARY=' . $this->php->getPHPBin(), '-DPHP_SCYLLADB_BACKEND=cassandra'];
+        $arguments = ['-B', 'cmake-build', '-DCMAKE_BUILD_TYPE=' . self::getCMakeBuildType($buildType), '-DCUSTOM_PHP_CONFIG=' . $buildTools->getPhpConfig(), '-DPHP_BINARY=' . $this->php->getPHPBin(), '-DPHP_SCYLLADB_BACKEND=cassandra'];
         // The default CPU type is x86-64-v2, which generates code that may not run on older CPUs
         $architecture = OS\Architecture::ofPHP($this->php, $this->os);
         if ($architecture === OS\Architecture::X64) {
@@ -206,6 +209,23 @@ final class cassandra extends Extension implements
         $this->runStep('cmake', ['--build', 'cmake-build', '--target', 'generated-sources'], $directory);
         $this->runStep('cmake', ['--build', 'cmake-build', '--parallel', (string) $parallelJobs], $directory);
         $this->runStep('cmake', ['--install', 'cmake-build', '--component', 'extension'], $directory);
+    }
+
+    /**
+     * @param string $buildType one of the \IPE\Installer\BuildOptions::TYPE_... constants
+     *
+     * @return non-empty-string
+     */
+    private static function getCMakeBuildType($buildType)
+    {
+        switch ($buildType) {
+            case BuildOptions::TYPE_DEBUG:
+                return 'Debug';
+            case BuildOptions::TYPE_WITH_SYMBOLS:
+                return 'RelWithDebInfo';
+            default:
+                return 'Release';
+        }
     }
 
     /**

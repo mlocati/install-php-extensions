@@ -572,7 +572,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
         $php->shouldReceive('getVersion')->andReturn('8.4.27');
         $pdoSnowflake = new Extensions\pdo_snowflake($php, self::createOS(OS\Debian::class, 12, $fs));
-        self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), new BuildTools($php, $fs, new \IPE\Logger()), 2));
+        self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), new BuildTools($php, $fs, new \IPE\Logger())));
         self::assertCount($needsPlatform ? 2 : 1, $commands);
         $build = $commands[count($commands) - 1];
         self::assertSame('bash', $build->getCommand());

@@ -363,6 +363,18 @@ final class BuildTools
     }
 
     /**
+     * Get the number of parallel jobs to be used for the compilation.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return positive-int
+     */
+    public function getParallelJobs(BuildOptions $buildOptions)
+    {
+        return $buildOptions->getParallelJobs() ?: $this->getProcessorCount();
+    }
+
+    /**
      * Get the number of processors available for the compilation.
      *
      * @throws \IPE\Exception\IO

@@ -30,10 +30,16 @@ final class VendorArchivePreparer
      */
     private $fs;
 
-    public function __construct(ArchiveExtractor $archiveExtractor, Filesystem $fs)
+    /**
+     * @var \IPE\Installer\BuildOptions
+     */
+    private $buildOptions;
+
+    public function __construct(ArchiveExtractor $archiveExtractor, Filesystem $fs, BuildOptions $buildOptions)
     {
         $this->archiveExtractor = $archiveExtractor;
         $this->fs = $fs;
+        $this->buildOptions = $buildOptions;
     }
 
     /**
@@ -54,7 +60,7 @@ final class VendorArchivePreparer
         $archive = $resolved->getPath() . $this->fs->getDirectorySeparator() . self::ARCHIVE_FILENAME;
         $rootDir = $this->archiveExtractor->extractTo($archive, $state->getVolatileDir()->createSubdir(), ArchiveFormat::ZIP);
         $this->fs->deleteFile($archive);
-        $context = new Extension\BuildContext($rootDir, $version, $resolved->getOptionValues());
+        $context = new Extension\BuildContext($rootDir, $version, $resolved->getOptionValues(), $this->buildOptions);
         $sourceDir = $extension->prepareVendorSource($context);
         $configureArguments = $extension->getVendorConfigureArguments($context);
 

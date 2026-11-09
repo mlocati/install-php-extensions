@@ -69,7 +69,7 @@ final class Compiler
         }
         $known = $resolved->getKnownExtension();
         $sourceDir = $this->ensureConfigM4($resolved->getPath());
-        $context = new Extension\BuildContext($sourceDir, $resolved->getVersion(), $resolved->getOptionValues());
+        $context = new Extension\BuildContext($sourceDir, $resolved->getVersion(), $resolved->getOptionValues(), $this->buildOptions);
         if ($known instanceof Extension\PatchesSourceCode) {
             $known->patchSourceCode($context);
         }
@@ -87,7 +87,7 @@ final class Compiler
         $this->logger->info('Running configure' . ($configureArguments === [] ? '' : ' with ' . implode(' ', $configureArguments)));
         $this->runStep('configure', './configure', $configureArguments, $sourceDir, $this->buildConfigureEnvironment($known, $context));
         $make = $this->buildTools->getMake();
-        $jobs = $this->buildOptions->getParallelJobs() ?: $this->buildTools->getProcessorCount();
+        $jobs = $this->buildTools->getParallelJobs($this->buildOptions);
         $makeEnvironment = $this->buildMakeEnvironment($known, $context);
         $this->logger->info("Running make (with {$jobs} parallel jobs)");
         $this->runStep('make', $make, ["-j{$jobs}"], $sourceDir, $makeEnvironment);

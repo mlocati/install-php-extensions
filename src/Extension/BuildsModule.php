@@ -12,11 +12,10 @@ interface BuildsModule extends AvailableAsBinary
 {
     /**
      * @param \IPE\Extension\BuildContext $context its source directory is the root directory of the archive
-     * @param positive-int $parallelJobs
      *
      * @throws \IPE\Exception\IO
      *
      * @return non-empty-string the path to the compiled module
      */
-    public function buildModule(BuildContext $context, BuildTools $buildTools, $parallelJobs);
+    public function buildModule(BuildContext $context, BuildTools $buildTools);
 }

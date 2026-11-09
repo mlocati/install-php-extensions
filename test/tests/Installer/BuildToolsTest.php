@@ -6,6 +6,7 @@ use IPE\Exception;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\Filesystem\VolatileDirectory;
+use IPE\Installer\BuildOptions;
 use IPE\Installer\BuildTools;
 use IPE\PHPInfo;
 use IPE\Test\Support\TestCase;
@@ -406,5 +407,19 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('getconf')->andReturn('');
         $fs->shouldReceive('isFile')->with('/proc/cpuinfo')->andReturn(false);
         self::assertSame(1, (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getProcessorCount());
+    }
+
+    /**
+     * @return void
+     */
+    public function testParallelJobs()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('');
+        $fs->shouldReceive('resolveCommand')->with('getconf')->andReturn('');
+        $fs->shouldReceive('isFile')->with('/proc/cpuinfo')->andReturn(false);
+        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        self::assertSame(1, $buildTools->getParallelJobs(new BuildOptions()));
+        self::assertSame(3, $buildTools->getParallelJobs((new BuildOptions())->withParallelJobs(3)));
     }
 }

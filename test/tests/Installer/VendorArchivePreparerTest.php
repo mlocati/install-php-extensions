@@ -5,6 +5,7 @@ namespace IPE\Test\Installer;
 use IPE\Exception;
 use IPE\Extension\Resolved;
 use IPE\Filesystem;
+use IPE\Installer\BuildOptions;
 use IPE\Installer\State;
 use IPE\Installer\VendorArchivePreparer;
 use IPE\Option\Values;
@@ -31,7 +32,7 @@ final class VendorArchivePreparerTest extends TestCase
         $extractor = M::mock(Filesystem\ArchiveExtractor::class);
         $extractor->shouldReceive('extractTo')->once()->with($archive, M::type('string'), Filesystem\ArchiveFormat::ZIP)->andReturn('/root');
         $resolved = new Resolved(new FakeVendorArchiveExtension($php, M::mock(OS::class)), $directory, '1.2.3', Resolved::ORIGIN_VENDOR_ARCHIVE, null, new Values(['--user=1']));
-        $prepared = (new VendorArchivePreparer($extractor, $fs))->prepare($resolved, $state);
+        $prepared = (new VendorArchivePreparer($extractor, $fs, new BuildOptions()))->prepare($resolved, $state);
         self::assertFalse($fs->exists($archive));
         self::assertSame('/root/src', $prepared->getPath());
         self::assertSame('1.2.3', $prepared->getVersion());
@@ -46,6 +47,6 @@ final class VendorArchivePreparerTest extends TestCase
         $fs = new Filesystem\Local(new \IPE\Logger());
         $this->expectException(Exception\InvalidArgument::class);
         $php = M::mock(PHPInfo::class);
-        (new VendorArchivePreparer(M::mock(Filesystem\ArchiveExtractor::class), $fs))->prepare(new Resolved(new FakeExtension($php, M::mock(OS::class)), '/src', '1.2.3', Resolved::ORIGIN_VENDOR_ARCHIVE), new State($php, $fs));
+        (new VendorArchivePreparer(M::mock(Filesystem\ArchiveExtractor::class), $fs, new BuildOptions()))->prepare(new Resolved(new FakeExtension($php, M::mock(OS::class)), '/src', '1.2.3', Resolved::ORIGIN_VENDOR_ARCHIVE), new State($php, $fs));
     }
 }

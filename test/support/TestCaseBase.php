@@ -4,6 +4,7 @@ namespace IPE\Test\Support;
 
 use IPE\Extension\BuildContext;
 use IPE\Filesystem;
+use IPE\Installer\BuildOptions;
 use IPE\Option;
 use IPE\Service\Container;
 use Mockery\Adapter\Phpunit\MockeryTestCase;
@@ -80,12 +81,13 @@ abstract class TestCaseBase extends MockeryTestCase
      * @param string $version
      * @param \IPE\Option\Values|null $options
      * @param non-empty-string $sourceDirectory
+     * @param \IPE\Installer\BuildOptions|null $buildOptions
      *
      * @return \IPE\Extension\BuildContext
      */
-    protected static function createBuildContext($version = '', $options = null, $sourceDirectory = '/tmp/ipe/ext')
+    protected static function createBuildContext($version = '', $options = null, $sourceDirectory = '/tmp/ipe/ext', $buildOptions = null)
     {
-        return new BuildContext($sourceDirectory, $version, $options === null ? new Option\Values() : $options);
+        return new BuildContext($sourceDirectory, $version, $options === null ? new Option\Values() : $options, $buildOptions === null ? new BuildOptions() : $buildOptions);
     }
 
     /**

@@ -56,7 +56,7 @@ final class BinaryInstaller
         }
         $moduleName = $extension::getHandle();
         $modulePath = "{$this->php->getExtensionDir()}/{$moduleName}.so";
-        $context = new Extension\BuildContext($resolved->getPath(), $resolved->getVersion(), $resolved->getOptionValues());
+        $context = new Extension\BuildContext($resolved->getPath(), $resolved->getVersion(), $resolved->getOptionValues(), $this->buildOptions);
         if ($extension instanceof Extension\ProvidesBinaryInstaller) {
             $extension->runBinaryInstaller($context);
             $this->stripSymbols($modulePath, $resolved->getPath());
@@ -64,7 +64,7 @@ final class BinaryInstaller
             return null;
         }
         if ($extension instanceof Extension\BuildsModule) {
-            $source = $extension->buildModule($context, $this->buildTools, $this->buildOptions->getParallelJobs() ?: $this->buildTools->getProcessorCount());
+            $source = $extension->buildModule($context, $this->buildTools);
             if ($source !== $modulePath) {
                 $this->fs->copyFile($source, $modulePath);
             }

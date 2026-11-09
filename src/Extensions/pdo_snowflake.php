@@ -133,7 +133,7 @@ final class pdo_snowflake extends Extension implements
      *
      * @see \IPE\Extension\BuildsModule::buildModule()
      */
-    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools, $parallelJobs)
+    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools)
     {
         $fs = $this->os->getFilesystem();
         $rootDir = $context->getSourceDirectory();
