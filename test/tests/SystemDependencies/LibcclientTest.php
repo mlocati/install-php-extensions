@@ -49,14 +49,14 @@ final class LibcclientTest extends TestCase
     }
 
     /**
-     * @return \IPE\Installer\State&\Mockery\MockInterface
+     * @return \IPE\Installer\State
      */
     private static function createState()
     {
-        $state = M::mock(State::class);
-        $state->shouldReceive('getVolatileDir')->andReturn(new VolatileDirectory('/tmp/ipe', M::mock(Filesystem::class)->shouldIgnoreMissing()));
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('createVolatileDirectory')->andReturn(new VolatileDirectory('/tmp/ipe', M::mock(Filesystem::class)->shouldIgnoreMissing()));
 
-        return $state;
+        return new State(M::mock(PHPInfo::class), $fs);
     }
 
     /**
@@ -94,8 +94,10 @@ final class LibcclientTest extends TestCase
     public function testStretchWithOpenSSL10IgnoresLibsslDev()
     {
         $dependency = $this->createDependency(OS\Debian::STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018', ['libc-client2007e-dev_8%3a2007f~dfsg-5+deb9u1_amd64.deb']);
-        $dependency->install(self::createState());
-        $dependency->finalize(self::createState());
+        $state = self::createState();
+        $dependency->install($state);
+        $dependency->finalize($state);
+        $state->shutdown(new \IPE\Logger());
         $commands = $this->describeCommands();
         self::assertCount(3, $commands);
         $dir = $commands[0][2];
@@ -108,6 +110,21 @@ final class LibcclientTest extends TestCase
             ],
             $commands
         );
+    }
+
+    /**
+     * @return void
+     */
+    public function testDevPackageRemovedAtShutdownWithoutFinalize()
+    {
+        $dependency = $this->createDependency(OS\Debian::STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018', ['libc-client2007e-dev_8%3a2007f~dfsg-5+deb9u1_amd64.deb']);
+        $state = self::createState();
+        $dependency->install($state);
+        $state->shutdown(new \IPE\Logger());
+        $state->shutdown(new \IPE\Logger());
+        $commands = $this->describeCommands();
+        self::assertCount(3, $commands);
+        self::assertSame(['dpkg', ['-r', 'libc-client2007e-dev'], ''], $commands[2]);
     }
 
     /**

@@ -33,11 +33,17 @@ class State
      */
     private $skippedExtensions = [];
 
+    /**
+     * @var \IPE\Installer\State\ShutdownCallbacks
+     */
+    private $shutdownCallbacks;
+
     public function __construct(PHPInfo $php, Filesystem $fs)
     {
         $this->php = $php;
         $this->fs = $fs;
         $this->volatileDir = null;
+        $this->shutdownCallbacks = new State\ShutdownCallbacks();
     }
 
     /**
@@ -133,5 +139,41 @@ class State
         }
 
         return $this->volatileDir;
+    }
+
+    /**
+     * Register a function to be called by shutdown(), for example to undo a temporary change.
+     *
+     * @param \Closure(): void $callback
+     *
+     * @return $this
+     */
+    public function registerShutdownCallback(\Closure $callback)
+    {
+        $this->shutdownCallbacks->add($callback);
+
+        return $this;
+    }
+
+    /**
+     * Unregister a function registered with registerShutdownCallback(), for example because it has already been called.
+     *
+     * @return bool false if the function wasn't registered
+     */
+    public function unregisterShutdownCallback(\Closure $callback)
+    {
+        return $this->shutdownCallbacks->remove($callback);
+    }
+
+    /**
+     * Call the functions registered with registerShutdownCallback(), the last registered first: whoever creates the state should call this at the end.
+     *
+     * @param \IPE\Logger $logger where to report the functions that fail
+     *
+     * @return void
+     */
+    public function shutdown(\IPE\Logger $logger)
+    {
+        $this->shutdownCallbacks->run($logger);
     }
 }

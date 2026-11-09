@@ -96,8 +96,11 @@ final class ExtensionsInstaller
     public function installAsked(array $askedExtensions, array $systemDependencyOptions = [], $enable = true, $deleteSystemPackagerCache = true)
     {
         $state = (new State($this->php, $this->os->getFilesystem()))->withSystemDependencyOptions($systemDependencyOptions);
-
-        return $this->install($this->resolver->resolveAskedExtensions($askedExtensions, $state), $state, $enable, $deleteSystemPackagerCache);
+        try {
+            return $this->install($this->resolver->resolveAskedExtensions($askedExtensions, $state), $state, $enable, $deleteSystemPackagerCache);
+        } finally {
+            $state->shutdown($this->logger);
+        }
     }
 
     /**

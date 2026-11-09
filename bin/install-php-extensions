@@ -300,44 +300,48 @@ try {
         ));
     }
 
-    if ($options->getBool('fix-letsencrypt', $inDockerPHPImage)) {
-        $app->make(Service\LetsEncryptFixer::class)->fix($os);
-    }
-    $report = new Installer\Report();
-    if ($askedExtensions !== []) {
-        $state = $app->make(Installer\State::class)
-            ->withSystemDependencyOptions($options->getSystemDependencyOptions())
-        ;
-        $resolvedExtensions = $app->make(Extension\Asked\Resolver::class)->resolveAskedExtensions($askedExtensions, $state);
-        foreach ($resolvedExtensions as $resolvedExtension) {
-            $logger->info("Resolved extension: {$resolvedExtension}");
+    $state = $app->make(Installer\State::class)
+        ->withSystemDependencyOptions($options->getSystemDependencyOptions())
+    ;
+    try {
+        if ($options->getBool('fix-letsencrypt', $inDockerPHPImage)) {
+            $app->make(Service\LetsEncryptFixer::class)->fix($os);
         }
-        if ($os instanceof OS\Windows) {
-            $logger->warning('Installing extensions on Windows is not implemented yet');
-        } else {
-            $report = $app->make(Installer\ExtensionsInstaller::class)->install($resolvedExtensions, $state, !$options->get('dont-enable'), !$options->getBool('keep-systempackager-cache', !$inDockerPHPImage));
-            if (!$options->getFlag('create-enable-scripts')) {
-                showHowToEnable($fs, $report, $logger);
+        $report = new Installer\Report();
+        if ($askedExtensions !== []) {
+            $resolvedExtensions = $app->make(Extension\Asked\Resolver::class)->resolveAskedExtensions($askedExtensions, $state);
+            foreach ($resolvedExtensions as $resolvedExtension) {
+                $logger->info("Resolved extension: {$resolvedExtension}");
+            }
+            if ($os instanceof OS\Windows) {
+                $logger->warning('Installing extensions on Windows is not implemented yet');
+            } else {
+                $report = $app->make(Installer\ExtensionsInstaller::class)->install($resolvedExtensions, $state, !$options->get('dont-enable'), !$options->getBool('keep-systempackager-cache', !$inDockerPHPImage));
+                if (!$options->getFlag('create-enable-scripts')) {
+                    showHowToEnable($fs, $report, $logger);
+                }
             }
         }
-    }
-    if ($options->getStringList('enable') !== [] || $options->getStringList('disable') !== []) {
-        $enabler = $app->make(Installer\Enabler::class);
-        foreach ($options->getStringList('disable') as $iniFile) {
-            $logger->info($enabler->disableIniFile($iniFile) ? "Disabled {$iniFile}" : "{$iniFile} was already disabled");
+        if ($options->getStringList('enable') !== [] || $options->getStringList('disable') !== []) {
+            $enabler = $app->make(Installer\Enabler::class);
+            foreach ($options->getStringList('disable') as $iniFile) {
+                $logger->info($enabler->disableIniFile($iniFile) ? "Disabled {$iniFile}" : "{$iniFile} was already disabled");
+            }
+            foreach ($options->getStringList('enable') as $iniFile) {
+                $logger->info($enabler->enableIniFile($iniFile) ? "Enabled {$iniFile}" : "{$iniFile} was already enabled");
+            }
         }
-        foreach ($options->getStringList('enable') as $iniFile) {
-            $logger->info($enabler->enableIniFile($iniFile) ? "Enabled {$iniFile}" : "{$iniFile} was already enabled");
+        savePackageList($fs, $options->getString('save-persistent-packages-to'), $report->getSystemPackages()->getPersistent());
+        savePackageList($fs, $options->getString('save-volatile-packages-to'), $report->getSystemPackages()->getVolatile());
+        saveReport($fs, $options->getString('save-report-to'), $report);
+        if ($options->get('install-composer')) {
+            $app->make(Service\ComposerInstaller::class)->install(
+                $options->getString('composer-path'),
+                $options->getString('composer-version')
+            );
         }
-    }
-    savePackageList($fs, $options->getString('save-persistent-packages-to'), $report->getSystemPackages()->getPersistent());
-    savePackageList($fs, $options->getString('save-volatile-packages-to'), $report->getSystemPackages()->getVolatile());
-    saveReport($fs, $options->getString('save-report-to'), $report);
-    if ($options->get('install-composer')) {
-        $app->make(Service\ComposerInstaller::class)->install(
-            $options->getString('composer-path'),
-            $options->getString('composer-version')
-        );
+    } finally {
+        $state->shutdown($logger);
     }
 } catch (IPEException $x) {
     $logger->emergency($x);
