@@ -12,10 +12,9 @@ use IPE\OS;
 use IPE\Service;
 use IPE\SystemPackager;
 
-if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed', 'micro'], true)) {
-    fwrite(STDERR, "This script may only be invoked from a command line.\n");
-    exit(1);
-}
+require_once __DIR__ . '/../src/autoload.php';
+
+CLI\Environment::prepare();
 
 const IPE_VERSION = '';
 
@@ -24,19 +23,6 @@ echo 'install-php-extensions ', IPE_VERSION === '' ? '(development version)' : (
 
 // Not defined when IPE is used as a library (it starts with phar:// when running from the phar)
 define('IPE_CLI_ROOT_DIR', dirname(__DIR__));
-
-if (function_exists('ob_get_level')) {
-    while (ob_get_level()) {
-        ob_end_flush();
-    }
-}
-
-if (function_exists('ob_implicit_flush')) {
-    ob_implicit_flush();
-}
-
-require_once __DIR__ . '/../src/autoload.php';
-require_once __DIR__ . '/../src/app.php';
 
 /**
  * @param string[] $options

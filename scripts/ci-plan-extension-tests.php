@@ -33,7 +33,6 @@ set_error_handler(
 define('IPE_CLI_ROOT_DIR', dirname(__DIR__));
 
 require_once IPE_CLI_ROOT_DIR . '/src/autoload.php';
-require_once IPE_CLI_ROOT_DIR . '/src/app.php';
 
 /**
  * When one of these files changes, at least one extension must be tested.

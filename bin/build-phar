@@ -6,13 +6,9 @@ use IPE\CLI\Argv;
 use IPE\CLI\Argv\Option;
 use IPE\Exception as IPEException;
 
-if (!in_array(PHP_SAPI, ['cli', 'phpdbg', 'embed', 'micro'], true)) {
-    fwrite(STDERR, "This script may only be invoked from a command line.\n");
-    exit(1);
-}
-
 require_once __DIR__ . '/../src/autoload.php';
-require_once __DIR__ . '/../src/app.php';
+
+CLI\Environment::prepare();
 
 set_error_handler(static function ($errno, $errstr, $errfile = '', $errline = 0) {
     $errstr = trim($errstr);
