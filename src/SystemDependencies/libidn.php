@@ -40,7 +40,7 @@ class libidn extends SystemDependency
         }
         if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
-                [],
+                ['^libidn1[0-9]$'],
                 ['^libidn1[0-9+]-dev$']
             );
         }
