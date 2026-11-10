@@ -6,8 +6,7 @@ use IPE\Extension;
 
 final class uopz extends Extension implements
     Extension\AvailableOnPECL,
-    Extension\DeclaresDefaultVersion,
-    Extension\ProvidesConfigureEnvironment
+    Extension\DeclaresDefaultVersion
 {
     /**
      * @public
@@ -81,15 +80,5 @@ final class uopz extends Extension implements
         }
 
         return $phpVersion <= 704 ? '6.1.2' : '';
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
-     */
-    public function getConfigureEnvironment(Extension\BuildContext $context)
-    {
-        return ['CFLAGS' => '-Wno-incompatible-pointer-types'];
     }
 }

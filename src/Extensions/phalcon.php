@@ -11,7 +11,6 @@ final class phalcon extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\DependsOnExtensions,
-    Extension\ProvidesConfigureEnvironment,
     Extension\ProvidesSystemPackageNames
 {
     /**
@@ -122,16 +121,6 @@ final class phalcon extends Extension implements
     public function getOptionalExtensions($version)
     {
         return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
-     */
-    public function getConfigureEnvironment(Extension\BuildContext $context)
-    {
-        return ['CFLAGS' => '-Wno-incompatible-pointer-types'];
     }
 
     /**

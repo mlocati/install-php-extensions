@@ -17,8 +17,8 @@ final class DomTest extends TestCase
     public static function provideConfigureEnvironment()
     {
         return [
-            [505, '/tmp/php-5.5.38/ext/dom', ['CFLAGS' => '-Wno-incompatible-pointer-types']],
-            [702, '/tmp/php-7.2.34/ext/dom', ['CFLAGS' => '-Wno-incompatible-pointer-types']],
+            [505, '/tmp/php-5.5.38/ext/dom', []],
+            [702, '/tmp/php-7.2.34/ext/dom', []],
             [703, '/tmp/php-7.3.33/ext/dom', []],
             [804, '/tmp/php-8.4.1/ext/dom', []],
             [805, '/tmp/php-8.5.4/ext/dom', ['CPPFLAGS' => '-I</tmp/php-8.5.4/ext/lexbor> -I</tmp/php-8.5.4>']],

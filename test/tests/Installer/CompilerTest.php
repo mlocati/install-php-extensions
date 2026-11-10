@@ -47,7 +47,7 @@ final class CompilerTest extends TestCase
      */
     private static function createConfigureEnvironment()
     {
-        return ['CFLAGS' => '-g -O2 -fstack-protector-strong', 'CXXFLAGS' => '-g -O2 -fstack-protector-strong'];
+        return ['CFLAGS' => '-g -O2 -fstack-protector-strong ' . Compiler::WARNING_FLAGS . ' ' . Compiler::C_WARNING_FLAGS, 'CXXFLAGS' => rtrim('-g -O2 -fstack-protector-strong ' . Compiler::WARNING_FLAGS . ' ' . Compiler::CXX_WARNING_FLAGS)];
     }
 
     /**
@@ -200,7 +200,7 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
         $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
-        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['CFLAGS' => '-O0 -g -fstack-protector-strong', 'CXXFLAGS' => '-O0 -g -fstack-protector-strong'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['CFLAGS' => '-O0 -g -fstack-protector-strong ' . Compiler::WARNING_FLAGS . ' ' . Compiler::C_WARNING_FLAGS, 'CXXFLAGS' => rtrim('-O0 -g -fstack-protector-strong ' . Compiler::WARNING_FLAGS . ' ' . Compiler::CXX_WARNING_FLAGS)])->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/bin/make', ['-j4'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createMakeEnvironment())->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
         $fs->shouldReceive('isDirectory')->with(self::SOURCE_DIR . '/modules')->andReturn(true);
         $fs->shouldReceive('listDirectoryContents')->with(self::SOURCE_DIR . '/modules')->andReturn(['lzf.so']);
@@ -285,7 +285,7 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
         $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
-        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['CFLAGS' => '-g -O2 -fstack-protector-strong -DFOO', 'CXXFLAGS' => '-g -O2 -fstack-protector-strong'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['CFLAGS' => '-g -O2 -fstack-protector-strong ' . Compiler::WARNING_FLAGS . ' ' . Compiler::C_WARNING_FLAGS . ' -DFOO', 'CXXFLAGS' => rtrim('-g -O2 -fstack-protector-strong ' . Compiler::WARNING_FLAGS . ' ' . Compiler::CXX_WARNING_FLAGS)])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
         $php = self::createPHPInfo();
         putenv('CFLAGS=-DFOO');
         try {
@@ -324,7 +324,7 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
         $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
-        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['CFLAGS' => '-g -O2 -fstack-protector-strong -Wno-foo', 'CXXFLAGS' => '-g -O2 -fstack-protector-strong', 'CPPFLAGS' => $expected])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(['CFLAGS' => '-g -O2 -fstack-protector-strong ' . Compiler::WARNING_FLAGS . ' ' . Compiler::C_WARNING_FLAGS . ' -Wno-foo', 'CXXFLAGS' => rtrim('-g -O2 -fstack-protector-strong ' . Compiler::WARNING_FLAGS . ' ' . Compiler::CXX_WARNING_FLAGS), 'CPPFLAGS' => $expected])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
         $php = self::createPHPInfo();
         $extension = M::mock(Extension::class . ', ' . Extension\ProvidesConfigureEnvironment::class);
         $extension->shouldReceive('getConfigureEnvironment')->once()->with(self::isBuildContext(self::SOURCE_DIR, '1.0.0'))->andReturn(['CFLAGS' => '-Wno-foo', 'CPPFLAGS' => '-I/usr/src/php']);

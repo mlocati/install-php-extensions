@@ -9,7 +9,6 @@ use IPE\SystemDependencies;
 final class pdo_dblib extends Extension implements
     Extension\BundledInPHPSource,
     Extension\DependsOnExtensions,
-    Extension\ProvidesConfigureEnvironment,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -98,16 +97,5 @@ final class pdo_dblib extends Extension implements
     public function getOptionalExtensions($version)
     {
         return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
-     */
-    public function getConfigureEnvironment(Extension\BuildContext $context)
-    {
-        // GCC 14 turned this warning into an error, and PHP 5 passes a message handler with the wrong signature to dbmsghandle()
-        return $this->php->getMajorMinorVersion() < 700 ? ['CFLAGS' => '-Wno-incompatible-pointer-types'] : [];
     }
 }

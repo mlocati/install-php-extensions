@@ -15,6 +15,27 @@ use IPE\PHPInfo;
 final class Compiler
 {
     /**
+     * Warnings that only add noise to the logs, for both C and C++.
+     *
+     * @var string
+     */
+    const WARNING_FLAGS = '-Wno-unused-variable -Wno-unused-but-set-variable';
+
+    /**
+     * Warnings that only add noise to the logs, only for C.
+     *
+     * @var string
+     */
+    const C_WARNING_FLAGS = '-Wno-incompatible-pointer-types -Wno-int-conversion -Wno-implicit-int -Wno-return-mismatch -Wno-declaration-missing-parameter-type -Wno-discarded-qualifiers';
+
+    /**
+     * Warnings that only add noise to the logs, only for C++.
+     *
+     * @var string
+     */
+    const CXX_WARNING_FLAGS = '';
+
+    /**
      * @var \IPE\Logger
      */
     private $logger;
@@ -197,7 +218,7 @@ final class Compiler
     {
         $flags = ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? '-O0 -g' : '-g -O2') . ' ' . $this->buildTools->getStackProtectorFlag();
         $result = self::mergeFlags(
-            ['CFLAGS' => $flags, 'CXXFLAGS' => $flags],
+            ['CFLAGS' => "{$flags} " . self::WARNING_FLAGS . ' ' . self::C_WARNING_FLAGS, 'CXXFLAGS' => rtrim("{$flags} " . self::WARNING_FLAGS . ' ' . self::CXX_WARNING_FLAGS)],
             $known instanceof Extension\ProvidesConfigureEnvironment ? $known->getConfigureEnvironment($context) : []
         );
         if ($this->php->getMajorMinorVersion() < 704 && getenv('SED') === false) {

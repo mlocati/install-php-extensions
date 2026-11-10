@@ -86,18 +86,13 @@ final class dom extends Extension implements
      */
     public function getConfigureEnvironment(Extension\BuildContext $context)
     {
-        $result = [];
-        if ($this->php->getMajorMinorVersion() < 703) {
-            // GCC 14 turned this warning into an error, and before PHP 7.3 the callback passed to xmlHashScan() has the wrong signature
-            $result['CFLAGS'] = '-Wno-incompatible-pointer-types';
+        if ($this->php->getMajorMinorVersion() < 805) {
+            return [];
         }
-        if ($this->php->getMajorMinorVersion() >= 805) {
-            // Since PHP 8.5 the lexbor headers are in ext/lexbor, and PHP doesn't install them: dom includes them both as lexbor/... and as ext/lexbor/lexbor/...
-            $phpSourceDirectory = dirname(dirname($context->getSourceDirectory()));
-            $fs = $this->os->getFilesystem();
-            $result['CPPFLAGS'] = '-I' . $fs->escapeShellArg("{$phpSourceDirectory}/ext/lexbor") . ' -I' . $fs->escapeShellArg($phpSourceDirectory);
-        }
+        // Since PHP 8.5 the lexbor headers are in ext/lexbor, and PHP doesn't install them: dom includes them both as lexbor/... and as ext/lexbor/lexbor/...
+        $phpSourceDirectory = dirname(dirname($context->getSourceDirectory()));
+        $fs = $this->os->getFilesystem();
 
-        return $result;
+        return ['CPPFLAGS' => '-I' . $fs->escapeShellArg("{$phpSourceDirectory}/ext/lexbor") . ' -I' . $fs->escapeShellArg($phpSourceDirectory)];
     }
 }

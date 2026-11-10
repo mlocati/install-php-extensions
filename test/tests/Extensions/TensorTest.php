@@ -69,10 +69,7 @@ final class TensorTest extends TestCase
         $os = M::mock($osClass);
         self::assertInstanceOf(OS::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
-        $expected = ['CFLAGS' => '-Wno-incompatible-pointer-types'];
-        if ($openBLAS) {
-            $expected['CPPFLAGS'] = '-I/usr/include/openblas';
-        }
+        $expected = $openBLAS ? ['CPPFLAGS' => '-I/usr/include/openblas'] : [];
         self::assertSame($expected, (new tensor(M::mock(PHPInfo::class), $os))->getConfigureEnvironment(self::createBuildContext()));
     }
 }
