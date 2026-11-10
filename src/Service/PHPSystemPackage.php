@@ -90,8 +90,7 @@ final class PHPSystemPackage
         }
         foreach (self::getExtensionPackageCandidates($this->packager, $phpPackage, $extension) as $packageName) {
             $package = $this->packager->findAvailablePackage($packageName);
-            // For example, php8.0-phalcon5 of the Ondřej Surý repositories only depends on php8.5-phalcon5
-            if ($package === null || $package->isArchitectureIndependent()) {
+            if ($package === null) {
                 continue;
             }
             if ($package->getSource() === $phpPackage->getSource()) {

@@ -140,7 +140,7 @@ final class SlowExtensions
                     // Like PHPSystemPackage::findExtensionPackage() and Resolver::resolveFromSystemPackage()
                     foreach (PHPSystemPackage::getExtensionPackageCandidates($osWithPackager->getSystemPackager(), $phpPackage, $extension) as $packageName) {
                         $package = self::findPackage($index, $packageName);
-                        if ($package === null || $index['packages'][$package]['architectureIndependent']) {
+                        if ($package === null) {
                             continue;
                         }
                         if (!self::dependsOnOtherPHPVersions($index, $package, $phpSource)) {
@@ -244,11 +244,10 @@ final class SlowExtensions
      * @throws \IPE\Exception\IO
      * @throws \RuntimeException
      *
-     * @return array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>} the PHP packages, and the PHP packages that provide the virtual ones
+     * @return array{packages: array<string, list<string>>, providers: array<string, list<string>>} the PHP packages, and the PHP packages that provide the virtual ones
      */
     private static function loadAPTIndex($url, Filesystem\Downloader $downloader, Filesystem\VolatileDirectory $volatileDirectory)
     {
-        $architectureIndependent = [];
         $depends = [];
         $providers = [];
         $file = $volatileDirectory->createSubdir() . $volatileDirectory->getFilesystem()->getDirectorySeparator() . 'Packages.gz';
@@ -264,13 +263,10 @@ final class SlowExtensions
                 if (preg_match('/^Package:\s*(\S+)/', $line, $match)) {
                     $package = strpos($match[1], 'php') === 0 ? $match[1] : null;
                     if ($package !== null) {
-                        $architectureIndependent[$package] = false;
                         $depends[$package] = [];
                     }
                 } elseif ($package === null) {
                     continue;
-                } elseif (preg_match('/^Architecture:\s*all\s*$/', $line)) {
-                    $architectureIndependent[$package] = true;
                 } elseif (preg_match('/^Depends:(.*)/', $line, $match)) {
                     // Like "Depends: php-psr | php7.3-psr, phpapi-20180731, libc6 (>= 2.14)": APT picks the first alternative
                     foreach (explode(',', $match[1]) as $alternatives) {
@@ -287,7 +283,7 @@ final class SlowExtensions
             gzclose($handle);
         }
 
-        return self::buildIndex($architectureIndependent, $depends, $providers);
+        return ['packages' => $depends, 'providers' => $providers];
     }
 
     /**
@@ -306,11 +302,10 @@ final class SlowExtensions
      * @throws \IPE\Exception\IO
      * @throws \RuntimeException
      *
-     * @return array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>} the PHP packages, and the PHP packages that provide the virtual ones
+     * @return array{packages: array<string, list<string>>, providers: array<string, list<string>>} the PHP packages, and the PHP packages that provide the virtual ones
      */
     private static function loadAPKIndex($url, Filesystem\Downloader $downloader, Filesystem\ArchiveExtractor $archiveExtractor, Filesystem\VolatileDirectory $volatileDirectory)
     {
-        $architectureIndependent = [];
         $depends = [];
         $providers = [];
         $fs = $volatileDirectory->getFilesystem();
@@ -323,13 +318,10 @@ final class SlowExtensions
             if (preg_match('/^P:(\S+)/', $line, $match)) {
                 $package = strpos($match[1], 'php') === 0 ? $match[1] : null;
                 if ($package !== null) {
-                    $architectureIndependent[$package] = false;
                     $depends[$package] = [];
                 }
             } elseif ($package === null) {
                 continue;
-            } elseif ($line === 'A:noarch') {
-                $architectureIndependent[$package] = true;
             } elseif (preg_match('/^([Dp]):(.*)/', $line, $match)) {
                 // Like "D:php84-common so:libc.musl-x86_64.so.1" and "p:php84-grpc=1.76.0-r0 cmd:foo"
                 foreach (explode(' ', trim($match[2])) as $relation) {
@@ -343,28 +335,11 @@ final class SlowExtensions
             }
         }
 
-        return self::buildIndex($architectureIndependent, $depends, $providers);
+        return ['packages' => $depends, 'providers' => $providers];
     }
 
     /**
-     * @param array<string, bool> $architectureIndependent
-     * @param array<string, list<string>> $depends
-     * @param array<string, list<string>> $providers
-     *
-     * @return array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>}
-     */
-    private static function buildIndex(array $architectureIndependent, array $depends, array $providers)
-    {
-        $packages = [];
-        foreach ($depends as $package => $packageDepends) {
-            $packages[$package] = ['architectureIndependent' => $architectureIndependent[$package], 'depends' => $packageDepends];
-        }
-
-        return ['packages' => $packages, 'providers' => $providers];
-    }
-
-    /**
-     * @param array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>} $index
+     * @param array{packages: array<string, list<string>>, providers: array<string, list<string>>} $index
      * @param string $name the name of a package, or of a virtual package
      *
      * @return string|null
@@ -381,7 +356,7 @@ final class SlowExtensions
     /**
      * Like PHPSystemPackage::getPackagesOfOtherPHPVersions(), but following the dependencies in the package indexes.
      *
-     * @param array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>} $index
+     * @param array{packages: array<string, list<string>>, providers: array<string, list<string>>} $index
      * @param string $package
      * @param string $phpSource like "php8.4" (APT) or "php84" (APK)
      * @param array<string, true> $visited
@@ -392,7 +367,7 @@ final class SlowExtensions
     {
         $visited[$package] = true;
         $match = null;
-        foreach ($index['packages'][$package]['depends'] as $dependency) {
+        foreach ($index['packages'][$package] as $dependency) {
             if (preg_match('/^(?<source>php\d+(?:\.\d+)?)(?:-|$)/', $dependency, $match) && $match['source'] !== $phpSource) {
                 return true;
             }

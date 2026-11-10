@@ -59,14 +59,12 @@ final class AvailablePackageTest extends TestCase
             ['apt-cache', ['show', '--no-all-versions', 'php8.4-mysql'], 0, "Package: php8.4-mysql\nSource: php8.4\nVersion: 8.4.27-1~deb13u1\nArchitecture: amd64\n"],
             ['apt-cache', ['show', '--no-all-versions', 'php8.4-redis'], 0, "Package: php8.4-redis\nSource: php-redis (6.2.0-1)\nVersion: 6.2.0-1+b1\n"],
             ['apt-cache', ['show', '--no-all-versions', 'php-redis'], 0, "Package: php-redis\nVersion: 6.2.0-1\n"],
-            ['apt-cache', ['show', '--no-all-versions', 'php8.0-phalcon5'], 0, "Package: php8.0-phalcon5\nSource: php-phalcon5\nVersion: 5.20.3-1\nArchitecture: all\n"],
         ]);
         $package = $apt->findAvailablePackage('php8.4-mysql');
         self::assertNotNull($package);
         self::assertSame('php8.4-mysql', $package->getName());
         self::assertSame('8.4.27-1~deb13u1', $package->getVersion());
         self::assertSame('php8.4', $package->getSource());
-        self::assertFalse($package->isArchitectureIndependent());
         // The package lists are refreshed only once
         $package = $apt->findAvailablePackage('php8.4-redis');
         self::assertNotNull($package);
@@ -75,9 +73,6 @@ final class AvailablePackageTest extends TestCase
         $package = $apt->findAvailablePackage('php-redis');
         self::assertNotNull($package);
         self::assertSame('php-redis', $package->getSource());
-        $package = $apt->findAvailablePackage('php8.0-phalcon5');
-        self::assertNotNull($package);
-        self::assertTrue($package->isArchitectureIndependent());
     }
 
     /**
@@ -173,23 +168,17 @@ final class AvailablePackageTest extends TestCase
             ['apk', ['list', '--available', 'php83-pecl-redis'], 0, "php83-pecl-redis-6.3.0-r0 x86_64 {php83-pecl-redis} (PHP-3.01)\n"],
             ['apk', ['search', '--exact', '--all', 'php83-pdo_mysql'], 0, "php83-pdo_mysql-8.3.37-r0\nphp83-pdo_mysql-8.3.36-r0\n"],
             ['apk', ['list', '--available', 'php83-pdo_mysql'], 0, "php83-pdo_mysql-8.3.37-r0 x86_64 {php83} (PHP-3.01)\nphp83-pdo_mysql-8.3.36-r0 x86_64 {php83} (PHP-3.01) [installed]\n"],
-            ['apk', ['search', '--exact', 'php83-pear'], 0, "php83-pear-8.3.37-r0\n"],
-            ['apk', ['list', '--available', 'php83-pear'], 0, "php83-pear-8.3.37-r0 noarch {php83} (PHP-3.01 BSD-2-Clause)\n"],
         ]);
         $package = $apk->findAvailablePackage('php83-redis');
         self::assertNotNull($package);
         self::assertSame('php83-pecl-redis', $package->getName());
         self::assertSame('6.3.0-r0', $package->getVersion());
         self::assertSame('php83-pecl-redis', $package->getSource());
-        self::assertFalse($package->isArchitectureIndependent());
         $package = $apk->findAvailablePackage('php83-pdo_mysql', '8.3.36-r0');
         self::assertNotNull($package);
         self::assertSame('php83-pdo_mysql', $package->getName());
         self::assertSame('8.3.36-r0', $package->getVersion());
         self::assertSame('php83', $package->getSource());
-        $package = $apk->findAvailablePackage('php83-pear');
-        self::assertNotNull($package);
-        self::assertTrue($package->isArchitectureIndependent());
     }
 
     /**

@@ -23,22 +23,15 @@ final class Package
     private $source;
 
     /**
-     * @var bool
-     */
-    private $architectureIndependent;
-
-    /**
      * @param non-empty-string $name
      * @param non-empty-string $version
      * @param non-empty-string $source
-     * @param bool $architectureIndependent
      */
-    public function __construct($name, $version, $source, $architectureIndependent = false)
+    public function __construct($name, $version, $source)
     {
         $this->name = $name;
         $this->version = $version;
         $this->source = $source;
-        $this->architectureIndependent = $architectureIndependent;
     }
 
     /**
@@ -76,16 +69,5 @@ final class Package
     public function getSource()
     {
         return $this->source;
-    }
-
-    /**
-     * Is the package the same for all the architectures (Architecture: all for APT, noarch for APK)?
-     * PHP extensions are architecture-dependent: such packages only depend on other packages (for example, the transitional ones).
-     *
-     * @return bool
-     */
-    public function isArchitectureIndependent()
-    {
-        return $this->architectureIndependent;
     }
 }

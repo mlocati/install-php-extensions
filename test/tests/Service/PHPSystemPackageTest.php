@@ -150,18 +150,6 @@ final class PHPSystemPackageTest extends TestCase
     }
 
     /**
-     * @return void
-     */
-    public function testArchitectureIndependentExtensionPackage()
-    {
-        $phpPackage = new SystemPackager\Package('php8.0-cli', '8.0.30-1', 'php8.0');
-        $subject = self::createWithAvailable($phpPackage, [
-            'php8.0-redis' => [new SystemPackager\Package('php8.0-redis', '6.2.0-1', 'php-redis', true)],
-        ]);
-        self::assertNull($subject->findExtensionPackage(new Extensions\redis(M::mock(PHPInfo::class), M::mock(OS::class))));
-    }
-
-    /**
      * @return array<array{\IPE\SystemPackager\Package, \IPE\SystemPackager\Package, list<non-empty-string>, list<non-empty-string>}> the package of PHP, the package of the extension, what installing it adds, and the expected packages of other PHP versions
      */
     public static function providePackagesOfOtherPHPVersions()
