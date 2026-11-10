@@ -40,7 +40,7 @@ final class libsasl extends SystemDependency
         }
         if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
-                [],
+                ['libsasl2-2'],
                 ['libsasl2-dev']
             );
         }
