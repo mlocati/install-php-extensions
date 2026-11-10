@@ -2,6 +2,7 @@
 
 namespace IPE\SystemDependencies;
 
+use IPE\Filesystem\Command;
 use IPE\Installer\State;
 use IPE\OS;
 use IPE\SystemDependency;
@@ -14,6 +15,11 @@ class libcurl extends SystemDependency
      * @var string
      */
     const HANDLE = 'lib-curl';
+
+    /**
+     * @var string
+     */
+    const HEADERS_DIRECTORY = '/usr/include/curl';
 
     /**
      * {@inheritdoc}
@@ -80,5 +86,23 @@ class libcurl extends SystemDependency
         }
 
         throw $this->createUnknownPackagesException();
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemDependency::install()
+     */
+    public function install(State $state)
+    {
+        // Before PHP 7.4 some configure scripts (curl, solr, http) don't look in the multiarch directories
+        $fs = $this->os->getFilesystem();
+        if (($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) && $this->php->getMajorMinorVersion() < 704 && !$fs->exists(self::HEADERS_DIRECTORY)) {
+            list(, $multiarch) = $fs->run(Command::create('gcc', ['-print-multiarch'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+            $fs->createSymlink('/usr/include/' . trim($multiarch) . '/curl', self::HEADERS_DIRECTORY);
+            $state->registerShutdownCallback(static function () use ($fs) {
+                $fs->deleteFile(self::HEADERS_DIRECTORY);
+            });
+        }
     }
 }
