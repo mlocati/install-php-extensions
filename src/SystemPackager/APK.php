@@ -195,11 +195,11 @@ final class APK extends SystemPackager
         }
         list($rc, $output) = $fs->run(Command::create('apk', ['list', '--available', $found['name']])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
         // Like "php83-pdo_mysql-8.3.36-r0 x86_64 {php83} (PHP-3.01) [installed]"
-        if ($rc !== 0 || !preg_match('/^' . preg_quote("{$found['name']}-{$found['version']}", '/') . ' \S+ \{(?<origin>[^}\s]+)\}/m', $output, $match)) {
+        if ($rc !== 0 || !preg_match('/^' . preg_quote("{$found['name']}-{$found['version']}", '/') . ' (?<architecture>\S+) \{(?<origin>[^}\s]+)\}/m', $output, $match)) {
             return null;
         }
 
-        return new Package($found['name'], $found['version'], $match['origin']);
+        return new Package($found['name'], $found['version'], $match['origin'], $match['architecture'] === 'noarch');
     }
 
     /**

@@ -138,7 +138,7 @@ class APT extends SystemPackager
         // The Source field is missing when it's the name of the package, and it may be followed by the version of the source package
         $source = preg_match('/^Source: (?<source>\S+)/m', $output, $sourceMatch) ? $sourceMatch['source'] : $name;
 
-        return new Package($name, $versionMatch['version'], $source);
+        return new Package($name, $versionMatch['version'], $source, preg_match('/^Architecture: all\r?$/m', $output) === 1);
     }
 
     /**

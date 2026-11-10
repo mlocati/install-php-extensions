@@ -963,6 +963,12 @@ abstract class Resolver
 
             return null;
         }
+        $otherPHPPackages = $this->phpSystemPackage->getPackagesOfOtherPHPVersions($package);
+        if ($otherPHPPackages !== []) {
+            $notes[Resolved::ORIGIN_SYSTEM_PACKAGE] = "{$description} would install packages of another PHP version (" . implode(', ', $otherPHPPackages) . ')';
+
+            return null;
+        }
         $this->logger->info("Using {$description} for {$handle}");
 
         return new Resolved($extension, $this->phpSystemPackage->getInstallArgument($package), $version, Resolved::ORIGIN_SYSTEM_PACKAGE);

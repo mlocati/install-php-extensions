@@ -1057,15 +1057,16 @@ final class ResolverTest extends TestCase
     /**
      * @param \IPE\SystemPackager\Package|null $phpPackage NULL if PHP hasn't been installed by the system packager
      * @param array<non-empty-string, list<\IPE\SystemPackager\Package>> $available
+     * @param array<non-empty-string, list<non-empty-string>> $expansions
      *
      * @return \IPE\Service\PHPSystemPackage
      */
-    private static function createPHPSystemPackage($phpPackage, array $available = [])
+    private static function createPHPSystemPackage($phpPackage, array $available = [], array $expansions = [])
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
         $os = M::mock(OS\Debian::class);
-        $packager = new FakePackager($os, [], []);
+        $packager = new FakePackager($os, [], $expansions);
         $packager->owningPackage = $phpPackage;
         $packager->available = $available;
         $os->shouldReceive('getSystemPackager')->andReturn($packager);
@@ -1126,6 +1127,29 @@ final class ResolverTest extends TestCase
         $resolver = self::createResolverWithMcryptPackage($php, Options::SYSTEMPACKAGES_ONLY, Options::ONUNSUPPORTED_SKIP);
         self::assertSame([], $resolver->resolveAskedExtensions([new Asked\FromHandle('mcrypt', '1.0.7')], $state));
         self::assertCount(1, $state->getSkippedExtensions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageInstallingAnotherPHP()
+    {
+        $php = self::createPHP('7.1.33');
+        $state = new State($php, self::$fs);
+        $phpSystemPackage = self::createPHPSystemPackage(
+            new SystemPackager\Package('php7.1-cli', '7.1.33-1', 'php7.1'),
+            ['php7.1-mcrypt' => [new SystemPackager\Package('php7.1-mcrypt', '1.0.7-1', 'php-mcrypt')]],
+            ['php7.1-mcrypt' => ['php7.1-mcrypt', 'php-common', 'php8.5-common', 'php8.5-cli']]
+        );
+        $resolved = self::resolveOne(self::createResolver($php, null, [], null, null, $phpSystemPackage), new Asked\FromHandle('mcrypt', ''), $state);
+        self::assertSame(Resolved::ORIGIN_BUNDLED, $resolved->getOrigin());
+        $resolver = self::createResolver($php, (new Options())->withSystemPackages(Options::SYSTEMPACKAGES_ONLY), [], null, null, $phpSystemPackage);
+        try {
+            $resolver->resolveAskedExtensions([new Asked\FromHandle('mcrypt', '')], $state);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedExtension $x) {
+            self::assertStringContainsString('system package: the package php7.1-mcrypt 1.0.7-1 would install packages of another PHP version (php8.5-common, php8.5-cli)', $x->getMessage());
+        }
     }
 
     /**

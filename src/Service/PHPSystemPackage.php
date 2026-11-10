@@ -90,7 +90,8 @@ final class PHPSystemPackage
         }
         foreach (self::getExtensionPackageCandidates($this->packager, $phpPackage, $extension) as $packageName) {
             $package = $this->packager->findAvailablePackage($packageName);
-            if ($package === null) {
+            // For example, php8.0-phalcon5 of the Ondřej Surý repositories only depends on php8.5-phalcon5
+            if ($package === null || $package->isArchitectureIndependent()) {
                 continue;
             }
             if ($package->getSource() === $phpPackage->getSource()) {
@@ -104,6 +105,34 @@ final class PHPSystemPackage
         }
 
         return null;
+    }
+
+    /**
+     * Get the packages of other PHP versions that would be installed together with a package found by findExtensionPackage().
+     * For example, php7.2-phalcon4 of the Ondřej Surý repositories depends on php-psr, which installs the most recent PHP.
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\InvalidArgument
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return list<non-empty-string>
+     */
+    public function getPackagesOfOtherPHPVersions(Package $package)
+    {
+        $phpPackage = $this->packager === null ? null : $this->getPackage();
+        if ($this->packager === null || $phpPackage === null) {
+            return [];
+        }
+        $result = [];
+        $match = null;
+        foreach (array_keys($this->packager->expandPackageList([$this->getInstallArgument($package)])) as $name) {
+            // Like php8.5-cli (APT) or php85-common (APK)
+            if (preg_match('/^(?<source>php\d+(?:\.\d+)?)(?:-|$)/', $name, $match) && $match['source'] !== $phpPackage->getSource()) {
+                $result[] = $name;
+            }
+        }
+
+        return $result;
     }
 
     /**

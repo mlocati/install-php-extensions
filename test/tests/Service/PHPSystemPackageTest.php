@@ -65,15 +65,16 @@ final class PHPSystemPackageTest extends TestCase
 
     /**
      * @param array<non-empty-string, list<\IPE\SystemPackager\Package>> $available
+     * @param array<non-empty-string, list<non-empty-string>> $expansions
      *
      * @return \IPE\Service\PHPSystemPackage
      */
-    private static function createWithAvailable(SystemPackager\Package $phpPackage, array $available)
+    private static function createWithAvailable(SystemPackager\Package $phpPackage, array $available, array $expansions = [])
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
         $os = M::mock(OS\Posix::class);
-        $packager = new FakePackager($os, [], []);
+        $packager = new FakePackager($os, [], $expansions);
         $packager->owningPackage = $phpPackage;
         $packager->available = $available;
         $os->shouldReceive('getSystemPackager')->andReturn($packager);
@@ -146,6 +147,59 @@ final class PHPSystemPackageTest extends TestCase
         self::assertNotNull($package);
         self::assertSame('6.2.0', $subject->getUpstreamVersion($package));
         self::assertSame('php8.4-redis', $subject->getInstallArgument($package));
+    }
+
+    /**
+     * @return void
+     */
+    public function testArchitectureIndependentExtensionPackage()
+    {
+        $phpPackage = new SystemPackager\Package('php8.0-cli', '8.0.30-1', 'php8.0');
+        $subject = self::createWithAvailable($phpPackage, [
+            'php8.0-redis' => [new SystemPackager\Package('php8.0-redis', '6.2.0-1', 'php-redis', true)],
+        ]);
+        self::assertNull($subject->findExtensionPackage(new Extensions\redis(M::mock(PHPInfo::class), M::mock(OS::class))));
+    }
+
+    /**
+     * @return array<array{\IPE\SystemPackager\Package, \IPE\SystemPackager\Package, list<non-empty-string>, list<non-empty-string>}> the package of PHP, the package of the extension, what installing it adds, and the expected packages of other PHP versions
+     */
+    public static function providePackagesOfOtherPHPVersions()
+    {
+        return [
+            [
+                new SystemPackager\Package('php7.2-cli', '7.2.34-1', 'php7.2'),
+                new SystemPackager\Package('php7.2-phalcon4', '4.1.3-3', 'php-phalcon4'),
+                ['php7.2-phalcon4', 'php7.2-common', 'php-psr', 'php8.5-psr', 'php8.5-common'],
+                ['php8.5-psr', 'php8.5-common'],
+            ],
+            [
+                new SystemPackager\Package('php7.3-cli', '7.3.33-1', 'php7.3'),
+                new SystemPackager\Package('php7.3-redis', '6.2.0-1', 'php-redis'),
+                ['php7.3-redis', 'php-common'],
+                [],
+            ],
+            [
+                new SystemPackager\Package('php84', '8.4.27-r0', 'php84'),
+                new SystemPackager\Package('php84-pecl-redis', '6.2.0-r0', 'php84-pecl-redis'),
+                ['php84-pecl-redis', 'php84-session', 'php85-common'],
+                ['php85-common'],
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider providePackagesOfOtherPHPVersions
+     *
+     * @param list<non-empty-string> $expansion
+     * @param list<non-empty-string> $expected
+     *
+     * @return void
+     */
+    public function testPackagesOfOtherPHPVersions(SystemPackager\Package $phpPackage, SystemPackager\Package $package, array $expansion, array $expected)
+    {
+        $subject = self::createWithAvailable($phpPackage, [], [$package->getName() => $expansion]);
+        self::assertSame($expected, $subject->getPackagesOfOtherPHPVersions($package));
     }
 
     /**
