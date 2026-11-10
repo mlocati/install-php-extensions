@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /*
  * Run the extension tests planned by scripts/ci-plan-extension-tests.php in the Docker images of an operating system.
- * Syntax: php scripts/ci-run-extension-tests.php <operating system> <path to install-php-extensions>
+ * Syntax: php scripts/ci-run-extension-tests.php <operating system> <path to install-php-extensions> [<group of the tests>]
  * The tests are read from the IPE_EXTENSION_TESTS environment variable.
  */
 
@@ -13,6 +13,7 @@ namespace IPE\Scripts\CI\RunExtensionTests;
 use IPE\CLI\Argv;
 use IPE\Dev\DockerImage;
 use IPE\Dev\DockerImages;
+use IPE\Dev\SlowExtensions;
 
 set_error_handler(
     static function (int $errno, string $errstr, string $errfile = '', int $errline = 0): never {
@@ -217,9 +218,9 @@ function runTest(string $description, DockerImage $dockerImage, string $phar, ar
 /**
  * @throws \JsonException
  * @throws \RuntimeException
- * @return list<array{extensions: non-empty-list<non-empty-string>, options: list<string>, php: string, zts: bool, image: DockerImage}> the tests to be run on the operating system
+ * @return list<array{extensions: non-empty-list<non-empty-string>, options: list<string>, php: string, zts: bool, image: DockerImage}> the tests of the group to be run on the operating system
  */
-function getTests(string $os): array
+function getTests(string $os, string $group): array
 {
     $json = getenv('IPE_EXTENSION_TESTS');
     $data = json_decode(is_string($json) ? $json : '', true, 512, JSON_THROW_ON_ERROR);
@@ -234,16 +235,20 @@ function getTests(string $os): array
         $extensions = array_values(array_filter(explode(' ', $test['extensions']), static fn (string $extension): bool => $extension !== ''));
         $rawOptions = $test['options'] ?? [];
         $options = is_array($rawOptions) ? array_values(array_filter($rawOptions, is_string(...))) : [];
-        if ($extensions === [] || $options !== $rawOptions) {
+        $testGroup = $test['group'] ?? '';
+        if ($extensions === [] || $options !== $rawOptions || !is_string($testGroup)) {
             throw new \RuntimeException('Invalid test in IPE_EXTENSION_TESTS: ' . json_encode($test, JSON_THROW_ON_ERROR));
+        }
+        if ($testGroup !== $group) {
+            continue;
         }
         foreach (DockerImages::find($test['php'], $test['zts']) as $image) {
             if ($image->getOS() !== $os) {
                 continue;
             }
             $result[] = ['extensions' => $extensions, 'options' => $options, 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image];
-            // The locally built images have PHP installed by the system packager: test also the compilation of the extensions
-            if ($image->getBaseImage() !== '' && !array_any($options, static fn (string $option): bool => str_starts_with($option, '--system-packages'))) {
+            // The locally built images have PHP installed by the system packager: test also the compilation of the extensions (unless they are compiled anyway)
+            if ($image->getBaseImage() !== '' && !array_any($options, static fn (string $option): bool => str_starts_with($option, '--system-packages')) && !array_all($extensions, static fn (string $extension): bool => SlowExtensions::isWithoutSystemPackage($extension, $os, $test['php']))) {
                 $result[] = ['extensions' => $extensions, 'options' => array_merge($options, ['--system-packages=never']), 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image];
             }
         }
@@ -257,17 +262,18 @@ function getTests(string $os): array
  */
 function main(array $argv): int
 {
-    if (count($argv) !== 3 || $argv[1] === '' || !is_file($argv[2])) {
-        fwrite(STDERR, "Syntax: {$argv[0]} <operating system> <path to install-php-extensions>\n");
+    if (!in_array(count($argv), [3, 4], true) || $argv[1] === '' || !is_file($argv[2])) {
+        fwrite(STDERR, "Syntax: {$argv[0]} <operating system> <path to install-php-extensions> [<group of the tests>]\n");
 
         return 1;
     }
     [, $os, $phar] = $argv;
+    $group = $argv[3] ?? '';
     $summary = [RESULT_PASSED => [], RESULT_FAILED => [], RESULT_SKIPPED => []];
     try {
         /** @var array<string, bool> $preparedImages */
         $preparedImages = [];
-        foreach (getTests($os) as $test) {
+        foreach (getTests($os, $group) as $test) {
             $description = implode(' ', $test['extensions']) . ($test['options'] === [] ? '' : ' (' . implode(' ', $test['options']) . ')') . " on PHP {$test['php']}" . ($test['zts'] ? ' (ZTS)' : '');
             $image = $test['image']->getName();
             echo "### {$description}\n";

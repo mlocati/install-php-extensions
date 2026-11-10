@@ -5,6 +5,7 @@ namespace IPE\Service;
 use IPE\Extension;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\SystemPackager;
 use IPE\SystemPackager\Package;
 
 /**
@@ -87,14 +88,7 @@ final class PHPSystemPackage
         if ($phpPackage === null) {
             return null;
         }
-        $packageNames = $extension instanceof Extension\ProvidesSystemPackageNames ? $extension->getSystemPackageNames($phpPackage) : null;
-        if ($packageNames === null) {
-            $packageNames = [];
-            foreach (array_unique(array_merge([$extension::getHandle()], $extension::getInstalledNames())) as $name) {
-                $packageNames = array_merge($packageNames, $this->packager->getPHPExtensionPackageCandidates($phpPackage, $name));
-            }
-        }
-        foreach (array_unique($packageNames) as $packageName) {
+        foreach (self::getExtensionPackageCandidates($this->packager, $phpPackage, $extension) as $packageName) {
             $package = $this->packager->findAvailablePackage($packageName);
             if ($package === null) {
                 continue;
@@ -110,6 +104,26 @@ final class PHPSystemPackage
         }
 
         return null;
+    }
+
+    /**
+     * Get the names of the system packages that may provide an extension, in order of preference.
+     *
+     * @param \IPE\SystemPackager\Package $phpPackage the system package that installed PHP
+     *
+     * @return list<non-empty-string>
+     */
+    public static function getExtensionPackageCandidates(SystemPackager $packager, Package $phpPackage, Extension $extension)
+    {
+        $packageNames = $extension instanceof Extension\ProvidesSystemPackageNames ? $extension->getSystemPackageNames($phpPackage) : null;
+        if ($packageNames === null) {
+            $packageNames = [];
+            foreach (array_unique(array_merge([$extension::getHandle()], $extension::getInstalledNames())) as $name) {
+                $packageNames = array_merge($packageNames, $packager->getPHPExtensionPackageCandidates($phpPackage, $name));
+            }
+        }
+
+        return array_values(array_unique($packageNames));
     }
 
     /**

@@ -4,9 +4,10 @@ namespace IPE\Dev;
 
 use IPE\Extension;
 use IPE\PHPInfo;
+use IPE\SystemPackager;
 
 /**
- * Create extensions without their services, to inspect what depends only on the PHP version (like supportsZTS() and supportsNTS()).
+ * Create extensions without their services, to inspect what depends only on the PHP version (like supportsZTS() and supportsNTS()) or on the system packager.
  *
  * @internal
  */
@@ -17,10 +18,11 @@ final class ExtensionFactory
      *
      * @param class-string<T> $class
      * @param string $phpVersion major.minor
+     * @param \IPE\OS|null $os
      *
      * @return T
      */
-    public static function createForPHPVersion($class, $phpVersion)
+    public static function createForPHPVersion($class, $phpVersion, $os = null)
     {
         list($major, $minor) = array_map('intval', explode('.', $phpVersion));
         $phpInfoClass = new \ReflectionClass(PHPInfo::class);
@@ -36,8 +38,30 @@ final class ExtensionFactory
         $extensionClass = new \ReflectionClass($class);
         $extension = $extensionClass->newInstanceWithoutConstructor();
         self::setProperty(new \ReflectionProperty(Extension::class, 'php'), $extension, $php);
+        if ($os !== null) {
+            self::setProperty(new \ReflectionProperty(Extension::class, 'os'), $extension, $os);
+        }
 
         return $extension;
+    }
+
+    /**
+     * Create an operating system that only provides its system packager (to inspect the names of the system packages).
+     *
+     * @param class-string<\IPE\OS\Debian>|class-string<\IPE\OS\Alpine> $osClass
+     * @param class-string<\IPE\SystemPackager> $packagerClass
+     *
+     * @return \IPE\OS\Debian|\IPE\OS\Alpine
+     */
+    public static function createOSWithSystemPackager($osClass, $packagerClass)
+    {
+        $osReflection = new \ReflectionClass($osClass);
+        $os = $osReflection->newInstanceWithoutConstructor();
+        $packager = (new \ReflectionClass($packagerClass))->newInstanceWithoutConstructor();
+        self::setProperty(new \ReflectionProperty(SystemPackager::class, 'os'), $packager, $os);
+        self::setProperty($osReflection->getProperty('systemPackager'), $os, $packager);
+
+        return $os;
     }
 
     /**
