@@ -14,6 +14,7 @@ use IPE\SystemPackager;
  * @see https://support.tideways.com/documentation/setup/installation/php-extension.html
  */
 final class tideways extends Extension\PrecompiledExtension implements
+    Extension\DeclaresUnsupportedEnvironments,
     Extension\ProvidesSystemPackageNames,
     Extension\RequiresSystemDependencies
 {
@@ -41,6 +42,26 @@ final class tideways extends Extension\PrecompiledExtension implements
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        // The module uses php_strlcat(), which PHP doesn't define when glibc provides strlcat()
+        $reason = 'the module for PHP 7.1 and older requires glibc 2.37 or older';
+
+        return [
+            'debian13..15-php5' => $reason,
+            'debian13..15-php7.0' => $reason,
+            'debian13..15-php7.1' => $reason,
+            'ubuntu23.10..26.10-php5' => $reason,
+            'ubuntu23.10..26.10-php7.0' => $reason,
+            'ubuntu23.10..26.10-php7.1' => $reason,
+        ];
     }
 
     /**
