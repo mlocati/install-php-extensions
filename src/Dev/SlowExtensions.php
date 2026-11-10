@@ -2,8 +2,8 @@
 
 namespace IPE\Dev;
 
-use IPE\Exception;
 use IPE\Extensions;
+use IPE\Filesystem;
 use IPE\OS;
 use IPE\Service\PHPSystemPackage;
 use IPE\SystemPackager;
@@ -55,8 +55,8 @@ final class SlowExtensions
                 'ubuntu26.04-apt' => true,
             ],
             Extensions\phalcon::HANDLE => [
-                'trixie-sury' => true,
-                'ubuntu24.04-sury' => true,
+                'trixie-sury' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
+                'ubuntu24.04-sury' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
             ],
             Extensions\swoole::HANDLE => [
                 'alpine3.24-apk' => true,
@@ -105,6 +105,11 @@ final class SlowExtensions
             }
         }
         $packageIndexes = self::getPackageIndexes();
+        $logger = new \IPE\Logger();
+        $fs = new Filesystem\Local($logger);
+        $downloader = (new Filesystem\Downloader\Factory($fs, $logger))->buildDownloader();
+        $archiveExtractor = new Filesystem\ArchiveExtractor($fs, $logger);
+        $volatileDirectory = $fs->createVolatileDirectory();
         $result = array_fill_keys(self::getHandles(), []);
         // Some images share the same package indexes
         $loadedIndexes = [];
@@ -116,12 +121,13 @@ final class SlowExtensions
                 throw new \RuntimeException("The package indexes of {$os} are not defined");
             }
             $apk = $packageIndexes[$os]['packager'] === 'apk';
-            $availablePackages = [];
+            $index = ['packages' => [], 'providers' => []];
             foreach ($packageIndexes[$os]['urls'] as $url) {
                 if (!isset($loadedIndexes[$url])) {
-                    $loadedIndexes[$url] = $apk ? self::loadAPKIndex($url) : self::loadAPTIndex($url);
+                    $loadedIndexes[$url] = $apk ? self::loadAPKIndex($url, $downloader, $archiveExtractor, $volatileDirectory) : self::loadAPTIndex($url, $downloader, $volatileDirectory);
                 }
-                $availablePackages += $loadedIndexes[$url];
+                $index['packages'] += $loadedIndexes[$url]['packages'];
+                $index['providers'] += $loadedIndexes[$url]['providers'];
             }
             $osWithPackager = $apk ? ExtensionFactory::createOSWithSystemPackager(OS\Alpine::class, SystemPackager\APK::class) : ExtensionFactory::createOSWithSystemPackager(OS\Debian::class, SystemPackager\APT::class);
             foreach (self::getClasses() as $class) {
@@ -131,11 +137,16 @@ final class SlowExtensions
                     $phpSource = $apk ? 'php' . str_replace('.', '', $phpVersion) : "php{$phpVersion}";
                     $phpPackage = new SystemPackager\Package($apk ? $phpSource : "{$phpSource}-cli", '0', $phpSource);
                     $extension = ExtensionFactory::createForPHPVersion($class, $phpVersion, $osWithPackager);
+                    // Like PHPSystemPackage::findExtensionPackage() and Resolver::resolveFromSystemPackage()
                     foreach (PHPSystemPackage::getExtensionPackageCandidates($osWithPackager->getSystemPackager(), $phpPackage, $extension) as $packageName) {
-                        if (isset($availablePackages[$packageName])) {
-                            $withPackage[] = $phpVersion;
-                            break;
+                        $package = self::findPackage($index, $packageName);
+                        if ($package === null || $index['packages'][$package]['architectureIndependent']) {
+                            continue;
                         }
+                        if (!self::dependsOnOtherPHPVersions($index, $package, $phpSource)) {
+                            $withPackage[] = $phpVersion;
+                        }
+                        break;
                     }
                 }
                 if ($withPackage !== []) {
@@ -233,37 +244,60 @@ final class SlowExtensions
      * @throws \IPE\Exception\IO
      * @throws \RuntimeException
      *
-     * @return array<string, true> the names of the PHP packages, including the virtual ones
+     * @return array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>} the PHP packages, and the PHP packages that provide the virtual ones
      */
-    private static function loadAPTIndex($url)
+    private static function loadAPTIndex($url, Filesystem\Downloader $downloader, Filesystem\VolatileDirectory $volatileDirectory)
     {
-        $result = [];
-        $file = self::download($url);
+        $architectureIndependent = [];
+        $depends = [];
+        $providers = [];
+        $file = $volatileDirectory->createSubdir() . $volatileDirectory->getFilesystem()->getDirectorySeparator() . 'Packages.gz';
+        $downloader->saveAs($url, $file);
+        $handle = gzopen($file, 'rb');
+        if ($handle === false) {
+            throw new \RuntimeException("Failed to decompress {$url}");
+        }
         try {
-            $handle = gzopen($file, 'rb');
-            if ($handle === false) {
-                throw new \RuntimeException("Failed to decompress {$url}");
-            }
+            $package = null;
             $match = null;
             while (($line = gzgets($handle)) !== false) {
-                if (preg_match('/^Package:\s*(php\S*)/', $line, $match)) {
-                    $result[$match[1]] = true;
+                if (preg_match('/^Package:\s*(\S+)/', $line, $match)) {
+                    $package = strpos($match[1], 'php') === 0 ? $match[1] : null;
+                    if ($package !== null) {
+                        $architectureIndependent[$package] = false;
+                        $depends[$package] = [];
+                    }
+                } elseif ($package === null) {
+                    continue;
+                } elseif (preg_match('/^Architecture:\s*all\s*$/', $line)) {
+                    $architectureIndependent[$package] = true;
+                } elseif (preg_match('/^Depends:(.*)/', $line, $match)) {
+                    // Like "Depends: php-psr | php7.3-psr, phpapi-20180731, libc6 (>= 2.14)": APT picks the first alternative
+                    foreach (explode(',', $match[1]) as $alternatives) {
+                        $depends[$package][] = self::getAPTRelationName(explode('|', $alternatives, 2)[0]);
+                    }
                 } elseif (preg_match('/^Provides:(.*)/', $line, $match)) {
                     // Like "Provides: php8.4-pdo-firebird (= 8.4.11-1), php-pdo-firebird"
                     foreach (explode(',', $match[1]) as $provided) {
-                        $name = trim(explode('(', $provided, 2)[0]);
-                        if (strpos($name, 'php') === 0) {
-                            $result[$name] = true;
-                        }
+                        $providers[self::getAPTRelationName($provided)][] = $package;
                     }
                 }
             }
-            gzclose($handle);
         } finally {
-            unlink($file);
+            gzclose($handle);
         }
 
-        return $result;
+        return self::buildIndex($architectureIndependent, $depends, $providers);
+    }
+
+    /**
+     * @param string $relation like "libc6 (>= 2.14)" or "php-psr:any"
+     *
+     * @return string
+     */
+    private static function getAPTRelationName($relation)
+    {
+        return explode(':', trim(explode('(', $relation, 2)[0]), 2)[0];
     }
 
     /**
@@ -272,86 +306,102 @@ final class SlowExtensions
      * @throws \IPE\Exception\IO
      * @throws \RuntimeException
      *
-     * @return array<string, true> the names of the PHP packages, including the ones they provide
+     * @return array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>} the PHP packages, and the PHP packages that provide the virtual ones
      */
-    private static function loadAPKIndex($url)
+    private static function loadAPKIndex($url, Filesystem\Downloader $downloader, Filesystem\ArchiveExtractor $archiveExtractor, Filesystem\VolatileDirectory $volatileDirectory)
     {
-        $result = [];
-        $file = self::download($url);
-        try {
-            // Not gzdecode(): the signature and the index are two concatenated gzip streams
-            $tar = @file_get_contents("compress.zlib://{$file}");
-        } finally {
-            unlink($file);
-        }
-        if (!is_string($tar) || $tar === '') {
-            throw new \RuntimeException("Failed to decompress {$url}");
-        }
+        $architectureIndependent = [];
+        $depends = [];
+        $providers = [];
+        $fs = $volatileDirectory->getFilesystem();
+        $archive = $volatileDirectory->createSubdir() . $fs->getDirectorySeparator() . 'APKINDEX.tar.gz';
+        $downloader->saveAs($url, $archive);
+        $directory = $archiveExtractor->extractTo($archive, $volatileDirectory->createSubdir(), Filesystem\ArchiveFormat::TAR_GZ);
+        $package = null;
         $match = null;
-        foreach (explode("\n", self::extractFromTar($tar, 'APKINDEX', $url)) as $line) {
-            if (preg_match('/^P:(php\S*)/', $line, $match)) {
-                $result[$match[1]] = true;
-            } elseif (preg_match('/^p:(.*)/', $line, $match)) {
-                // Like "p:php84-grpc=1.76.0-r0 cmd:foo"
-                foreach (explode(' ', trim($match[1])) as $provided) {
-                    $name = substr($provided, 0, strcspn($provided, '=<>~'));
-                    if (strpos($name, 'php') === 0) {
-                        $result[$name] = true;
+        foreach (explode("\n", $fs->readFile($directory . $fs->getDirectorySeparator() . 'APKINDEX')) as $line) {
+            if (preg_match('/^P:(\S+)/', $line, $match)) {
+                $package = strpos($match[1], 'php') === 0 ? $match[1] : null;
+                if ($package !== null) {
+                    $architectureIndependent[$package] = false;
+                    $depends[$package] = [];
+                }
+            } elseif ($package === null) {
+                continue;
+            } elseif ($line === 'A:noarch') {
+                $architectureIndependent[$package] = true;
+            } elseif (preg_match('/^([Dp]):(.*)/', $line, $match)) {
+                // Like "D:php84-common so:libc.musl-x86_64.so.1" and "p:php84-grpc=1.76.0-r0 cmd:foo"
+                foreach (explode(' ', trim($match[2])) as $relation) {
+                    $name = substr($relation, 0, strcspn($relation, '=<>~'));
+                    if ($match[1] === 'D') {
+                        $depends[$package][] = $name;
+                    } else {
+                        $providers[$name][] = $package;
                     }
                 }
             }
         }
 
-        return $result;
+        return self::buildIndex($architectureIndependent, $depends, $providers);
     }
 
     /**
-     * @param string $tar
-     * @param non-empty-string $name
-     * @param string $url
+     * @param array<string, bool> $architectureIndependent
+     * @param array<string, list<string>> $depends
+     * @param array<string, list<string>> $providers
      *
-     * @throws \RuntimeException
-     *
-     * @return string
+     * @return array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>}
      */
-    private static function extractFromTar($tar, $name, $url)
+    private static function buildIndex(array $architectureIndependent, array $depends, array $providers)
     {
-        $offset = 0;
-        $length = strlen($tar);
-        while ($offset + 512 <= $length) {
-            $entryName = rtrim(substr($tar, $offset, 100), "\0");
-            if ($entryName === '') {
-                break;
-            }
-            $size = octdec(rtrim(substr($tar, $offset + 124, 12), "\0 "));
-            if ($entryName === $name) {
-                return substr($tar, $offset + 512, (int) $size);
-            }
-            $offset += 512 + (int) ceil($size / 512) * 512;
+        $packages = [];
+        foreach ($depends as $package => $packageDepends) {
+            $packages[$package] = ['architectureIndependent' => $architectureIndependent[$package], 'depends' => $packageDepends];
         }
-        throw new \RuntimeException("{$name} not found in {$url}");
+
+        return ['packages' => $packages, 'providers' => $providers];
     }
 
     /**
-     * @param non-empty-string $url
+     * @param array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>} $index
+     * @param string $name the name of a package, or of a virtual package
      *
-     * @throws \IPE\Exception\IO
-     * @throws \RuntimeException
-     *
-     * @return string the path to a temporary file
+     * @return string|null
      */
-    private static function download($url)
+    private static function findPackage(array $index, $name)
     {
-        $file = tempnam(sys_get_temp_dir(), 'ipe');
-        if ($file === false) {
-            throw new \RuntimeException('Failed to create a temporary file');
-        }
-        $context = stream_context_create(['http' => ['timeout' => 60, 'user_agent' => 'install-php-extensions tests']]);
-        if (!@copy($url, $file, $context)) {
-            unlink($file);
-            throw new Exception\IO("Failed to download {$url}");
+        if (isset($index['packages'][$name])) {
+            return $name;
         }
 
-        return $file;
+        return isset($index['providers'][$name]) ? $index['providers'][$name][0] : null;
+    }
+
+    /**
+     * Like PHPSystemPackage::getPackagesOfOtherPHPVersions(), but following the dependencies in the package indexes.
+     *
+     * @param array{packages: array<string, array{architectureIndependent: bool, depends: list<string>}>, providers: array<string, list<string>>} $index
+     * @param string $package
+     * @param string $phpSource like "php8.4" (APT) or "php84" (APK)
+     * @param array<string, true> $visited
+     *
+     * @return bool
+     */
+    private static function dependsOnOtherPHPVersions(array $index, $package, $phpSource, array &$visited = [])
+    {
+        $visited[$package] = true;
+        $match = null;
+        foreach ($index['packages'][$package]['depends'] as $dependency) {
+            if (preg_match('/^(?<source>php\d+(?:\.\d+)?)(?:-|$)/', $dependency, $match) && $match['source'] !== $phpSource) {
+                return true;
+            }
+            $dependencyPackage = self::findPackage($index, $dependency);
+            if ($dependencyPackage !== null && !isset($visited[$dependencyPackage]) && self::dependsOnOtherPHPVersions($index, $dependencyPackage, $phpSource, $visited)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
