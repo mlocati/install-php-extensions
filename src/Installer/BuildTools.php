@@ -307,12 +307,19 @@ final class BuildTools
      */
     public function getConfigureEnvironment()
     {
-        if ($this->php->getMajorMinorVersion() < 704 && getenv('SED') === false) {
+        $result = [];
+        if ($this->php->getMajorMinorVersion() < 704) {
             // The phpize of PHP up to 7.3 uses $SED before looking for it: with autoconf 2.72 it's empty, so the include flags are lost
-            return ['SED' => 'sed'];
+            if (getenv('SED') === false) {
+                $result['SED'] = 'sed';
+            }
+            // Sury's PHP_SETUP_LIBXML uses pkg-config: when config.m4 calls it in more branches, only the first one looks for pkg-config
+            if (getenv('PKG_CONFIG') === false) {
+                $result['PKG_CONFIG'] = 'pkg-config';
+            }
         }
 
-        return [];
+        return $result;
     }
 
     /**

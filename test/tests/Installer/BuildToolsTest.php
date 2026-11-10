@@ -373,7 +373,7 @@ final class BuildToolsTest extends TestCase
     public static function provideConfigureEnvironment()
     {
         return [
-            [703, ['SED' => 'sed']],
+            [703, ['SED' => 'sed', 'PKG_CONFIG' => 'pkg-config']],
             [704, []],
         ];
     }

@@ -581,6 +581,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $expectedEnvironment = ['PHP_HOME' => '/usr/local'];
         if ($phpVersion < 704) {
             $expectedEnvironment['SED'] = 'sed';
+            $expectedEnvironment['PKG_CONFIG'] = 'pkg-config';
         }
         if ($needsPlatform) {
             $expectedEnvironment['PLATFORM'] = 'linux';

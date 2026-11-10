@@ -96,6 +96,6 @@ final class CassandraTest extends TestCase
         $buildOptions = (new BuildOptions())->withParallelJobs(2);
         self::assertSame('/ext/cassandra.so', (new cassandra($php, $os))->buildModule(self::createBuildContext('', null, '/src', $buildOptions), new BuildTools($php, $fs, new \IPE\Logger())));
         self::assertSame('./configure', $commands[1]->getCommand());
-        self::assertSame(['SED' => 'sed'], $commands[1]->getEnvironment());
+        self::assertSame(['SED' => 'sed', 'PKG_CONFIG' => 'pkg-config'], $commands[1]->getEnvironment());
     }
 }
