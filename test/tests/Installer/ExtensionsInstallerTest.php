@@ -409,6 +409,41 @@ final class ExtensionsInstallerTest extends TestCase
     }
 
     /**
+     * @dataProvider provideReenableCases
+     *
+     * @param bool $enable
+     * @param string $expectedIniContent
+     *
+     * @return void
+     */
+    public function testSystemPackageWithDisabledIniFile($enable, $expectedIniContent)
+    {
+        $iniFile = '/ini/20-fake.ini';
+        $this->writtenFiles[$iniFile] = ";extension=fake.so\n";
+        $fs = $this->createFilesystem();
+        $fs->shouldReceive('isFile')->andReturn(true);
+        $fs->shouldReceive('isDirectory')->andReturn(true);
+        $fs->shouldReceive('listDirectoryContents')->andReturnUsing(static function ($path) {
+            return $path === '/ini' ? ['20-fake.ini'] : [];
+        });
+        $installer = $this->createInstaller($fs, new Package('php8.4-cli', '8.4.27-1~deb13u1', 'php8.4'));
+        $this->packager->expansions['php8.4-fake=8.4.27-1~deb13u1'] = ['php8.4-fake'];
+        $fs->shouldReceive('run')->andReturnUsing(function () use ($iniFile) {
+            return [0, "[PHP Modules]\nCore\n" . ($this->writtenFiles[$iniFile] === "extension=fake.so\n" ? "fake\n" : '')];
+        });
+        $extension = M::mock(Extension::class . ', ' . Extension\RequiresSystemDependencies::class);
+        $extension->shouldReceive('getHandle')->andReturn('fake');
+        $extension->shouldReceive('getInstalledNames')->andReturn(['fake']);
+        $extension->shouldNotReceive('getRequiredSystemDependencies');
+        $report = $installer->install([new Resolved($extension, 'php8.4-fake=8.4.27-1~deb13u1', '8.4.27', Resolved::ORIGIN_SYSTEM_PACKAGE)], new State($this->php, $fs), $enable);
+        self::assertSame($expectedIniContent, $this->writtenFiles[$iniFile]);
+        $installed = $report->getExtensions()[0];
+        self::assertSame(InstalledExtension::METHOD_SYSTEM_PACKAGE, $installed->getMethod());
+        self::assertSame([$iniFile => $enable], $installed->getIniFiles());
+        self::assertSame(['fake'], $installed->getLoadedModules());
+    }
+
+    /**
      * @return void
      */
     public function testFilesCreatedByTheInstallerOfTheVendor()

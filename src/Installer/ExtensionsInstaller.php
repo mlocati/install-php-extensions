@@ -244,7 +244,12 @@ final class ExtensionsInstaller
                 // The package doesn't enable the module if the administrator disabled it before removing the package
                 $disabledIniFile = $this->enabler->getDisabledIniFile($knownExtension);
                 if ($disabledIniFile === '') {
-                    throw $x;
+                    // Some packages ship a disabled ini file (like php84-pecl-xdebug of Alpine)
+                    $iniFile = $this->enabler->findIniFile($knownExtension);
+                    if ($iniFile === '' || $this->enabler->isIniFileActive($iniFile)) {
+                        throw $x;
+                    }
+                    $disabledIniFile = $iniFile;
                 }
                 $this->logger->info("Enabling {$disabledIniFile}");
                 $loadedModules = $this->enabler->reenable($knownExtension, $disabledIniFile);
