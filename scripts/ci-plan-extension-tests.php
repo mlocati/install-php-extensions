@@ -10,7 +10,7 @@ declare(strict_types=1);
  * - php scripts/ci-plan-extension-tests.php --quick [<commit before> <commit after>]
  *   For pushes and manual runs: install one extension in a few Docker images (if the commits are specified, only if relevant files changed)
  * Writes to the file specified by the GITHUB_OUTPUT environment variable (if set):
- * - jobs: the JSON array of the jobs, each one with the operating system of the Docker images and the group of the tests (empty if there's nothing to test)
+ * - jobs: the JSON array of the jobs, each one with the operating system of the Docker images, the group of the tests, and the PHP version (empty string for all) (empty if there's nothing to test)
  * - tests: the JSON array of the tests, each one with the space-separated extensions, the PHP version, whether PHP is thread-safe, the options of install-php-extensions (if any), and the group (if not the default one)
  */
 
@@ -61,6 +61,11 @@ const QUICK_TEST_EXTENSION = 'calendar';
 const QUICK_TEST_PHP_VERSION = '8.5';
 
 const MAX_JOBS_PER_MATRIX = 256;
+
+/**
+ * When the Docker images of an operating system install every extension more than these times, its job is split by PHP version (GitHub Actions stops the jobs after 6 hours).
+ */
+const MAX_INSTALLATIONS_PER_EXTENSION = 8;
 
 /**
  * The extensions to be tested more times, each time with different install-php-extensions options (an empty list means the default options).
@@ -409,24 +414,55 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
 }
 
 /**
- * One job for every operating system used by every group of tests.
+ * The operating systems whose Docker images install every extension more than MAX_INSTALLATIONS_PER_EXTENSION times.
  *
- * @param list<array{group: string, os: non-empty-list<string>}> $tests
+ * @return list<string>
+ */
+function getOperatingSystemsToSplit(): array
+{
+    $installations = [];
+    foreach (DockerImages::getAll() as $image) {
+        $installations[$image->getOS()][$image->getPHPVersion()] = $image->getInstallationsPerExtension();
+    }
+
+    return array_keys(array_filter($installations, static fn (array $perPHPVersion): bool => array_sum($perPHPVersion) > MAX_INSTALLATIONS_PER_EXTENSION));
+}
+
+/**
+ * One job for every operating system used by every group of tests.
+ * The default group is split by PHP version on the operating systems returned by getOperatingSystemsToSplit() (the other groups test one slow extension each).
+ *
+ * @param list<array{php: string, group: string, os: non-empty-list<string>}> $tests
  * @param list<string> $operatingSystems
  *
- * @return list<array{distro: string, group: string}>
+ * @return list<array{distro: string, group: string, php: string}>
  */
 function getJobs(array $tests, array $operatingSystems): array
 {
     $usedOperatingSystems = [];
+    $phpVersions = [];
     foreach ($tests as $test) {
         $usedOperatingSystems[$test['group']] = array_merge($usedOperatingSystems[$test['group']] ?? [], $test['os']);
+        if ($test['group'] === '') {
+            foreach ($test['os'] as $os) {
+                $phpVersions[$os][] = $test['php'];
+            }
+        }
     }
     ksort($usedOperatingSystems, SORT_STRING);
+    $operatingSystemsToSplit = getOperatingSystemsToSplit();
     $result = [];
     foreach ($usedOperatingSystems as $group => $groupOperatingSystems) {
         foreach (array_intersect($operatingSystems, $groupOperatingSystems) as $os) {
-            $result[] = ['distro' => $os, 'group' => $group];
+            if ($group !== '' || !in_array($os, $operatingSystemsToSplit, true)) {
+                $result[] = ['distro' => $os, 'group' => $group, 'php' => ''];
+                continue;
+            }
+            $osPHPVersions = array_values(array_unique($phpVersions[$os]));
+            usort($osPHPVersions, static fn (string $a, string $b): int => version_compare($a, $b));
+            foreach ($osPHPVersions as $phpVersion) {
+                $result[] = ['distro' => $os, 'group' => $group, 'php' => $phpVersion];
+            }
         }
     }
 

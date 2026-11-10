@@ -134,4 +134,14 @@ final class DockerImage
     {
         return $this->phpBinary === '' ? 'php' : $this->phpBinary;
     }
+
+    /**
+     * How many times the CI installs every extension in this image: when PHP is installed by the system packager, also with --system-packages=never.
+     *
+     * @return int
+     */
+    public function getInstallationsPerExtension()
+    {
+        return $this->baseImage === '' ? 1 : 2;
+    }
 }

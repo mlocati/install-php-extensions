@@ -303,7 +303,7 @@ jobs:
           esac
 
   test-extensions:
-    name: Test ${{ matrix.group || 'extensions' }} on ${{ matrix.distro }}
+    name: Test ${{ matrix.group || 'extensions' }} on ${{ matrix.distro }}${{ matrix.php && format(' with PHP {0}', matrix.php) || '' }}
     needs:
       - phpunit
       - build-phar
@@ -343,4 +343,4 @@ jobs:
         name: Test extensions
         env:
           IPE_EXTENSION_TESTS: ${{ needs.plan-extension-tests.outputs.tests }}
-        run: php scripts/ci-run-extension-tests.php "${{ matrix.distro }}" install-php-extensions "${{ matrix.group }}"
+        run: php scripts/ci-run-extension-tests.php "${{ matrix.distro }}" install-php-extensions "${{ matrix.group }}" "${{ matrix.php }}"
