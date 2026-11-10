@@ -963,6 +963,11 @@ abstract class Resolver
 
             return null;
         }
+        if ($version !== '' && $extension instanceof Extension\RestrictsVersions && !$extension->canUseVersion(Resolved::ORIGIN_SYSTEM_PACKAGE, $version)) {
+            $notes[Resolved::ORIGIN_SYSTEM_PACKAGE] = "{$description} can't be used";
+
+            return null;
+        }
         $otherPHPPackages = $this->phpSystemPackage->getPackagesOfOtherPHPVersions($package);
         if ($otherPHPPackages !== []) {
             $notes[Resolved::ORIGIN_SYSTEM_PACKAGE] = "{$description} would install packages of another PHP version (" . implode(', ', $otherPHPPackages) . ')';

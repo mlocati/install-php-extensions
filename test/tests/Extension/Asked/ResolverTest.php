@@ -1155,6 +1155,28 @@ final class ResolverTest extends TestCase
     /**
      * @return void
      */
+    public function testSystemPackageWithRestrictedVersion()
+    {
+        $php = self::createPHP('7.1.33');
+        $state = new State($php, self::$fs);
+        $options = (new Options())->withSystemPackages(Options::SYSTEMPACKAGES_ONLY);
+        $phpPackage = new SystemPackager\Package('php7.1-cli', '7.1.33-1', 'php7.1');
+        $phpSystemPackage = self::createPHPSystemPackage($phpPackage, ['php7.1-mongodb' => [new SystemPackager\Package('php7.1-mongodb', '1.11.1+1.9.2+1.7.5-1', 'php-mongodb')]]);
+        try {
+            self::createResolver($php, $options, [], null, null, $phpSystemPackage)->resolveAskedExtensions([new Asked\FromHandle('mongodb', '')], $state);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedExtension $x) {
+            self::assertStringContainsString("system package: the package php7.1-mongodb 1.11.1+1.9.2+1.7.5-1 can't be used", $x->getMessage());
+        }
+        $phpSystemPackage = self::createPHPSystemPackage($phpPackage, ['php7.1-mongodb' => [new SystemPackager\Package('php7.1-mongodb', '1.16.2-1', 'php-mongodb')]]);
+        $resolved = self::resolveOne(self::createResolver($php, $options, [], null, null, $phpSystemPackage), new Asked\FromHandle('mongodb', ''), $state);
+        self::assertSame(Resolved::ORIGIN_SYSTEM_PACKAGE, $resolved->getOrigin());
+        self::assertSame('1.16.2', $resolved->getVersion());
+    }
+
+    /**
+     * @return void
+     */
     public function testSystemPackageWithOptions()
     {
         $php = self::createPHP('8.3.0');
