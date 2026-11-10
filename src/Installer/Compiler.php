@@ -221,10 +221,7 @@ final class Compiler
             ['CFLAGS' => "{$flags} " . self::WARNING_FLAGS . ' ' . self::C_WARNING_FLAGS, 'CXXFLAGS' => rtrim("{$flags} " . self::WARNING_FLAGS . ' ' . self::CXX_WARNING_FLAGS)],
             $known instanceof Extension\ProvidesConfigureEnvironment ? $known->getConfigureEnvironment($context) : []
         );
-        if ($this->php->getMajorMinorVersion() < 704 && getenv('SED') === false) {
-            // The phpize of PHP up to 7.3 uses $SED before looking for it: with autoconf 2.72 it's empty, so the include flags of pkg-config are lost
-            $result['SED'] = 'sed';
-        }
+        $result += $this->buildTools->getConfigureEnvironment();
         if ($this->php->getMajorMinorVersion() < 700) {
             $includeDir = $this->buildTools->getIncludeDir();
             if ($includeDir !== '' && $this->fs->isFile("{$includeDir}/ext/pdo/php_pdo_driver.h")) {

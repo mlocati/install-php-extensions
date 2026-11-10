@@ -368,6 +368,32 @@ final class BuildToolsTest extends TestCase
     }
 
     /**
+     * @return array<array{int, array<string, string>}> the PHP version, and the expected configure environment
+     */
+    public static function provideConfigureEnvironment()
+    {
+        return [
+            [703, ['SED' => 'sed']],
+            [704, []],
+        ];
+    }
+
+    /**
+     * @dataProvider provideConfigureEnvironment
+     *
+     * @param int $phpVersion
+     * @param array<string, string> $expected
+     *
+     * @return void
+     */
+    public function testConfigureEnvironment($phpVersion, array $expected)
+    {
+        $php = self::createPHPInfo();
+        $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
+        self::assertSame($expected, (new BuildTools($php, self::createFilesystem(), new \IPE\Logger()))->getConfigureEnvironment());
+    }
+
+    /**
      * @return void
      */
     public function testStackProtectorFlagWithoutCompiler()

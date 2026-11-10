@@ -239,7 +239,7 @@ final class cassandra extends Extension implements
     private function buildNanoDriver($directory, BuildTools $buildTools, $parallelJobs)
     {
         $this->runStep($buildTools->getPhpize(), [], $directory);
-        $this->runStep('./configure', [], $directory);
+        $this->runStep('./configure', [], $directory, $buildTools->getConfigureEnvironment());
         $this->runStep($buildTools->getMake(), ['-j' . $parallelJobs, 'install'], $directory);
     }
 
@@ -247,14 +247,15 @@ final class cassandra extends Extension implements
      * @param non-empty-string $command
      * @param list<string> $arguments
      * @param non-empty-string $directory
+     * @param array<non-empty-string, string> $environment
      *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    private function runStep($command, array $arguments, $directory)
+    private function runStep($command, array $arguments, $directory, array $environment = [])
     {
-        list($rc) = $this->os->getFilesystem()->run(Command::create($command, $arguments)->withWorkingDirectory($directory)->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run(Command::create($command, $arguments)->withWorkingDirectory($directory)->withEnvironment($environment)->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\IO("Failed to compile the cassandra extension: {$command} failed with exit code {$rc}");
         }

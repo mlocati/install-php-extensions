@@ -527,14 +527,14 @@ final class PrecompiledExtensionsTest extends TestCase
     }
 
     /**
-     * @return array<array{string, bool}> the pdo_snowflake version, and whether the build script needs PLATFORM
+     * @return array<array{string, int, bool}> the pdo_snowflake version, the PHP version, and whether the build script needs PLATFORM
      */
     public static function providePdoSnowflakePlatforms()
     {
         return [
-            ['0.2.4', true],
-            ['0.2.5', false],
-            ['2.0.0', false],
+            ['0.2.4', 701, true],
+            ['0.2.5', 703, false],
+            ['2.0.0', 804, false],
         ];
     }
 
@@ -542,11 +542,12 @@ final class PrecompiledExtensionsTest extends TestCase
      * @dataProvider providePdoSnowflakePlatforms
      *
      * @param string $version
+     * @param int $phpVersion
      * @param bool $needsPlatform
      *
      * @return void
      */
-    public function testPdoSnowflakeBuildModule($version, $needsPlatform)
+    public function testPdoSnowflakeBuildModule($version, $phpVersion, $needsPlatform)
     {
         $commands = [];
         $fs = M::mock(Filesystem::class);
@@ -571,12 +572,16 @@ final class PrecompiledExtensionsTest extends TestCase
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
         $php->shouldReceive('getVersion')->andReturn('8.4.27');
+        $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $pdoSnowflake = new Extensions\pdo_snowflake($php, self::createOS(OS\Debian::class, 12, $fs));
         self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), new BuildTools($php, $fs, new \IPE\Logger())));
         self::assertCount($needsPlatform ? 2 : 1, $commands);
         $build = $commands[count($commands) - 1];
         self::assertSame('bash', $build->getCommand());
         $expectedEnvironment = ['PHP_HOME' => '/usr/local'];
+        if ($phpVersion < 704) {
+            $expectedEnvironment['SED'] = 'sed';
+        }
         if ($needsPlatform) {
             $expectedEnvironment['PLATFORM'] = 'linux';
         }

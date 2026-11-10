@@ -137,7 +137,7 @@ final class pdo_snowflake extends Extension implements
     {
         $fs = $this->os->getFilesystem();
         $rootDir = $context->getSourceDirectory();
-        $environment = ['PHP_HOME' => dirname(dirname($buildTools->getPhpConfig()))];
+        $environment = ['PHP_HOME' => dirname(dirname($buildTools->getPhpConfig()))] + $buildTools->getConfigureEnvironment();
         $version = $context->getVersion();
         // Before 0.2.5 the build script doesn't set PLATFORM (like scripts/_init.sh does), so it doesn't link the static libraries
         if (!self::isVersionAtLeast($version, '0.2.5')) {

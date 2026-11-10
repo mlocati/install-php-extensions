@@ -65,4 +65,37 @@ final class CassandraTest extends TestCase
         self::assertContains("-DCMAKE_BUILD_TYPE={$expected}", $commands[0]->getArguments());
         self::assertSame(['--build', 'cmake-build', '--parallel', '2'], $commands[2]->getArguments());
     }
+
+    /**
+     * @return void
+     */
+    public function testNanoDriverConfigureEnvironment()
+    {
+        $commands = [];
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/phpize')->andReturn(true);
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/make')->andReturn(true);
+        $fs->shouldReceive('resolveCommand')->with('make')->andReturn('/usr/local/bin/make');
+        $fs->shouldReceive('run')->andReturnUsing(static function (Command $command) use (&$commands) {
+            if ($command->getArguments() === ['--version']) {
+                return [0, "PHP Api Version:         20180731\n"];
+            }
+            $commands[] = $command;
+
+            return [0, ''];
+        });
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
+        $php->shouldReceive('getVersion')->andReturn('7.3.33');
+        $php->shouldReceive('getAPIVersion')->andReturn(20180731);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(703);
+        $php->shouldReceive('getExtensionDir')->andReturn('/ext');
+        $os = M::mock(OS\Debian::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $buildOptions = (new BuildOptions())->withParallelJobs(2);
+        self::assertSame('/ext/cassandra.so', (new cassandra($php, $os))->buildModule(self::createBuildContext('', null, '/src', $buildOptions), new BuildTools($php, $fs, new \IPE\Logger())));
+        self::assertSame('./configure', $commands[1]->getCommand());
+        self::assertSame(['SED' => 'sed'], $commands[1]->getEnvironment());
+    }
 }
