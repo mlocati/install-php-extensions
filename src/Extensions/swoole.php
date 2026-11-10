@@ -124,7 +124,8 @@ final class swoole extends Extension implements
             return '4.5.10';
         }
         if ($phpVersion <= 704) {
-            return '4.8.11';
+            // 4.8.11 and 4.8.12 don't include <cstdint>, so they can't be compiled with GCC 13+
+            return '4.8.13';
         }
         if ($this->php->getBits() === 32) {
             // 32-bit systems are not supported since 5.1 (see https://github.com/swoole/swoole-src/issues/5198#issuecomment-1820162178), and 5.0 doesn't compile with PHP 8.3+
