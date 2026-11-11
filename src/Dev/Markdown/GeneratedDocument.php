@@ -25,7 +25,7 @@ abstract class GeneratedDocument
      */
     public static function getAll()
     {
-        return [new Readme()];
+        return [new Readme(), new Contributing()];
     }
 
     /**

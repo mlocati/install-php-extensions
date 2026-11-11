@@ -25,3 +25,7 @@ The workflow:
 Since the workflow pushes to the `main` branch, the rules that protect the branch must allow it.
 
 The repository has release immutability enabled: once published, the tag and the files of a release can't be changed.
+
+## CONTRIBUTING.md
+
+When the Tests workflow runs on the `main` branch (except for pull requests), after PHPUnit it updates the automatically generated sections of `CONTRIBUTING.md` with `scripts/update-contributing.php`: if they changed, it commits them and pushes the commit to the `main` branch (so the rules that protect the branch must allow it).

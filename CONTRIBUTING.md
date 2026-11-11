@@ -2,20 +2,11 @@
 
 Pull requests are welcome!
 
-## The README file
+## Generated sections
 
-Some sections of `README.md` are generated automatically when a new version is released.
+Some sections of `README.md` are generated automatically when a new version is released, and some sections of `CONTRIBUTING.md` are generated automatically when the `main` branch changes.
 
-They are delimited by lines like
-```
-<!-- START OF ... -->
-```
-
-and
-
-```
-<!-- END OF ... -->
-```
+They are delimited by lines like `<!-- START OF ... -->` and `<!-- END OF ... -->`.
 
 Please don't change them in your pull requests (the tests check it).
 
@@ -59,3 +50,10 @@ The extensions that take long to be compiled (listed in `src/Dev/SlowExtensions.
 
 If a pull request changes the code of IPE (like `bin/install-php-extensions` or the PHP files in `src`), how it's built, or how the extensions are tested, at least one extension must be tested, otherwise the tests fail.
 If no extension needs to be tested, write `Test: -STOP-`.
+
+### Available distros
+
+The distros whose names end with `-apk` or `-apt` use the PHP packages of the distro, and the ones ending with `-sury` use the PHP packages of [packages.sury.org](https://packages.sury.org/php/); the other ones use the official Docker PHP images.
+
+<!-- START OF TEST DISTROS -->
+<!-- END OF TEST DISTROS -->
