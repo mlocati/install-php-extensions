@@ -232,6 +232,7 @@ $ipe->when(\IPE\Filesystem\Downloader\Factory::class)
 ### Composer repositories
 
 The extensions published as Composer packages are looked for in the registered Composer repositories, starting from the ones with the highest priority.
+The only exception are the names like `php/bcmath` of the supported extensions bundled in the PHP source code: they are the same as the handles of the extensions (like `bcmath`).
 By default, only packagist.org is registered (with the priority `\IPE\ComposerRepository\Registry::PACKAGIST_PRIORITY`, lower than the default priority of the other repositories).
 IPE supports the version 2 of the Composer repository protocol (the one used by packagist.org, Private Packagist and Satis).
 

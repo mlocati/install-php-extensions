@@ -107,12 +107,36 @@ class Registry
     public function getExtensionByComposerPackageName($packageName)
     {
         foreach ($this->classes as $handle => $class) {
-            if (is_subclass_of($class, AvailableAsComposerPackage::class) && strcasecmp($class::getComposerPackageName(), $packageName) === 0) {
-                return $this->getExtensionByHandle($handle);
+            foreach (self::getComposerPackageNames($class) as $name) {
+                if (strcasecmp($name, $packageName) === 0) {
+                    return $this->getExtensionByHandle($handle);
+                }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Only the bundled extensions we know have a php/... name: other php/... packages may be published on Packagist.
+     *
+     * @param class-string<\IPE\Extension> $className
+     *
+     * @return list<non-empty-string> the Composer package names that identify an extension, sorted alphabetically
+     */
+    public static function getComposerPackageNames($className)
+    {
+        $result = [];
+        if (is_subclass_of($className, AvailableAsComposerPackage::class)) {
+            $result[] = $className::getComposerPackageName();
+        }
+        if (is_subclass_of($className, BundledInPHPSource::class)) {
+            $result[] = BundledInPHPSource::COMPOSER_VENDOR . '/' . $className::getHandle();
+        }
+        $result = array_unique($result);
+        sort($result, SORT_STRING);
+
+        return $result;
     }
 
     /**

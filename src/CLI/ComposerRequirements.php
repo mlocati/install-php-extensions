@@ -85,7 +85,7 @@ class ComposerRequirements
                 $this->logger->warning($message);
                 continue;
             }
-            if ($this->php->isExtensionInstalled($known) || self::isAlreadyAsked($known, $alreadyAsked)) {
+            if ($this->php->isExtensionInstalled($known) || $this->isAlreadyAsked($known, $alreadyAsked)) {
                 continue;
             }
             $handle = $known::getHandle();
@@ -260,14 +260,17 @@ class ComposerRequirements
      *
      * @return bool
      */
-    private static function isAlreadyAsked(Extension $extension, array $alreadyAsked)
+    private function isAlreadyAsked(Extension $extension, array $alreadyAsked)
     {
         foreach ($alreadyAsked as $asked) {
             if ($asked instanceof Asked\FromHandle && $asked->getHandle() === $extension::getHandle()) {
                 return true;
             }
-            if ($asked instanceof Asked\FromComposer && $extension instanceof Extension\AvailableAsComposerPackage && strcasecmp($asked->getFullName(), $extension::getComposerPackageName()) === 0) {
-                return true;
+            if ($asked instanceof Asked\FromComposer) {
+                $known = $this->registry->getExtensionByComposerPackageName($asked->getFullName());
+                if ($known !== null && $known::getHandle() === $extension::getHandle()) {
+                    return true;
+                }
             }
         }
 

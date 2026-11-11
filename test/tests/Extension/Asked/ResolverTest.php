@@ -275,6 +275,43 @@ final class ResolverTest extends TestCase
     /**
      * @return void
      */
+    public function testBundledExtensionAskedWithComposerPackageName()
+    {
+        $options = (new Options())->withOnUnsupportedExtensions(Options::ONUNSUPPORTED_FORCE);
+        // php/mcrypt is the same as mcrypt, also when it's not bundled in PHP
+        foreach ([['7.1.33', '', Resolved::ORIGIN_BUNDLED, '7.1.33'], ['7.1.33', '^1.0', Resolved::ORIGIN_PECL, '1.0.7'], ['7.2.34', '', Resolved::ORIGIN_PECL, '1.0.7']] as $case) {
+            list($phpVersion, $versionRequirements, $expectedOrigin, $expectedVersion) = $case;
+            $php = self::createPHP($phpVersion);
+            foreach ([new Asked\FromHandle('mcrypt', $versionRequirements), new Asked\FromComposer('php/mcrypt', $versionRequirements)] as $asked) {
+                $resolved = self::resolveOne(self::createResolver($php, $options), $asked, new State($php, self::$fs));
+                self::assertInstanceOf(Extensions\mcrypt::class, $resolved->getKnownExtension());
+                self::assertSame($expectedOrigin, $resolved->getOrigin());
+                self::assertSame($expectedVersion, $resolved->getVersion());
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testNotBundledExtensionAskedWithComposerPackageName()
+    {
+        $php = self::createPHP('8.3.0');
+        $state = new State($php, self::$fs);
+        // They may be published on Packagist
+        foreach (['php/apcu', 'php/not-known'] as $fullName) {
+            try {
+                self::createResolver($php)->resolveAskedExtensions([new Asked\FromComposer($fullName, '')], $state);
+                self::fail('Expected exception not thrown');
+            } catch (Exception\UnsupportedExtension $x) {
+                self::assertStringStartsWith("Unable to find a suitable version of {$fullName} in the Composer repositories", $x->getMessage());
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
     public function testManifestRequiringAnotherPHPVersion()
     {
         $php = self::createPHP('7.1.33');

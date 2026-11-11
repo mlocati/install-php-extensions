@@ -147,8 +147,8 @@ final class ComposerRequirementsTest extends TestCase
      */
     public function testExtensionsSpecifiedByTheUserWin()
     {
-        $file = self::writeJson(['require' => ['ext-apcu' => '^5', 'ext-lzf' => '^1', 'ext-mcrypt' => '*']]);
-        $asked = self::create()->getAskedExtensions($file, '', true, [new Asked\FromHandle('lzf', '^2'), new Asked\FromComposer('APCu/apcu', '^4')], ['mcrypt' => ['some-option' => 'value']]);
+        $file = self::writeJson(['require' => ['ext-apcu' => '^5', 'ext-lzf' => '^1', 'ext-mcrypt' => '*', 'ext-bcmath' => '*']]);
+        $asked = self::create()->getAskedExtensions($file, '', true, [new Asked\FromHandle('lzf', '^2'), new Asked\FromComposer('APCu/apcu', '^4'), new Asked\FromComposer('php/bcmath')], ['mcrypt' => ['some-option' => 'value']]);
         self::assertSame(['mcrypt' => ''], self::describe($asked));
         self::assertSame(['some-option' => 'value'], $asked[0]->getOptions());
     }

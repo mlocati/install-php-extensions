@@ -5,6 +5,9 @@ namespace IPE\Test\Extension;
 use IPE\Exception;
 use IPE\Extension\Registry;
 use IPE\Extensions\apcu;
+use IPE\Extensions\bcmath;
+use IPE\Extensions\ev;
+use IPE\Extensions\zip;
 use IPE\Filesystem\Downloader;
 use IPE\OS;
 use IPE\PHPInfo;
@@ -42,6 +45,32 @@ final class RegistryTest extends TestCase
         self::assertInstanceOf(apcu::class, $extension);
         self::assertSame($extension, $registry->getExtensionByHandle(apcu::getHandle()));
         self::assertSame($extension, $registry->getExtensionByPECLHandle('apcu'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testComposerPackageNames()
+    {
+        $app = self::createApp();
+        $app->instance(PHPInfo::class, M::mock(PHPInfo::class));
+        $app->instance(OS::class, M::mock(OS::class));
+        $app->instance(Downloader::class, M::mock(Downloader::class));
+        $registry = (new Registry($app))->registerDefaultExtensions();
+        self::assertInstanceOf(apcu::class, $registry->getExtensionByComposerPackageName('APCu/apcu'));
+        self::assertInstanceOf(bcmath::class, $registry->getExtensionByComposerPackageName('php/bcmath'));
+        self::assertInstanceOf(bcmath::class, $registry->getExtensionByComposerPackageName('PHP/BCMath'));
+        // Both published on Packagist and bundled in PHP
+        self::assertInstanceOf(zip::class, $registry->getExtensionByComposerPackageName('pecl/zip'));
+        self::assertInstanceOf(zip::class, $registry->getExtensionByComposerPackageName('php/zip'));
+        // Not bundled in PHP
+        self::assertNull($registry->getExtensionByComposerPackageName('php/apcu'));
+        self::assertNull($registry->getExtensionByComposerPackageName('php/not-an-extension'));
+        self::assertNull($registry->getExtensionByComposerPackageName('other/bcmath'));
+        self::assertSame(['apcu/apcu'], Registry::getComposerPackageNames(apcu::class));
+        self::assertSame(['php/bcmath'], Registry::getComposerPackageNames(bcmath::class));
+        self::assertSame(['pecl/zip', 'php/zip'], Registry::getComposerPackageNames(zip::class));
+        self::assertSame([], Registry::getComposerPackageNames(ev::class));
     }
 
     /**

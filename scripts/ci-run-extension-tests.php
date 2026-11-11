@@ -14,6 +14,7 @@ use IPE\CLI\Argv;
 use IPE\Dev\DockerImage;
 use IPE\Dev\DockerImages;
 use IPE\Dev\SlowExtensions;
+use IPE\Extension;
 
 set_error_handler(
     static function (int $errno, string $errstr, string $errfile = '', int $errline = 0): never {
@@ -144,13 +145,36 @@ function prepareImage(DockerImage $image): array
 }
 
 /**
+ * The handle of the extension of an argument like "xdebug", "xdebug:^3.3", "xdebug/xdebug" or "php/imap" (the name itself for unknown extensions).
+ *
+ * @param list<class-string<Extension>> $extensionClasses
+ */
+function getHandle(string $argument, array $extensionClasses): string
+{
+    $name = explode(':', $argument, 2)[0];
+    if (!str_contains($name, '/')) {
+        return $name;
+    }
+    $class = array_find(
+        $extensionClasses,
+        static fn (string $class): bool => array_any(
+            Extension\Registry::getComposerPackageNames($class),
+            static fn (string $composerName): bool => strcasecmp($composerName, $name) === 0,
+        ),
+    );
+
+    return $class === null ? $name : $class::getHandle();
+}
+
+/**
  * @param non-empty-list<non-empty-string> $extensions
  * @param list<string> $options
+ * @param list<class-string<Extension>> $extensionClasses
  *
  * @throws \RuntimeException
  * @throws \JsonException
  */
-function runTest(string $description, DockerImage $dockerImage, string $phar, array $extensions, array $options): string
+function runTest(string $description, DockerImage $dockerImage, string $phar, array $extensions, array $options, array $extensionClasses): string
 {
     $image = $dockerImage->getName();
     $php = $dockerImage->getPHPBinary();
@@ -200,12 +224,19 @@ function runTest(string $description, DockerImage $dockerImage, string $phar, ar
                 printIndented(is_string($skippedExtension['message'] ?? null) ? $skippedExtension['message'] : "{$skippedExtension['name']} has been skipped");
             }
         }
-        $installed = array_values(array_filter($extensions, static fn (string $extension): bool => !in_array(explode(':', $extension, 2)[0], $skipped, true)));
+        $installed = array_values(
+            array_filter(
+                array_map(
+                    static fn (string $extension): string => getHandle($extension, $extensionClasses),
+                    $extensions,
+                ),
+                static fn (string $handle): bool => !in_array($handle, $skipped, true),
+            ),
+        );
         if ($installed === []) {
             return RESULT_SKIPPED;
         }
-        foreach ($installed as $extension) {
-            $handle = explode(':', $extension, 2)[0];
+        foreach ($installed as $handle) {
             if (!is_file(ROOT_DIR . "/test/extensions/{$handle}.php")) {
                 continue;
             }
@@ -306,6 +337,7 @@ function main(array $argv): int
     $phpVersion = $argv[4] ?? '';
     $summary = [RESULT_PASSED => [], RESULT_FAILED => [], RESULT_SKIPPED => []];
     try {
+        $extensionClasses = \IPE\createApp()->make(Extension\Registry::class)->getExtensionClasses();
         /** @var array<string, bool> $preparedImages */
         $preparedImages = [];
         foreach (getTests($os, $group, $phpVersion) as $test) {
@@ -328,7 +360,7 @@ function main(array $argv): int
                 continue;
             }
             $start = time();
-            $result = runTest($description, $test['image'], $phar, $test['extensions'], $test['options']);
+            $result = runTest($description, $test['image'], $phar, $test['extensions'], $test['options'], $extensionClasses);
             $seconds = time() - $start;
             printIndented('Time: ' . ($seconds < 60 ? "{$seconds} seconds" : sprintf('%.1f minutes', $seconds / 60)));
             $summary[$result][] = "{$description} ({$image})";
