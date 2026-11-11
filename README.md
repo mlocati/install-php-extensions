@@ -164,46 +164,46 @@ Below the handles there are the Composer package names that can be used to speci
 | apcu<br><sub>apcu/apcu</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | apcu_bc |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; |  |  |
 | ast<br><sub>nikic/php-ast</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| bcmath | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| bcmath<br><sub>php/bcmath</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | bitset<br><sub>pecl/bitset</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | blackfire[&#x24D8;](#blackfire) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | brotli<br><sub>kjdev/brotli</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| bz2 | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| calendar | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| bz2<br><sub>php/bz2</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| calendar<br><sub>php/calendar</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | cassandra[&#x24D8;](#cassandra) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | cmark |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; |  |  |
 | csv | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
-| curl | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| dba | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| curl<br><sub>php/curl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| dba<br><sub>php/dba</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ddtrace[&#x24D8;](#ddtrace) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | decimal<br><sub>php-decimal/ext-decimal</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| dom | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| dom<br><sub>php/dom</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ds<br><sub>php-ds/ext-ds</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | ecma_intl[&#x24D8;](#ecma_intl) |  |  |  | &check; | &check; |  |  |  |  |  |  |  |  |  |
-| enchant | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| enchant<br><sub>php/enchant</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ev |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | event | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | excimer<br><sub>wikimedia/excimer</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
-| exif | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| ffi | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
-| ftp | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| gd[&#x24D8;](#gd) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| exif<br><sub>php/exif</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| ffi<br><sub>php/ffi</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
+| ftp<br><sub>php/ftp</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| gd[&#x24D8;](#gd)<br><sub>php/gd</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | gearman |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | geoip |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | geos[&#x24D8;](#geos) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | geospatial<br><sub>php-geospatial/geospatial</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| gettext | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| gettext<br><sub>php/gettext</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | gmagick |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| gmp | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| gmp<br><sub>php/gmp</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | gnupg |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | grpc |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | http<br><sub>m6w6/ext-http</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | igbinary<br><sub>igbinary/igbinary</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | imagick<br><sub>imagick/imagick</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| imap |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| imap<br><sub>php/imap</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | inotify<br><sub>arnaud-lb/inotify</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| interbase |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
-| intl | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| interbase<br><sub>php/interbase</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
+| intl<br><sub>php/intl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ion |  | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |
 | ioncube_loader |  | &check; | &check; | &check; | &check; | &check; |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ip2location<br><sub>ip2location/ip2location-pie</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
@@ -211,14 +211,14 @@ Below the handles there are the Composer package names that can be used to speci
 | json_post |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | jsonpath<br><sub>supermetrics/jsonpath</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
 | judy[&#x24D8;](#judy)<br><sub>orieg/judy</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
-| ldap | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| ldap<br><sub>php/ldap</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | luasandbox |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | lz4[&#x24D8;](#lz4) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |
 | lzf<br><sub>pecl/lzf</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | mailparse<br><sub>pecl/mailparse</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | maxminddb | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
-| mbstring | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| mcrypt<br><sub>pecl/mcrypt</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| mbstring<br><sub>php/mbstring</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| mcrypt<br><sub>pecl/mcrypt<br>php/mcrypt</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | md4c | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | memcache |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | memcached<br><sub>php-memcached/php-memcached</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -227,35 +227,35 @@ Below the handles there are the Composer package names that can be used to speci
 | mongodb<br><sub>mongodb/mongodb-extension</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | mosquitto |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | msgpack<br><sub>msgpack/msgpack-php</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| mssql |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
-| mysql |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
-| mysqli | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| mysqlnd | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| mssql<br><sub>php/mssql</sub> |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
+| mysql<br><sub>php/mysql</sub> |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
+| mysqli<br><sub>php/mysqli</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| mysqlnd<br><sub>php/mysqlnd</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | newrelic[&#x24D8;](#newrelic) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | nsq |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | oauth |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| oci8[&#x24D8;](#oci8)<br><sub>oci8/oci8</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| odbc | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| opcache | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| oci8[&#x24D8;](#oci8)<br><sub>oci8/oci8<br>php/oci8</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| odbc<br><sub>php/odbc</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| opcache<br><sub>php/opcache</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | opencensus |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| openssl | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| openssl<br><sub>php/openssl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | openswoole |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | opentelemetry<br><sub>open-telemetry/ext-opentelemetry</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | operator[&#x24D8;](#operator) |  | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | parallel[&#x24D8;](#parallel)<br><sub>pecl/parallel</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | parle[&#x24D8;](#parle) |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| pcntl | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pcntl<br><sub>php/pcntl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pcov<br><sub>pecl/pcov</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| pdo | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pdo_dblib | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pdo_firebird | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pdo_mysql | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pdo_oci[&#x24D8;](#pdo_oci)<br><sub>pecl/pdo_oci</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pdo_odbc | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pdo_pgsql | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pdo<br><sub>php/pdo</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pdo_dblib<br><sub>php/pdo_dblib</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pdo_firebird<br><sub>php/pdo_firebird</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pdo_mysql<br><sub>php/pdo_mysql</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pdo_oci[&#x24D8;](#pdo_oci)<br><sub>pecl/pdo_oci<br>php/pdo_oci</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pdo_odbc<br><sub>php/pdo_odbc</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pdo_pgsql<br><sub>php/pdo_pgsql</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_snowflake[&#x24D8;](#pdo_snowflake) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | pdo_sqlsrv[&#x24D8;](#pdo_sqlsrv) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| pgsql | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pgsql<br><sub>php/pgsql</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | phalcon<br><sub>phalcon/cphalcon</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | php_trie |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
 | phpy[&#x24D8;](#phpy) |  | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |
@@ -263,28 +263,28 @@ Below the handles there are the Composer package names that can be used to speci
 | pq |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | propro |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | protobuf |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pspell |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pspell<br><sub>php/pspell</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | psr | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pthreads[&#x24D8;](#pthreads) |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; | &check; |
 | raphf<br><sub>m6w6/ext-raphf</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | rdkafka<br><sub>rdkafka/rdkafka</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| recode[&#x24D8;](#recode) |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
+| recode[&#x24D8;](#recode)<br><sub>php/recode</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
 | redis |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | relay[&#x24D8;](#relay) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
 | rrd |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | saxon[&#x24D8;](#saxon) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | seasclick[&#x24D8;](#seasclick) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | seaslog |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| session | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| shmop | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| session<br><sub>php/session</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| shmop<br><sub>php/shmop</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | simdjson[&#x24D8;](#simdjson) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | smbclient |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | snappy | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| snmp | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| snmp<br><sub>php/snmp</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | snuffleupagus[&#x24D8;](#snuffleupagus) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| soap | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| sockets | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| sodium[&#x24D8;](#sodium) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |
+| soap<br><sub>php/soap</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| sockets<br><sub>php/sockets</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| sodium[&#x24D8;](#sodium)<br><sub>php/sodium</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |
 | solr<br><sub>pecl/solr</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | sourceguardian |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | spx |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -293,16 +293,16 @@ Below the handles there are the Composer package names that can be used to speci
 | statgrab[&#x24D8;](#statgrab)<br><sub>iliaal/statgrab</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | stomp |  |  | &check; | &check; | &check; |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | swoole[&#x24D8;](#swoole)<br><sub>swoole/swoole</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| sybase_ct |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
+| sybase_ct<br><sub>php/sybase_ct</sub> |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
 | sync |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| sysvmsg | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| sysvsem | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| sysvshm | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| sysvmsg<br><sub>php/sysvmsg</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| sysvsem<br><sub>php/sysvsem</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| sysvshm<br><sub>php/sysvshm</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | tensor |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | tideways[&#x24D8;](#tideways) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| tidy | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| tidy<br><sub>php/tidy</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | timezonedb<br><sub>pecl/timezonedb</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| tokenizer | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| tokenizer<br><sub>php/tokenizer</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | translit<br><sub>derickr/translit</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | uopz |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | uploadprogress |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -311,7 +311,7 @@ Below the handles there are the Composer package names that can be used to speci
 | v8js[&#x24D8;](#v8js) |  | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | vips[&#x24D8;](#vips) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | vld<br><sub>derickr/vld</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| wddx |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
+| wddx<br><sub>php/wddx</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
 | wikidiff2[&#x24D8;](#wikidiff2) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | xattr<br><sub>pecl/xattr</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xdebug<br><sub>xdebug/xdebug</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -319,15 +319,15 @@ Below the handles there are the Composer package names that can be used to speci
 | xhprof | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xlswriter<br><sub>viest/xlswriter</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | xmldiff<br><sub>pecl/xml-xmldiff</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| xmlrpc |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| xmlrpc<br><sub>php/xmlrpc</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xpass[&#x24D8;](#xpass)<br><sub>remi/xpass</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
-| xsl | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| xsl<br><sub>php/xsl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | yac<br><sub>laruence/yac</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | yajl_stream |  | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | yaml<br><sub>pecl/yaml</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | yar |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zephir_parser | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| zip<br><sub>pecl/zip</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| zip<br><sub>pecl/zip<br>php/zip</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zmq |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zookeeper[&#x24D8;](#zookeeper) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zstd<br><sub>kjdev/zstd</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
