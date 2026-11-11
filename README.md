@@ -158,22 +158,24 @@ The extensions marked with &#x24D8; have some [notes](#extension-notes).
 
 | Extension | PHP 8.6 | PHP 8.5 | PHP 8.4 | PHP 8.3 | PHP 8.2 | PHP 8.1 | PHP 8.0 | PHP 7.4 | PHP 7.3 | PHP 7.2 | PHP 7.1 | PHP 7.0 | PHP 5.6 | PHP 5.5 |
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| amqp |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| amqp[&#x24D8;](#amqp) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | apcu |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | apcu_bc |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; |  |  |
 | ast | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | bcmath | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | bitset | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| blackfire | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| blackfire[&#x24D8;](#blackfire) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | brotli | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | bz2 | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | calendar | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | cassandra[&#x24D8;](#cassandra) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | cmark |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; |  |  |
 | csv | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
+| curl | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | dba | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ddtrace[&#x24D8;](#ddtrace) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | decimal |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
+| dom | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ds |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | ecma_intl[&#x24D8;](#ecma_intl) |  |  |  | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | enchant | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -226,6 +228,7 @@ The extensions marked with &#x24D8; have some [notes](#extension-notes).
 | mssql |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
 | mysql |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
 | mysqli | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| mysqlnd | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | newrelic[&#x24D8;](#newrelic) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | nsq |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | oauth |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -241,6 +244,7 @@ The extensions marked with &#x24D8; have some [notes](#extension-notes).
 | parle[&#x24D8;](#parle) |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | pcntl | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pcov |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
+| pdo | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_dblib | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_firebird | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_mysql | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -269,6 +273,7 @@ The extensions marked with &#x24D8; have some [notes](#extension-notes).
 | saxon[&#x24D8;](#saxon) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | seasclick[&#x24D8;](#seasclick) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | seaslog |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| session | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | shmop | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | simdjson[&#x24D8;](#simdjson) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | smbclient |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -292,9 +297,10 @@ The extensions marked with &#x24D8; have some [notes](#extension-notes).
 | sysvsem | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | sysvshm | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | tensor |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
-| tideways |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| tideways[&#x24D8;](#tideways) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | tidy | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | timezonedb | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| tokenizer | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | translit | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | uopz |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | uploadprogress |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -324,7 +330,7 @@ The extensions marked with &#x24D8; have some [notes](#extension-notes).
 | zookeeper[&#x24D8;](#zookeeper) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zstd | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 
-*Number of supported extensions: 165*
+*Number of supported extensions: 171*
 
 <!-- Generated by scripts/update-readme.php: do not edit -->
 <!-- END OF SUPPORTED PHP EXTENSIONS TABLE -->
@@ -345,12 +351,13 @@ These options apply to all the extensions (the options of specific extensions ar
 | `--no-dev` | Ignore the development requirements of the project in --from-composer-json and --from-composer-lock |  |
 | `--ignore-unknown-extensions` | Ignore unknown extensions instead of aborting |  |
 | `--unsupported-extensions[=]<abort\|force\|skip>` | What to do with extensions that are known not to work in the current environment. | `abort` |
+| `--system-packages[=]<auto\|never\|only>` | When PHP has been installed by the system packager (APT, APK), install the extensions from its packages: when available (auto), never, or only from them (only). | `auto` |
 | `--build-type[=]<optimized\|with-symbols\|debug>` | How to compile the extensions: optimized (debug symbols stripped), with-symbols (optimized, keeping the debug symbols), debug (no optimizations, with debug symbols) | `optimized` |
 | `--cpus[=]value` | Number of parallel processors to be used while compiling (0: all the available ones) | all the available ones |
 | `--skip-check` | Don't check that PHP loads the extensions correctly before enabling them |  |
 | `--dont-enable` | Disable the extensions at the end of the installation (they can be enabled later with --enable) |  |
-| `--enable[=]value` | Enable the extension loaded by this ini file, by uncommenting its extension= and zend_extension= lines (can be specified multiple times) |  |
-| `--disable[=]value` | Disable the extension loaded by this ini file, by commenting out its extension= and zend_extension= lines (can be specified multiple times) |  |
+| `--enable[=]value` | Enable the extension loaded by this ini file, by uncommenting its extension= and zend_extension= lines, or with phpenmod for the files in the mods-available directory of Debian and Ubuntu (can be specified multiple times) |  |
+| `--disable[=]value` | Disable the extension loaded by this ini file, by commenting out its extension= and zend_extension= lines, or with phpdismod for the files in the mods-available directory of Debian and Ubuntu (can be specified multiple times) |  |
 | `--ini-basename[=]value` | The name of the ini files that enable the extensions (without .ini): use the {priority} and {name} placeholders, or compat for the names used by the official Docker PHP images (see https://github.com/mlocati/install-php-extensions#names-of-the-ini-files) | compat in the official Docker PHP images, {priority}-{name} otherwise |
 | `--keep-systempackager-cache[=]<yes\|no>` | Keep the system packager (APT/APK) cache after installing PHP extensions | no in the official Docker PHP images, yes otherwise |
 | `--apt-debian-fix-archived[=]<yes\|no>` | Update the APT repositories for archived Debian systems | yes in the official Docker PHP images, no otherwise |
@@ -396,6 +403,17 @@ Some extensions have limitations, or specific command line options:
 
 <!-- START OF EXTENSION NOTES -->
 <!-- Generated by scripts/update-readme.php: do not edit -->
+
+### amqp
+
+Not available on Ubuntu 14.04 (the version of the librabbitmq library of this system is too old)
+
+### blackfire
+
+Not available on:
+
+- Debian 12 to 15 with PHP 5 (the probe for PHP 5 requires glibc 2.33 or older)
+- Ubuntu 22.04 to 26.10 with PHP 5 (the probe for PHP 5 requires glibc 2.33 or older)
 
 ### cassandra
 
@@ -445,6 +463,7 @@ Not available on:
 
 - Alpine 3.0 to 3.8 (the version of the LZ4 library of this system is too old)
 - Debian 8 (the version of the LZ4 library of this system is too old)
+- Ubuntu 14.04 (the version of the LZ4 library of this system is too old)
 
 ### memprof
 
@@ -499,6 +518,7 @@ Not available on:
 
 - Alpine (the vendor only supports glibc)
 - Debian 8 (the extension requires OpenSSL 1.1)
+- Ubuntu 14.04 to 16.04 (the extension requires OpenSSL 1.1)
 
 ### pdo_sqlsrv
 
@@ -506,7 +526,10 @@ Not available on Alpine 3.7 to 3.8 (the Microsoft ODBC Driver requires unixODBC 
 
 ### phpy
 
-Not available on Debian 10 (the version of Python of this system is too old)
+Not available on:
+
+- Debian 10 (the version of Python of this system is too old)
+- Ubuntu 14.04 to 18.04 (the version of Python of this system is too old)
 
 ### pthreads
 
@@ -569,7 +592,10 @@ Command line options:
 
 ### sodium
 
-Not available on Debian 8 (libsodium 1.0.0 is too old - at least 1.0.9 is required)
+Not available on:
+
+- Debian 8 (libsodium 1.0.0 is too old - at least 1.0.9 is required)
+- Ubuntu 14.04 to 16.04 (libsodium 1.0.8 is too old - at least 1.0.9 is required)
 
 ### sqlsrv
 
@@ -587,11 +613,23 @@ Command line options:
 |---|---|---|
 | `--swoole:without-iouring` | Don't enable the io_uring support |  |
 
+### tideways
+
+Not available on:
+
+- Debian 13 to 15 with PHP 5 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Debian 13 to 15 with PHP 7.0 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Debian 13 to 15 with PHP 7.1 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Ubuntu 23.10 to 26.10 with PHP 5 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Ubuntu 23.10 to 26.10 with PHP 7.0 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Ubuntu 23.10 to 26.10 with PHP 7.1 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+
 ### v8js
 
 Not available on:
 
 - Debian 10 to 11 (the version of the V8 library of this system is too old)
+- Ubuntu 20.04 to 22.04 (the version of the V8 library of this system is too old)
 - Alpine 3.12 to 3.18 (the version of the V8 library of this system is too old)
 
 ### vips
