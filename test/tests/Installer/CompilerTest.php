@@ -59,7 +59,7 @@ final class CompilerTest extends TestCase
     }
 
     /**
-     * A filesystem where phpize, php-config, make and nproc are available.
+     * A filesystem where phpize, php-config, make, nproc and pkg-config are available.
      *
      * @return \IPE\Filesystem&\Mockery\MockInterface
      */
@@ -73,6 +73,7 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
         $fs->shouldReceive('resolveCommand')->with('make')->andReturn('/usr/bin/make');
         $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('/usr/bin/nproc');
+        $fs->shouldReceive('resolveCommand')->with('pkg-config')->andReturn('/usr/bin/pkg-config');
         $fs->shouldReceive('resolveCommand')->with('readelf')->andReturn('');
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('nproc', [])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "4\n"]);
         $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('/usr/bin/cc');
@@ -225,7 +226,7 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/config.m4')->andReturn(true);
         $fs->shouldReceive('isFile')->with(self::SOURCE_DIR . '/configure')->andReturn(false);
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
-        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment() + ['SED' => 'sed', 'PKG_CONFIG' => 'pkg-config'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment() + ['SED' => 'sed', 'PKG_CONFIG' => '/usr/bin/pkg-config'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
         $php = self::createPHPInfo(703);
         try {
             (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
@@ -246,7 +247,7 @@ final class CompilerTest extends TestCase
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--include-dir'])))->andReturn([0, "/usr/include/php/20131226\n"]);
         $fs->shouldReceive('isFile')->with('/usr/include/php/20131226/ext/pdo/php_pdo_driver.h')->andReturn(true);
         $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('/usr/local/bin/phpize', [])->withWorkingDirectory(self::SOURCE_DIR)->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
-        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment() + ['SED' => 'sed', 'PKG_CONFIG' => 'pkg-config', 'pdo_cv_inc_path' => '/usr/include/php/20131226/ext'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
+        $fs->shouldReceive('run')->once()->ordered()->with(self::isCommand(Command::create('./configure', ['--with-php-config=/usr/local/bin/php-config', '--with-libdir=lib64'])->withWorkingDirectory(self::SOURCE_DIR)->withEnvironment(self::createConfigureEnvironment() + ['SED' => 'sed', 'PKG_CONFIG' => '/usr/bin/pkg-config', 'pdo_cv_inc_path' => '/usr/include/php/20131226/ext'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([1, '']);
         $php = self::createPHPInfo(506);
         try {
             (new Compiler(new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), $php, $fs, new ZendExtensionDetector($fs, new \IPE\Logger()), new \IPE\Logger()))->compile(new Resolved(null, self::SOURCE_DIR, '', Resolved::ORIGIN_DIRECTORY));
