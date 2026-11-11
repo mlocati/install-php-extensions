@@ -94,9 +94,10 @@ function generateExtensionsTable(array $extensionClasses, array $notes, array $p
         if (isset($notes[$handle])) {
             $line .= "[&#x24D8;](#{$handle})";
         }
-        if (is_a($class, Extension\AvailableAsComposerPackage::class, true)) {
+        $composerNames = Extension\Registry::getComposerPackageNames($class);
+        if ($composerNames !== []) {
             // GitHub strips <small>
-            $line .= '<br><sub>' . escapeTableCell(escapeText($class::getComposerPackageName())) . '</sub>';
+            $line .= '<br><sub>' . implode('<br>', array_map(static fn (string $name): string => escapeTableCell(escapeText($name)), $composerNames)) . '</sub>';
         }
         $line .= ' |';
         $supportedPHPVersions = $class::getSupportedPHPVersions();

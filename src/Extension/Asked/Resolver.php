@@ -584,6 +584,13 @@ abstract class Resolver
      */
     public function resolveAskedExtension(Asked $asked, State $state)
     {
+        if ($asked instanceof Asked\FromComposer && strcasecmp($asked->getVendor(), Extension\BundledInPHPSource::COMPOSER_VENDOR) === 0) {
+            $known = $this->registry->getExtensionByComposerPackageName($asked->getFullName());
+            // php/imap is the same as imap
+            if ($known !== null) {
+                return $this->resolveKnownExtension($known, $asked->getVersionRequirements(), $asked->getOptions(), $state, self::getHandleOrigins());
+            }
+        }
         if (!$asked instanceof Asked\FromHandle && $this->options->getSystemPackages() === Options::SYSTEMPACKAGES_ONLY) {
             $name = self::describeAskedSource($asked);
             if (!$this->handleUnsupported("The extension from {$name} would be compiled, but the extensions must be installed only from the system packages", $name, $state)) {
@@ -689,14 +696,22 @@ abstract class Resolver
             throw new Exception\UnsupportedExtension("'{$handle}' is the handle of an unknown extension");
         }
 
-        return $this->resolveKnownExtension($known, $asked->getVersionRequirements(), $asked->getOptions(), $state, [
+        return $this->resolveKnownExtension($known, $asked->getVersionRequirements(), $asked->getOptions(), $state, self::getHandleOrigins());
+    }
+
+    /**
+     * @return non-empty-list<non-empty-string> the origins of the extensions asked with their handle, in order of preference
+     */
+    private static function getHandleOrigins()
+    {
+        return [
             Resolved::ORIGIN_SYSTEM_PACKAGE,
             Resolved::ORIGIN_BUNDLED,
             Resolved::ORIGIN_COMPOSER,
             Resolved::ORIGIN_PECL,
             Resolved::ORIGIN_BINARY,
             Resolved::ORIGIN_VENDOR_ARCHIVE,
-        ]);
+        ];
     }
 
     /**

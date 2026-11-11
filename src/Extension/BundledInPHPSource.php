@@ -10,6 +10,13 @@ namespace IPE\Extension;
 interface BundledInPHPSource
 {
     /**
+     * The vendor of the Composer package names of the bundled extensions (for example php/bcmath).
+     *
+     * @var string
+     */
+    const COMPOSER_VENDOR = 'php';
+
+    /**
      * Get the name of the directory inside /ext of the PHP source code.
      *
      * @return non-empty-string

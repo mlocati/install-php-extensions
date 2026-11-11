@@ -282,7 +282,7 @@ function getQuickTestOperatingSystems(): array
 }
 
 /**
- * The class of the supported extension (if any) of an argument like "xdebug", "xdebug:^3.3" or "xdebug/xdebug".
+ * The class of the supported extension (if any) of an argument like "xdebug", "xdebug:^3.3", "xdebug/xdebug" or "php/imap".
  *
  * @param array<string, class-string<Extension>> $extensionClasses
  *
@@ -295,7 +295,7 @@ function getExtensionClass(string $argument, array $extensionClasses): ?string
         return $extensionClasses[$name] ?? null;
     }
 
-    return array_find($extensionClasses, static fn (string $class): bool => is_subclass_of($class, Extension\AvailableAsComposerPackage::class) && strcasecmp($class::getComposerPackageName(), $name) === 0);
+    return array_find($extensionClasses, static fn (string $class): bool => array_any(Extension\Registry::getComposerPackageNames($class), static fn (string $composerName): bool => strcasecmp($composerName, $name) === 0));
 }
 
 /**
