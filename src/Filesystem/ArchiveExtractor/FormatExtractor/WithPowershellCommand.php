@@ -10,6 +10,13 @@ use IPE\Filesystem\Command;
 final class WithPowershellCommand extends FormatExtractor
 {
     /**
+     * Windows PowerShell started by pwsh inherits its PSModulePath, and would load the pwsh module (which requires .NET Core).
+     *
+     * @var non-empty-string
+     */
+    const IMPORT_MODULE = 'Import-Module -Name (Join-Path $PSHOME \'Modules\Microsoft.PowerShell.Archive\') -ErrorAction Stop';
+
+    /**
      * @var \IPE\Filesystem\VolatileDirectory|null
      */
     private $scriptContainer = null;
@@ -42,7 +49,7 @@ final class WithPowershellCommand extends FormatExtractor
                 continue;
             }
             // Not "Get-Command Expand-Archive": it may analyze all the installed modules, which is slow when there are many of them
-            list($rc) = $fs->run(Command::create($command, ['-NoProfile', '-NonInteractive', '-Command', 'Import-Module Microsoft.PowerShell.Archive -ErrorAction Stop']));
+            list($rc) = $fs->run(Command::create($command, ['-NoProfile', '-NonInteractive', '-Command', self::IMPORT_MODULE]));
             if ($rc !== 0) {
                 continue;
             }
@@ -72,9 +79,11 @@ final class WithPowershellCommand extends FormatExtractor
         try {
             $psArchive = $this->toLiteralString($archiveWithZipExtension);
             $psDestinationDirectory = $this->toLiteralString($destinationDirectory);
+            $importModule = self::IMPORT_MODULE;
             $scriptContent = <<<EOT
 try {
     \$Global:ProgressPreference = 'SilentlyContinue'
+    {$importModule}
     Expand-Archive -Path {$psArchive} -DestinationPath {$psDestinationDirectory} -Force -ErrorAction Stop | Out-Null
 } catch {
     \$_ | Write-Host
