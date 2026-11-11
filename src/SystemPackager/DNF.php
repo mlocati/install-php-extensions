@@ -5,7 +5,6 @@ namespace IPE\SystemPackager;
 use IPE\Exception;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
-use IPE\OS;
 use IPE\Service\Regex;
 use IPE\SystemPackager;
 
@@ -14,11 +13,6 @@ use IPE\SystemPackager;
  */
 abstract class DNF extends SystemPackager
 {
-    public function __construct(OS $os)
-    {
-        parent::__construct($os);
-    }
-
     /**
      * Get the class that handles the dnf command available on a system.
      *

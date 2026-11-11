@@ -18,7 +18,7 @@ abstract class SystemPackager
      */
     protected $os;
 
-    protected function __construct(OS $os)
+    public function __construct(OS $os)
     {
         $this->os = $os;
     }
