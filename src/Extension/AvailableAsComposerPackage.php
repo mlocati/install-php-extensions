@@ -10,7 +10,7 @@ interface AvailableAsComposerPackage
     /**
      * Get the name of the Composer package.
      *
-     * @return string
+     * @return non-empty-string
      *
      * @example 'xdebug/xdebug'
      */
