@@ -9,7 +9,9 @@ use IPE\OS;
 /**
  * @see https://www.ioncube.com/loaders.php
  */
-final class ioncube_loader extends Extension\PrecompiledExtension implements Extension\DeclaresDefaultVersion
+final class ioncube_loader extends Extension\PrecompiledExtension implements
+    Extension\DeclaresDefaultVersion,
+    Extension\DeclaresPriority
 {
     /**
      * @public
@@ -47,6 +49,17 @@ final class ioncube_loader extends Extension\PrecompiledExtension implements Ext
         return [
             'ionCube Loader',
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresPriority::getPriority()
+     */
+    public static function getPriority()
+    {
+        // It refuses to work if another Zend extension is loaded before it (Debian and Ubuntu use 10-opcache.ini, Alpine uses 00_opcache.ini)
+        return 0;
     }
 
     /**
@@ -107,9 +120,9 @@ final class ioncube_loader extends Extension\PrecompiledExtension implements Ext
     {
         if ($os instanceof OS\Alpine) {
             // The builds for musl are available since version 14.4.0
-            return $version === '' || version_compare($version, '14.4.0') >= 0 ? 'lin-musl' : 'lin';
+            return self::isVersionAtLeast($version, '14.4.0') ? 'lin-musl' : 'lin';
         }
-        if ($os instanceof OS\Debian) {
+        if ($os instanceof OS\Debian || $os instanceof OS\Ubuntu) {
             return 'lin';
         }
 

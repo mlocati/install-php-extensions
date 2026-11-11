@@ -38,7 +38,7 @@ class liblz4 extends SystemDependency
                 ['lz4-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['liblz4-1'],
                 ['liblz4-dev']

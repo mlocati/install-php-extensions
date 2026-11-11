@@ -11,7 +11,7 @@ interface DeclaresPriority
     /**
      * Get the priority of the extension (prefix of the ini file name: lower values are loaded first).
      *
-     * @return int between 10 and 99 (the default is \IPE\Extension\Manifest::DEFAULT_PRIORITY)
+     * @return int between 0 and 99 (the default is \IPE\Extension\Manifest::DEFAULT_PRIORITY)
      */
     public static function getPriority();
 }

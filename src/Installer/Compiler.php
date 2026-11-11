@@ -15,6 +15,27 @@ use IPE\PHPInfo;
 final class Compiler
 {
     /**
+     * Warnings that only add noise to the logs, for both C and C++.
+     *
+     * @var string
+     */
+    const WARNING_FLAGS = '-Wno-unused-variable -Wno-unused-but-set-variable';
+
+    /**
+     * Warnings that only add noise to the logs, only for C.
+     *
+     * @var string
+     */
+    const C_WARNING_FLAGS = '-Wno-incompatible-pointer-types -Wno-int-conversion -Wno-implicit-int -Wno-return-mismatch -Wno-declaration-missing-parameter-type -Wno-discarded-qualifiers';
+
+    /**
+     * Warnings that only add noise to the logs, only for C++.
+     *
+     * @var string
+     */
+    const CXX_WARNING_FLAGS = '';
+
+    /**
      * @var \IPE\Logger
      */
     private $logger;
@@ -69,7 +90,7 @@ final class Compiler
         }
         $known = $resolved->getKnownExtension();
         $sourceDir = $this->ensureConfigM4($resolved->getPath());
-        $context = new Extension\BuildContext($sourceDir, $resolved->getVersion(), $resolved->getOptionValues());
+        $context = new Extension\BuildContext($sourceDir, $resolved->getVersion(), $resolved->getOptionValues(), $this->buildOptions);
         if ($known instanceof Extension\PatchesSourceCode) {
             $known->patchSourceCode($context);
         }
@@ -87,8 +108,8 @@ final class Compiler
         $this->logger->info('Running configure' . ($configureArguments === [] ? '' : ' with ' . implode(' ', $configureArguments)));
         $this->runStep('configure', './configure', $configureArguments, $sourceDir, $this->buildConfigureEnvironment($known, $context));
         $make = $this->buildTools->getMake();
-        $jobs = $this->buildOptions->getParallelJobs() ?: $this->buildTools->getProcessorCount();
-        $makeEnvironment = $this->buildMakeEnvironment();
+        $jobs = $this->buildTools->getParallelJobs($this->buildOptions);
+        $makeEnvironment = $this->buildMakeEnvironment($known, $context);
         $this->logger->info("Running make (with {$jobs} parallel jobs)");
         $this->runStep('make', $make, ["-j{$jobs}"], $sourceDir, $makeEnvironment);
         $moduleName = $this->detectModuleName($resolved, "{$sourceDir}/modules");
@@ -185,23 +206,28 @@ final class Compiler
 
     /**
      * Debian's gcc doesn't enable the stack protector by default.
-     * Setting these variables replaces the default of configure (-g -O2), and the flags of the user come last so that they win.
+     * Setting these variables replaces the default of configure (-g -O2).
      *
      * @param \IPE\Extension|null $known
+     *
+     * @throws \IPE\Exception\IO
      *
      * @return array<non-empty-string, string>
      */
     private function buildConfigureEnvironment($known, Extension\BuildContext $context)
     {
-        $flags = ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? '-O0 -g' : '-g -O2') . ' -fstack-protector-strong';
-        $extraFlags = $known instanceof Extension\ProvidesCompilerFlags ? $known->getCompilerFlags($context) : '';
-        if ($extraFlags !== '') {
-            $flags .= ' ' . $extraFlags;
-        }
-        $result = [];
-        foreach (['CFLAGS', 'CXXFLAGS'] as $name) {
-            $userFlags = getenv($name);
-            $result[$name] = $userFlags === false || $userFlags === '' ? $flags : "{$flags} {$userFlags}";
+        $flags = ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? '-O0 -g' : '-g -O2') . ' ' . $this->buildTools->getStackProtectorFlag();
+        $result = self::mergeFlags(
+            ['CFLAGS' => "{$flags} " . self::WARNING_FLAGS . ' ' . self::C_WARNING_FLAGS, 'CXXFLAGS' => rtrim("{$flags} " . self::WARNING_FLAGS . ' ' . self::CXX_WARNING_FLAGS)],
+            $known instanceof Extension\ProvidesConfigureEnvironment ? $known->getConfigureEnvironment($context) : []
+        );
+        $result += $this->buildTools->getConfigureEnvironment();
+        if ($this->php->getMajorMinorVersion() < 700) {
+            $includeDir = $this->buildTools->getIncludeDir();
+            if ($includeDir !== '' && $this->fs->isFile("{$includeDir}/ext/pdo/php_pdo_driver.h")) {
+                // PHP 5 looks for the PDO headers only in <prefix>/include/php, but Debian and Ubuntu packages put them in /usr/include/php/<API version>
+                $result['pdo_cv_inc_path'] = "{$includeDir}/ext";
+            }
         }
 
         return $result;
@@ -209,16 +235,45 @@ final class Compiler
 
     /**
      * With GCC < 14 calling an undeclared function (for example, one removed in newer PHP versions) is just a warning: the module builds, but it fails at runtime.
-     * PHP uses EXTRA_CFLAGS only to compile the C sources of the extension (not in the configure checks, nor for C++), and the flags of the user come last so that they win.
+     * PHP uses EXTRA_CFLAGS and EXTRA_CXXFLAGS only to compile the sources of the extension (not in the configure checks).
+     *
+     * @param \IPE\Extension|null $known
      *
      * @return array<non-empty-string, string>
      */
-    private function buildMakeEnvironment()
+    private function buildMakeEnvironment($known, Extension\BuildContext $context)
     {
-        $flags = '-Werror=implicit-function-declaration';
-        $userFlags = getenv('EXTRA_CFLAGS');
+        return self::mergeFlags(
+            ['EXTRA_CFLAGS' => '-Werror=implicit-function-declaration'],
+            $known instanceof Extension\ProvidesMakeEnvironment ? $known->getMakeEnvironment($context) : []
+        );
+    }
 
-        return ['EXTRA_CFLAGS' => $userFlags === false || $userFlags === '' ? $flags : "{$flags} {$userFlags}"];
+    /**
+     * The flags of the extension come after the ones of IPE, and the ones of the user come last so that they win.
+     *
+     * @param array<non-empty-string, string> $ipeFlags
+     * @param array<non-empty-string, string> $extensionFlags
+     *
+     * @return array<non-empty-string, string> without empty values
+     */
+    private static function mergeFlags(array $ipeFlags, array $extensionFlags)
+    {
+        foreach ($extensionFlags as $name => $value) {
+            $ipeFlags[$name] = isset($ipeFlags[$name]) ? trim("{$ipeFlags[$name]} {$value}") : $value;
+        }
+        $result = [];
+        foreach ($ipeFlags as $name => $value) {
+            $userFlags = getenv($name);
+            if ($userFlags !== false && $userFlags !== '') {
+                $value = trim("{$value} {$userFlags}");
+            }
+            if ($value !== '') {
+                $result[$name] = $value;
+            }
+        }
+
+        return $result;
     }
 
     /**

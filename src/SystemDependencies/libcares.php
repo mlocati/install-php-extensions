@@ -38,7 +38,7 @@ class libcares extends SystemDependency
                 ['c-ares-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['libc-ares2'],
                 ['libc-ares-dev']

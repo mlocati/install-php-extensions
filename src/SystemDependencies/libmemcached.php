@@ -38,7 +38,7 @@ final class libmemcached extends SystemDependency
                 ['libmemcached-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libmemcachedutil2(t64)?$'],
                 ['libmemcached-dev']

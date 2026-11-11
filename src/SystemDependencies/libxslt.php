@@ -39,7 +39,7 @@ final class libxslt extends SystemDependency
                 ['libxslt-dev', 'libgcrypt-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['libxslt1.1'],
                 ['libxslt-dev']

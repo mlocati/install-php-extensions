@@ -11,6 +11,7 @@ final class mongodb extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\ProvidesConfigureArguments,
+    Extension\ProvidesConfigureEnvironment,
     Extension\RequiresSystemDependencies,
     Extension\RestrictsVersions
 {
@@ -114,6 +115,11 @@ final class mongodb extends Extension implements
      */
     public function canUseVersion($origin, $version)
     {
+        if ($origin === Extension\Resolved::ORIGIN_SYSTEM_PACKAGE) {
+            // Like for getConfigureEnvironment(): the older packages built with glibc 2.34+ don't link libresolv
+            return version_compare($version, '1.16.0') >= 0;
+        }
+
         // Older Composer versions don't declare a pre-packaged source, and the GitHub zipball doesn't contain the git submodules
         return $origin !== Extension\Resolved::ORIGIN_COMPOSER || version_compare($version, '1.21.0') >= 0;
     }
@@ -141,7 +147,7 @@ final class mongodb extends Extension implements
     public function getConfigureArguments(Extension\BuildContext $context)
     {
         $version = $context->getVersion();
-        if ($version !== '' && version_compare($version, '1.17.0') < 0) {
+        if (!self::isVersionAtLeast($version, '1.17.0')) {
             return [];
         }
 
@@ -154,5 +160,16 @@ final class mongodb extends Extension implements
             '--with-mongodb-ssl=yes',
             '--enable-mongodb-crypto-system-profile=yes',
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
+     */
+    public function getConfigureEnvironment(Extension\BuildContext $context)
+    {
+        // Before 1.16.0 configure links libresolv only if libc lacks res_nsearch(): glibc 2.34+ has it, but ns_parserr() is still in libresolv
+        return self::isVersionAtLeast($context->getVersion(), '1.16.0') ? [] : ['LDFLAGS' => '-lresolv'];
     }
 }

@@ -44,6 +44,16 @@ final class libmosquitto extends SystemDependency
                 ['libmosquitto-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['^libmosquitto1(t64)?$'],
+                ['libmosquitto-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

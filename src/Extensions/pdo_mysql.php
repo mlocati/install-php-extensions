@@ -4,7 +4,9 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 
-final class pdo_mysql extends Extension implements Extension\BundledInPHPSource
+final class pdo_mysql extends Extension implements
+    Extension\BundledInPHPSource,
+    Extension\DependsOnExtensions
 {
     /**
      * @public
@@ -62,5 +64,26 @@ final class pdo_mysql extends Extension implements Extension\BundledInPHPSource
     public static function getBundledPHPVersions()
     {
         return '*';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // PHP builds it with mysqlnd by default
+        return [pdo::HANDLE, mysqlnd::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }

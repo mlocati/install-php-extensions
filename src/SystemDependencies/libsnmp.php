@@ -38,7 +38,7 @@ final class libsnmp extends SystemDependency
                 ['net-snmp-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['snmp'],
                 ['libsnmp-dev']

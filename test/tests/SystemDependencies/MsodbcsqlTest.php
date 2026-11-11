@@ -107,11 +107,11 @@ final class MsodbcsqlTest extends TestCase
         $alpine = $this->createDependency(OS\Alpine::class, 323, 804)->getSystemPackages(M::mock(State::class));
         self::assertSame(['libstdc++', 'unixodbc'], $alpine->getPersistent());
         self::assertSame(['unixodbc-dev'], $alpine->getVolatile());
-        $debian = $this->createDependency(OS\Debian::class, OS\Debian::VERSION_BUSTER, 804)->getSystemPackages(M::mock(State::class));
-        self::assertSame(['unixodbc'], $debian->getPersistent());
+        $debian = $this->createDependency(OS\Debian::class, OS\Debian::BUSTER, 804)->getSystemPackages(M::mock(State::class));
+        self::assertSame(['unixodbc', 'libgssapi-krb5-2'], $debian->getPersistent());
         self::assertSame(['unixodbc-dev'], $debian->getVolatile());
-        $old = $this->createDependency(OS\Debian::class, OS\Debian::VERSION_STRETCH, 700)->getSystemPackages(M::mock(State::class));
-        self::assertSame(['unixodbc', 'apt-transport-https'], $old->getPersistent());
+        $old = $this->createDependency(OS\Debian::class, OS\Debian::STRETCH, 700)->getSystemPackages(M::mock(State::class));
+        self::assertSame(['unixodbc', 'libgssapi-krb5-2', 'apt-transport-https'], $old->getPersistent());
         self::assertSame(['unixodbc-dev'], $old->getVolatile());
     }
 
@@ -121,7 +121,7 @@ final class MsodbcsqlTest extends TestCase
     public function testUnsupportedOS()
     {
         $this->expectException(Exception\UnsupportedOS::class);
-        $this->createDependency(OS\Ubuntu::class, 2404, 804)->getSystemPackages(M::mock(State::class));
+        $this->createDependency(OS\Posix::class, 1, 804)->getSystemPackages(M::mock(State::class));
     }
 
     /**
@@ -130,7 +130,7 @@ final class MsodbcsqlTest extends TestCase
     public function testInstallOnUnsupportedOS()
     {
         $this->expectException(Exception\UnsupportedOS::class);
-        $this->createDependency(OS\Ubuntu::class, 2404, 804)->install(M::mock(State::class));
+        $this->createDependency(OS\Posix::class, 1, 804)->install(M::mock(State::class));
     }
 
     /**
@@ -138,7 +138,7 @@ final class MsodbcsqlTest extends TestCase
      */
     public function testAlreadyInstalled()
     {
-        $this->createDependency(OS\Debian::class, OS\Debian::VERSION_TRIXIE, 804, "[Other]\nDriver=x\n\n[ODBC Driver 18 for SQL Server]\nDriver=y\n")->install(M::mock(State::class));
+        $this->createDependency(OS\Debian::class, OS\Debian::TRIXIE, 804, "[Other]\nDriver=x\n\n[ODBC Driver 18 for SQL Server]\nDriver=y\n")->install(M::mock(State::class));
         self::assertSame([], $this->commands);
         self::assertSame([], $this->downloads);
     }
@@ -149,10 +149,10 @@ final class MsodbcsqlTest extends TestCase
     public static function provideDebianCases()
     {
         return [
-            [OS\Debian::VERSION_TRIXIE, 804, 'microsoft-2025.asc', 'msodbcsql18'],
-            [OS\Debian::VERSION_BOOKWORM, 804, 'microsoft.asc', 'msodbcsql18'],
-            [OS\Debian::VERSION_BUSTER, 703, 'microsoft.asc', 'msodbcsql17'],
-            [OS\Debian::VERSION_FORKY, 804, 'microsoft-2025.asc', '^msodbcsql[0-9]+$'],
+            [OS\Debian::TRIXIE, 804, 'microsoft-2025.asc', 'msodbcsql18'],
+            [OS\Debian::BOOKWORM, 804, 'microsoft.asc', 'msodbcsql18'],
+            [OS\Debian::BUSTER, 703, 'microsoft.asc', 'msodbcsql17'],
+            [OS\Debian::FORKY, 804, 'microsoft-2025.asc', '^msodbcsql[0-9]+$'],
         ];
     }
 
@@ -182,12 +182,57 @@ final class MsodbcsqlTest extends TestCase
      */
     public function testInstallOnDebian8()
     {
-        $this->createDependency(OS\Debian::class, OS\Debian::VERSION_JESSIE, 700)->install(self::createState());
+        $this->createDependency(OS\Debian::class, OS\Debian::JESSIE, 700)->install(self::createState());
         self::assertSame(['https://packages.microsoft.com/keys/microsoft.asc'], $this->downloads);
         self::assertSame(["deb https://packages.microsoft.com/debian/8/prod thecodename main\n"], array_values($this->writtenFiles));
         self::assertCount(2, $this->commands);
         self::assertSame('apt-key', $this->commands[0]->getCommand());
         self::assertSame('apt-get', $this->commands[1]->getCommand());
+    }
+
+    /**
+     * @return list<array{int, int, string, string, string}>
+     */
+    public static function provideUbuntuCases()
+    {
+        return [
+            [OS\Ubuntu::RESOLUTE, 805, 'ubuntu/26.04', 'microsoft-2025.asc', 'msodbcsql18'],
+            [OS\Ubuntu::QUESTING, 804, 'ubuntu/25.10', 'microsoft-2025.asc', 'msodbcsql18'],
+            [OS\Ubuntu::NOBLE, 803, 'ubuntu/24.04', 'microsoft.asc', 'msodbcsql18'],
+            [OS\Ubuntu::BIONIC, 703, 'ubuntu/18.04', 'microsoft.asc', 'msodbcsql17'],
+        ];
+    }
+
+    /**
+     * @dataProvider provideUbuntuCases
+     *
+     * @param int $osVersion
+     * @param int $phpVersion
+     * @param string $expectedPath
+     * @param string $expectedKey
+     * @param string $expectedPackage
+     *
+     * @return void
+     */
+    public function testInstallOnUbuntu($osVersion, $phpVersion, $expectedPath, $expectedKey, $expectedPackage)
+    {
+        $this->createDependency(OS\Ubuntu::class, $osVersion, $phpVersion)->install(self::createState());
+        self::assertSame(["https://packages.microsoft.com/keys/{$expectedKey}"], $this->downloads);
+        self::assertSame(["deb [signed-by=/usr/share/keyrings/microsoft-prod.asc] https://packages.microsoft.com/{$expectedPath}/prod thecodename main\n"], array_values($this->writtenFiles));
+        self::assertCount(1, $this->commands);
+        self::assertSame(['install', '-qy', '--no-install-recommends', $expectedPackage], $this->commands[0]->getArguments());
+    }
+
+    /**
+     * @return void
+     */
+    public function testInstallOnUbuntu1604()
+    {
+        $this->createDependency(OS\Ubuntu::class, OS\Ubuntu::XENIAL, 804)->install(self::createState());
+        self::assertSame(["deb https://packages.microsoft.com/ubuntu/16.04/prod thecodename main\n"], array_values($this->writtenFiles));
+        self::assertCount(2, $this->commands);
+        self::assertSame('apt-key', $this->commands[0]->getCommand());
+        self::assertSame(['install', '-qy', '--no-install-recommends', 'msodbcsql17'], $this->commands[1]->getArguments());
     }
 
     /**

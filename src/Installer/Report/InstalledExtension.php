@@ -34,6 +34,22 @@ final class InstalledExtension implements \JsonSerializable
     const METHOD_VENDOR_INSTALLER = 'vendor-installer';
 
     /**
+     * Already installed but disabled: enabled by IPE.
+     *
+     * @public
+     * @var string
+     */
+    const METHOD_ENABLED = 'enabled';
+
+    /**
+     * Installed (and usually enabled) by a package of the system packager.
+     *
+     * @public
+     * @var string
+     */
+    const METHOD_SYSTEM_PACKAGE = 'system-package';
+
+    /**
      * @var \IPE\Extension\Resolved
      */
     private $resolved;

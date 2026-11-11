@@ -34,9 +34,9 @@ final class libcclient extends SystemDependency
     private $downloader;
 
     /**
-     * @var bool
+     * @var \Closure(): void|null
      */
-    private $removeDevPackage = false;
+    private $removeDevPackage;
 
     public function __construct(PHPInfo $php, OS\Posix $os, Values $options, Downloader $downloader)
     {
@@ -86,7 +86,7 @@ final class libcclient extends SystemDependency
                 );
             }
             $version = $this->os->getNumericVersion();
-            if ($version <= OS\Debian::VERSION_BOOKWORM) {
+            if ($version <= OS\Debian::BOOKWORM) {
                 return new Packages(
                     ['libc-client2007e'],
                     ['libkrb5-dev', 'libc-client-dev']
@@ -102,6 +102,12 @@ final class libcclient extends SystemDependency
             return new Packages(
                 ['sgml-base'],
                 ['libkrb5-dev', 'libpam0g-dev']
+            );
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            return new Packages(
+                ['libc-client2007e'],
+                ['libkrb5-dev', 'libc-client-dev']
             );
         }
 
@@ -120,7 +126,7 @@ final class libcclient extends SystemDependency
         }
         if (libopenssl::isPHPUsingOpenSSL10OnStretch($this->php, $this->os)) {
             $this->installDevPackageWithoutLibssl($state);
-        } elseif ($this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE) {
+        } elseif ($this->os->getNumericVersion() >= OS\Debian::TRIXIE) {
             $this->installPackagesOfBookworm($state);
         }
     }
@@ -132,10 +138,29 @@ final class libcclient extends SystemDependency
      */
     public function finalize(State $state)
     {
-        if ($this->removeDevPackage) {
-            // Installed with dpkg, so it's not among the volatile packages
-            $this->os->getFilesystem()->run(Command::create('dpkg', ['-r', self::PACKAGE_DEV])->withOutput(Command::OUTPUT_SHOW));
+        $removeDevPackage = $this->removeDevPackage;
+        if ($removeDevPackage === null) {
+            return;
         }
+        $this->removeDevPackage = null;
+        // At shutdown it would be too late: the volatile packages it depends on would have been removed
+        $state->unregisterShutdownCallback($removeDevPackage);
+        $removeDevPackage();
+    }
+
+    /**
+     * Remove the development package at the finalization, or at the shutdown of the state if the installation fails.
+     *
+     * @return void
+     */
+    private function scheduleDevPackageRemoval(State $state)
+    {
+        $fs = $this->os->getFilesystem();
+        $this->removeDevPackage = static function () use ($fs) {
+            // Installed with dpkg, so it's not among the volatile packages
+            $fs->run(Command::create('dpkg', ['-r', self::PACKAGE_DEV])->withOutput(Command::OUTPUT_SHOW));
+        };
+        $state->registerShutdownCallback($this->removeDevPackage);
     }
 
     /**
@@ -170,7 +195,7 @@ final class libcclient extends SystemDependency
         }
         if (!$fs->isFile('/usr/include/c-client/utf8.h')) {
             $this->installPackage(self::PACKAGE_DEV . "_{$debianVersion}_{$architecture}.deb", $state);
-            $this->removeDevPackage = true;
+            $this->scheduleDevPackageRemoval($state);
         }
     }
 
@@ -192,7 +217,7 @@ final class libcclient extends SystemDependency
         if ($rc !== 0) {
             throw new Exception\IO('Failed to install ' . self::PACKAGE_DEV);
         }
-        $this->removeDevPackage = true;
+        $this->scheduleDevPackageRemoval($state);
     }
 
     /**

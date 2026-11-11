@@ -36,7 +36,10 @@ final class libenchant2 extends SystemDependency
             return $os->getNumericVersion() >= 312;
         }
         if ($os instanceof OS\Debian) {
-            return $os->getNumericVersion() >= OS\Debian::VERSION_BULLSEYE;
+            return $os->getNumericVersion() >= OS\Debian::BULLSEYE;
+        }
+        if ($os instanceof OS\Ubuntu) {
+            return $os->getNumericVersion() >= OS\Ubuntu::FOCAL;
         }
 
         return false;

@@ -42,6 +42,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $php->shouldReceive('getBaseVersion')->andReturn($fullVersion);
         $php->shouldReceive('isThreadSafe')->andReturn($threadSafe);
         $php->shouldReceive('getBits')->andReturn($bits);
+        $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
 
         return $php;
     }
@@ -189,7 +190,7 @@ final class PrecompiledExtensionsTest extends TestCase
     {
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('getContent')->andReturn('1.2.3');
-        $extension = new $class(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM, null, $architecture, $rawArchitecture), $downloader);
+        $extension = new $class(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM, null, $architecture, $rawArchitecture), $downloader);
         self::assertStringContainsString($expected, $extension->getBinaryArchiveURL(''));
     }
 
@@ -283,8 +284,8 @@ final class PrecompiledExtensionsTest extends TestCase
     {
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('getContent')->with('https://builds.r2.relay.so/meta/latest')->andReturn("v1.2.3\n");
-        self::assertMatchesRegularExpression('#/v1\.2\.3/relay-v1\.2\.3-php8\.4-debian-aarch64\+libssl3\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::VERSION_BOOKWORM), $downloader))->getBinaryArchiveURL(''));
-        self::assertMatchesRegularExpression('#/v2\.0/relay-v2\.0-php8\.4-debian-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::VERSION_BULLSEYE), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#/v1\.2\.3/relay-v1\.2\.3-php8\.4-debian-aarch64\+libssl3\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), $downloader))->getBinaryArchiveURL(''));
+        self::assertMatchesRegularExpression('#/v2\.0/relay-v2\.0-php8\.4-debian-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::BULLSEYE), $downloader))->getBinaryArchiveURL('2.0'));
         self::assertMatchesRegularExpression('#-alpine3\.9-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Alpine::class, 316), $downloader))->getBinaryArchiveURL('2.0'));
         self::assertMatchesRegularExpression('#-alpine3\.17-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Alpine::class, 317), $downloader))->getBinaryArchiveURL('2.0'));
         $fs = self::createFilesystem(['/src/relay-pkg.so', '/src/relay-zts.so']);
@@ -313,9 +314,9 @@ final class PrecompiledExtensionsTest extends TestCase
     public static function provideRelayZTSLibraries()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_TRIXIE, true, true],
-            [OS\Debian::class, OS\Debian::VERSION_TRIXIE, false, false],
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, false, false],
+            [OS\Debian::class, OS\Debian::TRIXIE, true, true],
+            [OS\Debian::class, OS\Debian::TRIXIE, false, false],
+            [OS\Debian::class, OS\Debian::BOOKWORM, false, false],
             [OS\Alpine::class, 318, true, true],
             [OS\Alpine::class, 318, false, false],
             [OS\Alpine::class, 317, false, false],
@@ -328,10 +329,10 @@ final class PrecompiledExtensionsTest extends TestCase
     public static function provideRelayZTSEnvironments()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER, true],
-            [OS\Debian::class, OS\Debian::VERSION_BULLSEYE, true],
-            [OS\Debian::class, OS\Debian::VERSION_BOOKWORM, true],
-            [OS\Debian::class, OS\Debian::VERSION_TRIXIE, false],
+            [OS\Debian::class, OS\Debian::BUSTER, true],
+            [OS\Debian::class, OS\Debian::BULLSEYE, true],
+            [OS\Debian::class, OS\Debian::BOOKWORM, true],
+            [OS\Debian::class, OS\Debian::TRIXIE, false],
             [OS\Alpine::class, 310, true],
             [OS\Alpine::class, 316, true],
             [OS\Alpine::class, 317, true],
@@ -394,7 +395,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $php = self::createPHP(804, true);
         $state = M::mock(State::class);
         $alpine = self::createOS(OS\Alpine::class, 318);
-        $debian = self::createOS(OS\Debian::class, OS\Debian::VERSION_TRIXIE);
+        $debian = self::createOS(OS\Debian::class, OS\Debian::TRIXIE);
         self::assertInstanceOf(OS\Posix::class, $alpine);
         self::assertInstanceOf(OS\Posix::class, $debian);
         self::assertSame(['hiredis', 'hiredis-ssl'], (new SystemDependencies\libhiredis($php, $alpine, new Values()))->getSystemPackages($state)->getPersistent());
@@ -462,12 +463,14 @@ final class PrecompiledExtensionsTest extends TestCase
         });
         $fs->shouldReceive('listDirectoryContents')->with('/tmp')->andReturn(['/tmp/nrinstall-1.tar', '/tmp/other.tar']);
         $fs->shouldReceive('deleteFile')->once()->with('/tmp/nrinstall-1.tar');
+        $fs->shouldReceive('createDirectory')->once()->with('/src/ipe-php');
+        $fs->shouldReceive('createSymlink')->once()->with('/usr/local/bin/php', '/src/ipe-php/php');
         (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class), new \IPE\Logger()))->runBinaryInstaller(self::createBuildContext('', new Values([], [Extensions\newrelic::OPTION_INSTALL_DAEMON => true]), '/src'));
         self::assertCount(2, $commands);
         self::assertSame('./newrelic-install', $commands[0]->getCommand());
         self::assertSame(['install'], $commands[0]->getArguments());
         self::assertSame(['install_daemon'], $commands[1]->getArguments());
-        self::assertSame(['NR_INSTALL_USE_CP_NOT_LN' => '1', 'NR_INSTALL_SILENT' => '1'], $commands[0]->getEnvironment());
+        self::assertSame(['NR_INSTALL_USE_CP_NOT_LN' => '1', 'NR_INSTALL_SILENT' => '1', 'NR_INSTALL_PHPLIST' => '/src/ipe-php'], $commands[0]->getEnvironment());
     }
 
     /**
@@ -477,6 +480,8 @@ final class PrecompiledExtensionsTest extends TestCase
     {
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('run')->andReturn([1, '']);
+        $fs->shouldReceive('createDirectory');
+        $fs->shouldReceive('createSymlink');
         $this->expectException(Exception\IO::class);
         (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class), new \IPE\Logger()))->runBinaryInstaller(self::createBuildContext('', null, '/src'));
     }
@@ -522,14 +527,14 @@ final class PrecompiledExtensionsTest extends TestCase
     }
 
     /**
-     * @return array<array{string, bool}> the pdo_snowflake version, and whether the build script needs PLATFORM
+     * @return array<array{string, int, bool}> the pdo_snowflake version, the PHP version, and whether the build script needs PLATFORM
      */
     public static function providePdoSnowflakePlatforms()
     {
         return [
-            ['0.2.4', true],
-            ['0.2.5', false],
-            ['2.0.0', false],
+            ['0.2.4', 701, true],
+            ['0.2.5', 703, false],
+            ['2.0.0', 804, false],
         ];
     }
 
@@ -537,11 +542,12 @@ final class PrecompiledExtensionsTest extends TestCase
      * @dataProvider providePdoSnowflakePlatforms
      *
      * @param string $version
+     * @param int $phpVersion
      * @param bool $needsPlatform
      *
      * @return void
      */
-    public function testPdoSnowflakeBuildModule($version, $needsPlatform)
+    public function testPdoSnowflakeBuildModule($version, $phpVersion, $needsPlatform)
     {
         $commands = [];
         $fs = M::mock(Filesystem::class);
@@ -566,12 +572,17 @@ final class PrecompiledExtensionsTest extends TestCase
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
         $php->shouldReceive('getVersion')->andReturn('8.4.27');
+        $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $pdoSnowflake = new Extensions\pdo_snowflake($php, self::createOS(OS\Debian::class, 12, $fs));
-        self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), new BuildTools($php, $fs, new \IPE\Logger()), 2));
+        self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), new BuildTools($php, $fs, new \IPE\Logger())));
         self::assertCount($needsPlatform ? 2 : 1, $commands);
         $build = $commands[count($commands) - 1];
         self::assertSame('bash', $build->getCommand());
         $expectedEnvironment = ['PHP_HOME' => '/usr/local'];
+        if ($phpVersion < 704) {
+            $expectedEnvironment['SED'] = 'sed';
+            $expectedEnvironment['PKG_CONFIG'] = 'pkg-config';
+        }
         if ($needsPlatform) {
             $expectedEnvironment['PLATFORM'] = 'linux';
         }

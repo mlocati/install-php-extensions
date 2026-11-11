@@ -53,6 +53,22 @@ final class Resolved
     const ORIGIN_VENDOR_ARCHIVE = 'vendor archive';
 
     /**
+     * Already installed, but disabled: the path is its ini file.
+     *
+     * @public
+     * @var string
+     */
+    const ORIGIN_DISABLED = 'disabled';
+
+    /**
+     * Available as a package of the system packager: the path is the argument that installs it.
+     *
+     * @public
+     * @var string
+     */
+    const ORIGIN_SYSTEM_PACKAGE = 'system package';
+
+    /**
      * @var \IPE\Extension|null
      */
     private $knownExtension;
@@ -94,7 +110,7 @@ final class Resolved
 
     /**
      * @param \IPE\Extension|null $knownExtension
-     * @param non-empty-string $path the directory containing the extension source code
+     * @param non-empty-string $path the directory containing the extension source code (the ini file for ORIGIN_DISABLED, the argument that installs the package for ORIGIN_SYSTEM_PACKAGE)
      * @param string $version the extension version (empty string if unknown)
      * @param non-empty-string $origin one of the ORIGIN_* constants
      * @param \IPE\Extension\Manifest|null $manifest the manifest found in the source code directory (if any)
@@ -128,6 +144,8 @@ final class Resolved
             self::ORIGIN_URL,
             self::ORIGIN_BINARY,
             self::ORIGIN_VENDOR_ARCHIVE,
+            self::ORIGIN_DISABLED,
+            self::ORIGIN_SYSTEM_PACKAGE,
         ];
     }
 
@@ -295,6 +313,10 @@ final class Resolved
                 return "{$result} (from {$this->path})";
             case self::ORIGIN_BUNDLED:
                 return "{$result} (bundled in PHP)";
+            case self::ORIGIN_DISABLED:
+                return "{$result} (installed but disabled)";
+            case self::ORIGIN_SYSTEM_PACKAGE:
+                return "{$result} (from the system package {$this->path})";
             default:
                 return "{$result} (from {$this->origin})";
         }

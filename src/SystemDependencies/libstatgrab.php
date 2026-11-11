@@ -38,7 +38,7 @@ final class libstatgrab extends SystemDependency
                 ['libstatgrab-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libstatgrab[0-9]*(t64)?$'],
                 ['libstatgrab-dev']

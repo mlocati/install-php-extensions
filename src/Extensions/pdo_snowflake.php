@@ -16,6 +16,7 @@ final class pdo_snowflake extends Extension implements
     Extension\BuildsModule,
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\DependsOnExtensions,
     Extension\ProvidesIniSettings,
     Extension\RequiresSystemDependencies
 {
@@ -67,6 +68,7 @@ final class pdo_snowflake extends Extension implements
         return [
             'alpine' => 'the vendor only supports glibc',
             'debian8' => 'the extension requires OpenSSL 1.1',
+            'ubuntu14.04..16.04' => 'the extension requires OpenSSL 1.1',
         ];
     }
 
@@ -131,14 +133,14 @@ final class pdo_snowflake extends Extension implements
      *
      * @see \IPE\Extension\BuildsModule::buildModule()
      */
-    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools, $parallelJobs)
+    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools)
     {
         $fs = $this->os->getFilesystem();
         $rootDir = $context->getSourceDirectory();
-        $environment = ['PHP_HOME' => dirname(dirname($buildTools->getPhpConfig()))];
+        $environment = ['PHP_HOME' => dirname(dirname($buildTools->getPhpConfig()))] + $buildTools->getConfigureEnvironment();
         $version = $context->getVersion();
         // Before 0.2.5 the build script doesn't set PLATFORM (like scripts/_init.sh does), so it doesn't link the static libraries
-        if ($version !== '' && version_compare($version, '0.2.5') < 0) {
+        if (!self::isVersionAtLeast($version, '0.2.5')) {
             list($rc, $kernelName) = $fs->run(Command::create('uname')->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
             if ($rc !== 0) {
                 throw new Exception\IO('Failed to detect the kernel name');
@@ -168,5 +170,25 @@ final class pdo_snowflake extends Extension implements
     public function getIniSettings()
     {
         return 'pdo_snowflake.cacert=' . self::CACERT_FILE . "\n";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        return [pdo::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }

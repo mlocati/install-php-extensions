@@ -5,6 +5,7 @@ namespace IPE\Extensions;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\Filesystem\Command;
+use IPE\Installer\BuildOptions;
 use IPE\Installer\BuildTools;
 use IPE\Option;
 use IPE\OS;
@@ -19,6 +20,7 @@ use IPE\SystemDependencies;
 final class cassandra extends Extension implements
     Extension\BuildsModule,
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\DependsOnExtensions,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -86,11 +88,37 @@ final class cassandra extends Extension implements
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // The build scripts of the ScyllaDB driver use token_get_all()
+        return $this->usesScyllaDBDriver() ? [tokenizer::HANDLE] : [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\Extension\RequiresSystemDependencies::getRequiredSystemDependencies()
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        return [SystemDependencies\libcassandra::HANDLE];
+        if (!$this->usesScyllaDBDriver()) {
+            return [SystemDependencies\libcassandra::HANDLE];
+        }
+
+        // gen_stub.php downloads PHP-Parser with wget or curl
+        return [SystemDependencies\libcassandra::HANDLE, SystemDependencies\curl::HANDLE];
     }
 
     /**
@@ -119,11 +147,12 @@ final class cassandra extends Extension implements
      *
      * @see \IPE\Extension\BuildsModule::buildModule()
      */
-    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools, $parallelJobs)
+    public function buildModule(Extension\BuildContext $context, BuildTools $buildTools)
     {
         $rootDir = $context->getSourceDirectory();
+        $parallelJobs = $buildTools->getParallelJobs($context->getBuildOptions());
         if ($this->usesScyllaDBDriver()) {
-            $this->buildScyllaDBDriver($rootDir, $buildTools, $parallelJobs);
+            $this->buildScyllaDBDriver($rootDir, $buildTools, $context->getBuildOptions()->getType(), $parallelJobs);
         } else {
             $this->buildNanoDriver("{$rootDir}/ext", $buildTools, $parallelJobs);
         }
@@ -142,20 +171,32 @@ final class cassandra extends Extension implements
             return false;
         }
 
-        return $this->os instanceof OS\Alpine ? $this->os->getNumericVersion() >= 321 : ($this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE);
+        if ($this->os instanceof OS\Alpine) {
+            return $this->os->getNumericVersion() >= 321;
+        }
+        if ($this->os instanceof OS\Debian) {
+            return $this->os->getNumericVersion() >= OS\Debian::TRIXIE;
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            return $this->os->getNumericVersion() >= OS\Ubuntu::RESOLUTE;
+        }
+
+        return false;
     }
 
     /**
      * @param non-empty-string $directory
+     * @param string $buildType one of the \IPE\Installer\BuildOptions::TYPE_... constants
      * @param positive-int $parallelJobs
      *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    private function buildScyllaDBDriver($directory, BuildTools $buildTools, $parallelJobs)
+    private function buildScyllaDBDriver($directory, BuildTools $buildTools, $buildType, $parallelJobs)
     {
-        $arguments = ['-B', 'cmake-build', '-DCMAKE_BUILD_TYPE=Release', '-DCUSTOM_PHP_CONFIG=' . $buildTools->getPhpConfig(), '-DPHP_SCYLLADB_BACKEND=cassandra'];
+        // FindPHP only looks for a command named php, which may be missing or another version (for example, with the php83 package of Alpine)
+        $arguments = ['-B', 'cmake-build', '-DCMAKE_BUILD_TYPE=' . self::getCMakeBuildType($buildType), '-DCUSTOM_PHP_CONFIG=' . $buildTools->getPhpConfig(), '-DPHP_BINARY=' . $this->php->getPHPBin(), '-DPHP_SCYLLADB_BACKEND=cassandra'];
         // The default CPU type is x86-64-v2, which generates code that may not run on older CPUs
         $architecture = OS\Architecture::ofPHP($this->php, $this->os);
         if ($architecture === OS\Architecture::X64) {
@@ -171,6 +212,23 @@ final class cassandra extends Extension implements
     }
 
     /**
+     * @param string $buildType one of the \IPE\Installer\BuildOptions::TYPE_... constants
+     *
+     * @return non-empty-string
+     */
+    private static function getCMakeBuildType($buildType)
+    {
+        switch ($buildType) {
+            case BuildOptions::TYPE_DEBUG:
+                return 'Debug';
+            case BuildOptions::TYPE_WITH_SYMBOLS:
+                return 'RelWithDebInfo';
+            default:
+                return 'Release';
+        }
+    }
+
+    /**
      * @param non-empty-string $directory
      * @param positive-int $parallelJobs
      *
@@ -181,7 +239,7 @@ final class cassandra extends Extension implements
     private function buildNanoDriver($directory, BuildTools $buildTools, $parallelJobs)
     {
         $this->runStep($buildTools->getPhpize(), [], $directory);
-        $this->runStep('./configure', [], $directory);
+        $this->runStep('./configure', [], $directory, $buildTools->getConfigureEnvironment());
         $this->runStep($buildTools->getMake(), ['-j' . $parallelJobs, 'install'], $directory);
     }
 
@@ -189,14 +247,15 @@ final class cassandra extends Extension implements
      * @param non-empty-string $command
      * @param list<string> $arguments
      * @param non-empty-string $directory
+     * @param array<non-empty-string, string> $environment
      *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    private function runStep($command, array $arguments, $directory)
+    private function runStep($command, array $arguments, $directory, array $environment = [])
     {
-        list($rc) = $this->os->getFilesystem()->run(Command::create($command, $arguments)->withWorkingDirectory($directory)->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run(Command::create($command, $arguments)->withWorkingDirectory($directory)->withEnvironment($environment)->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\IO("Failed to compile the cassandra extension: {$command} failed with exit code {$rc}");
         }

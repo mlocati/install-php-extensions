@@ -23,6 +23,23 @@ final class DockerImagesTest extends TestCase
         $sortedOSIndexes = $osIndexes;
         sort($sortedOSIndexes);
         self::assertSame($sortedOSIndexes, $osIndexes, 'The images must be sorted by operating system');
+        foreach ($images as $image) {
+            if ($image->getBaseImage() === '') {
+                self::assertSame([], $image->getSetupCommands(), "{$image->getName()} is pulled, so it can't have setup commands");
+            } else {
+                self::assertNotSame([], $image->getSetupCommands(), "{$image->getName()} is built, so it needs setup commands");
+                self::assertFalse($image->isZTS(), "{$image->getName()} has PHP installed by the system packager, which is not thread-safe");
+            }
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testPHPBinary()
+    {
+        self::assertSame('php', (new DockerImage('php:8.4-cli', 'trixie', '8.4', false, false))->getPHPBinary());
+        self::assertSame('php84', (new DockerImage('ipe-test:alpine-php8.4', 'alpine3.24-apk', '8.4', false, false, 'alpine:3.24', ['apk add php84'], 'php84'))->getPHPBinary());
     }
 
     /**
@@ -66,7 +83,7 @@ final class DockerImagesTest extends TestCase
         ksort($expected);
         $actual = [];
         foreach (DockerImages::getAll() as $image) {
-            if ($image->isZTS() || version_compare($image->getPHPVersion(), '5.6') < 0) {
+            if ($image->isZTS() || version_compare($image->getPHPVersion(), '5.6') < 0 || $image->getBaseImage() !== '') {
                 continue;
             }
             if (!isset($actual[$image->getPHPVersion()])) {

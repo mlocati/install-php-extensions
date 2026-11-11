@@ -45,6 +45,7 @@ function createApp()
 
         return PHPInfo::fromPHPBin('php', $fs);
     });
+    $app->singleton(Service\PHPSystemPackage::class);
     // OS
     $app->singleton(OS::class, static function (Container $app) {
         return $app->make(OS\Factory::class)->detectOS();
@@ -74,6 +75,15 @@ function createApp()
             return $app->make(Extension\Asked\Resolver\Posix::class);
         }
         throw new Exception\UnsupportedOS('Unsupported OS: ' . $os->getDisplayName());
+    });
+    // Extension enabler
+    $app->bind(Installer\Enabler::class, static function (Container $app) {
+        $modsAvailable = Installer\Enabler\ModsAvailable::detect($app->make(PHPInfo::class), $app->make(Filesystem::class));
+        if ($modsAvailable !== null) {
+            return $app->build(Installer\Enabler\WithModsAvailable::class, ['modsAvailable' => $modsAvailable]);
+        }
+
+        return $app->build(Installer\Enabler::class);
     });
 
     return $app;

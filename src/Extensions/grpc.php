@@ -10,7 +10,7 @@ use IPE\SystemDependencies;
 final class grpc extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
-    Extension\ProvidesCompilerFlags,
+    Extension\ProvidesMakeEnvironment,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -18,6 +18,13 @@ final class grpc extends Extension implements
      * @var string
      */
     const HANDLE = 'grpc';
+
+    /**
+     * Passed to make because config.m4 overwrites CFLAGS and CXXFLAGS.
+     *
+     * @var string
+     */
+    const WARNING_FLAGS = '-Wno-maybe-uninitialized -Wno-attributes -Wno-return-type';
 
     /**
      * {@inheritdoc}
@@ -81,16 +88,26 @@ final class grpc extends Extension implements
         }
         if ($this->os instanceof OS\Debian) {
             $osVersion = $this->os->getNumericVersion();
-            if ($osVersion <= OS\Debian::VERSION_JESSIE) {
+            if ($osVersion <= OS\Debian::JESSIE) {
                 return '1.46.3';
             }
-            if ($osVersion <= OS\Debian::VERSION_STRETCH) {
+            if ($osVersion <= OS\Debian::STRETCH) {
                 // Newer versions require GCC 7
                 return '1.52.1';
             }
 
             // Newer versions require GCC 10
-            return $osVersion <= OS\Debian::VERSION_BUSTER ? '1.84.0' : '';
+            return $osVersion <= OS\Debian::BUSTER ? '1.84.0' : '';
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            $osVersion = $this->os->getNumericVersion();
+            if ($osVersion <= OS\Ubuntu::XENIAL) {
+                // Ubuntu 16.04 has GCC 5: let's use the version that works with the GCC 4.9 of Debian 8
+                return '1.46.3';
+            }
+
+            // Newer versions require GCC 10
+            return $osVersion <= OS\Ubuntu::FOCAL ? '1.84.0' : '';
         }
         if ($this->os instanceof OS\Alpine) {
             $osVersion = $this->os->getNumericVersion();
@@ -128,10 +145,21 @@ final class grpc extends Extension implements
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
+     * @see \IPE\Extension\ProvidesMakeEnvironment::getMakeEnvironment()
      */
-    public function getCompilerFlags(Extension\BuildContext $context)
+    public function getMakeEnvironment(Extension\BuildContext $context)
     {
-        return '-Wno-maybe-uninitialized -Wno-attributes -Wno-return-type';
+        $cFlags = self::WARNING_FLAGS;
+        $cxxFlags = self::WARNING_FLAGS;
+        if (!self::isVersionAtLeast($context->getVersion(), '1.46.0')) {
+            // config.m4 sets -Werror, and newer compilers have new warnings (for example, -Warray-parameter of GCC 11+ in boringssl)
+            $cFlags .= ' -Wno-error';
+        }
+        if (!self::isVersionAtLeast($context->getVersion(), '1.52.0')) {
+            // The bundled abseil uses uint8_t and std::numeric_limits without including their headers, and GCC 13+ doesn't include them implicitly anymore
+            $cxxFlags .= ' -include cstdint -include limits';
+        }
+
+        return ['EXTRA_CFLAGS' => $cFlags, 'EXTRA_CXXFLAGS' => $cxxFlags];
     }
 }

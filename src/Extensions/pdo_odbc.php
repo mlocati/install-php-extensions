@@ -8,6 +8,7 @@ use IPE\SystemDependencies;
 
 final class pdo_odbc extends Extension implements
     Extension\BundledInPHPSource,
+    Extension\DependsOnExtensions,
     Extension\RequiresSystemDependencies,
     Extension\ProvidesConfigureArguments
 {
@@ -87,5 +88,25 @@ final class pdo_odbc extends Extension implements
     public function getConfigureArguments(Extension\BuildContext $context)
     {
         return ['--with-pdo-odbc=unixODBC,/usr'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        return [pdo::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }

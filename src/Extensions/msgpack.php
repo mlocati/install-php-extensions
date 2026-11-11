@@ -7,7 +7,8 @@ use IPE\Extension;
 final class msgpack extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
-    Extension\DeclaresDefaultVersion
+    Extension\DeclaresDefaultVersion,
+    Extension\DependsOnExtensions
 {
     /**
      * @public
@@ -85,5 +86,26 @@ final class msgpack extends Extension implements
     public function getDefaultVersionRequirements()
     {
         return $this->php->getMajorMinorVersion() <= 506 ? '0.5.7' : '';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // msgpack provides a session serializer: without session it can't be loaded
+        return [session::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }

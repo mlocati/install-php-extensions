@@ -8,11 +8,15 @@ use IPE\Option;
 use IPE\OS;
 use IPE\Service\JSON;
 use IPE\SystemDependencies\binutils;
+use IPE\SystemPackager;
 
 /**
  * @see https://support.tideways.com/documentation/setup/installation/php-extension.html
  */
-final class tideways extends Extension\PrecompiledExtension implements Extension\RequiresSystemDependencies
+final class tideways extends Extension\PrecompiledExtension implements
+    Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesSystemPackageNames,
+    Extension\RequiresSystemDependencies
 {
     /**
      * @public
@@ -38,6 +42,26 @@ final class tideways extends Extension\PrecompiledExtension implements Extension
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        // The module uses php_strlcat(), which PHP doesn't define when glibc provides strlcat()
+        $reason = 'the module for PHP 7.1 and older requires glibc 2.37 or older';
+
+        return [
+            'debian13..15-php5' => $reason,
+            'debian13..15-php7.0' => $reason,
+            'debian13..15-php7.1' => $reason,
+            'ubuntu23.10..26.10-php5' => $reason,
+            'ubuntu23.10..26.10-php7.0' => $reason,
+            'ubuntu23.10..26.10-php7.1' => $reason,
+        ];
     }
 
     /**
@@ -82,7 +106,7 @@ final class tideways extends Extension\PrecompiledExtension implements Extension
         }
         if ($this->os instanceof OS\Alpine) {
             $platform = 'linux-alpine';
-        } elseif ($this->os instanceof OS\Debian) {
+        } elseif ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             $platform = 'linux';
         } else {
             throw new Exception\UnsupportedOS("Tideways can't be installed on {$this->os->getDisplayName()}");
@@ -123,5 +147,18 @@ final class tideways extends Extension\PrecompiledExtension implements Extension
         $module = "{$directory}{$separator}tideways-php" . ($this->os instanceof OS\Alpine ? '-alpine' : '') . '-' . self::getPHPMajorDotMinor($this->php) . ($this->php->isThreadSafe() ? '-zts' : '') . '.so';
 
         return $fs->isFile($module) ? $module : '';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     *
+     * @return list<non-empty-string>
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        // The phpX.Y-tideways packages of Debian and of the repositories of Ondrej Sury provide tideways_xhprof, which is another extension
+        return [];
     }
 }

@@ -21,11 +21,6 @@ final class libtidy extends SystemDependency
     const OLD_HEADER = '/usr/include/buffio.h';
 
     /**
-     * @var bool
-     */
-    private $headerLinked = false;
-
-    /**
      * {@inheritdoc}
      *
      * @see \IPE\SystemDependency::getHandle()
@@ -55,7 +50,7 @@ final class libtidy extends SystemDependency
                 ['tidyhtml-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libtidy-?[0-9][0-9.\-]*(deb[0-9])?$'],
                 ['libtidy-dev']
@@ -76,20 +71,9 @@ final class libtidy extends SystemDependency
         $fs = $this->os->getFilesystem();
         if ($this->os instanceof OS\Alpine && $this->php->getMajorMinorVersion() < 703 && !$fs->isFile(self::OLD_HEADER)) {
             $fs->createSymlink('/usr/include/tidybuffio.h', self::OLD_HEADER);
-            $this->headerLinked = true;
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\SystemDependency::finalize()
-     */
-    public function finalize(State $state)
-    {
-        if ($this->headerLinked) {
-            // The link would be left dangling when the volatile packages are removed
-            $this->os->getFilesystem()->deleteFile(self::OLD_HEADER);
+            $state->registerShutdownCallback(static function () use ($fs) {
+                $fs->deleteFile(self::OLD_HEADER);
+            });
         }
     }
 }

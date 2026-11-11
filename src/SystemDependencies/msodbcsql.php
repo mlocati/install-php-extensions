@@ -98,17 +98,32 @@ final class msodbcsql extends SystemDependency
                 ['unixodbc-dev']
             );
         }
+        // The driver uses libgssapi-krb5-2 without declaring it, and the build dependencies may pull it in: it must not be removed with them
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_STRETCH) {
+            if ($this->os->getNumericVersion() <= OS\Debian::STRETCH) {
                 return new Packages(
                     // APT supports HTTPS by itself since Debian 10: before that, apt-get update would always fail without this package since the Microsoft repository stays configured
-                    ['unixodbc', 'apt-transport-https'],
+                    ['unixodbc', 'libgssapi-krb5-2', 'apt-transport-https'],
                     ['unixodbc-dev']
                 );
             }
 
             return new Packages(
-                ['unixodbc'],
+                ['unixodbc', 'libgssapi-krb5-2'],
+                ['unixodbc-dev']
+            );
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::XENIAL) {
+                return new Packages(
+                    // APT supports HTTPS by itself since Ubuntu 18.04
+                    ['unixodbc', 'libgssapi-krb5-2', 'apt-transport-https'],
+                    ['unixodbc-dev']
+                );
+            }
+
+            return new Packages(
+                ['unixodbc', 'libgssapi-krb5-2'],
                 ['unixodbc-dev']
             );
         }
@@ -134,6 +149,11 @@ final class msodbcsql extends SystemDependency
         }
         if ($this->os instanceof OS\Debian) {
             $this->installOnDebian($this->os, $state);
+
+            return;
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            $this->installOnUbuntu($this->os, $state);
 
             return;
         }
@@ -212,32 +232,78 @@ final class msodbcsql extends SystemDependency
      */
     private function installOnDebian(OS\Debian $os, State $state)
     {
-        $fs = $os->getFilesystem();
-        $sourceList = '/etc/apt/sources.list.d/mssql-release.list';
-        if (!$fs->isFile($sourceList)) {
-            $version = $os->getNumericVersion();
-            $options = $this->installAptKey($os, $state);
-            $fs->writeFile($sourceList, "deb {$options}https://packages.microsoft.com/debian/{$version}/prod {$os->getCodename()} main\n");
-            $os->getSystemPackager()->refresh();
-        }
-        // The postinst script of the package refuses to continue if the license is not accepted
-        list($rc) = $fs->run(Command::create('apt-get', ['install', '-qy', '--no-install-recommends', $this->getDebianPackage($os)])->withEnvironment(['ACCEPT_EULA' => 'Y'])->withOutput(Command::OUTPUT_SHOW));
-        if ($rc !== 0) {
-            throw new Exception\SystemPackager('Failed to install the Microsoft ODBC Driver for SQL Server');
-        }
+        $version = $os->getNumericVersion();
+        $this->installFromMicrosoftRepository(
+            $os,
+            "debian/{$version}/prod {$os->getCodename()}",
+            $version >= OS\Debian::TRIXIE ? 'microsoft-2025.asc' : 'microsoft.asc',
+            // The APT of Debian 8 doesn't support signed-by
+            $version >= OS\Debian::STRETCH,
+            $this->getDebianPackage($os),
+            $state
+        );
     }
 
     /**
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\SystemPackager
      *
+     * @return void
+     */
+    private function installOnUbuntu(OS\Ubuntu $os, State $state)
+    {
+        $version = $os->getNumericVersion();
+        $this->installFromMicrosoftRepository(
+            $os,
+            sprintf('ubuntu/%d.%02d/prod %s', (int) floor($version / 100), $version % 100, $os->getCodename()),
+            $version >= OS\Ubuntu::QUESTING ? 'microsoft-2025.asc' : 'microsoft.asc',
+            // The APT of Ubuntu 16.04 doesn't support keys in .asc format
+            $version >= OS\Ubuntu::BIONIC,
+            $this->getUbuntuPackage($os),
+            $state
+        );
+    }
+
+    /**
+     * @param non-empty-string $repository the path of the repository followed by the distribution (eg 'debian/13/prod trixie')
+     * @param non-empty-string $keyFile
+     * @param bool $useSignedBy
+     * @param non-empty-string $package
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return void
+     */
+    private function installFromMicrosoftRepository(OS\Posix $os, $repository, $keyFile, $useSignedBy, $package, State $state)
+    {
+        $fs = $os->getFilesystem();
+        $sourceList = '/etc/apt/sources.list.d/mssql-release.list';
+        if (!$fs->isFile($sourceList)) {
+            $options = $this->installAptKey($os, "https://packages.microsoft.com/keys/{$keyFile}", $useSignedBy, $state);
+            $fs->writeFile($sourceList, "deb {$options}https://packages.microsoft.com/{$repository} main\n");
+            $os->getSystemPackager()->refresh();
+        }
+        // The postinst script of the package refuses to continue if the license is not accepted
+        list($rc) = $fs->run(Command::create('apt-get', ['install', '-qy', '--no-install-recommends', $package])->withEnvironment(['ACCEPT_EULA' => 'Y'])->withOutput(Command::OUTPUT_SHOW));
+        if ($rc !== 0) {
+            throw new Exception\SystemPackager('Failed to install the Microsoft ODBC Driver for SQL Server');
+        }
+    }
+
+    /**
+     * @param non-empty-string $url
+     * @param bool $useSignedBy
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
      * @return string the options for the line of the APT source list
      */
-    private function installAptKey(OS\Debian $os, State $state)
+    private function installAptKey(OS\Posix $os, $url, $useSignedBy, State $state)
     {
-        $url = 'https://packages.microsoft.com/keys/' . ($os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE ? 'microsoft-2025.asc' : 'microsoft.asc');
         $fs = $os->getFilesystem();
-        if ($os->getNumericVersion() >= OS\Debian::VERSION_STRETCH) {
+        if ($useSignedBy) {
             // A key in .asc format doesn't require gnupg
             if (!$fs->isDirectory('/usr/share/keyrings')) {
                 $fs->createDirectory('/usr/share/keyrings');
@@ -246,7 +312,6 @@ final class msodbcsql extends SystemDependency
 
             return '[signed-by=/usr/share/keyrings/microsoft-prod.asc] ';
         }
-        // The APT of Debian 8 doesn't support signed-by
         $file = $state->getVolatileDir()->createSubdir() . '/microsoft.asc';
         $this->downloader->saveAs($url, $file);
         list($rc) = $fs->run(Command::create('apt-key', ['add', $file])->withOutput(Command::OUTPUT_SHOW));
@@ -267,6 +332,19 @@ final class msodbcsql extends SystemDependency
         }
 
         // Up to Debian 13 both the drivers 17 and 18 are available: let's install just one
-        return $os->getNumericVersion() <= OS\Debian::VERSION_TRIXIE ? 'msodbcsql18' : '^msodbcsql[0-9]+$';
+        return $os->getNumericVersion() <= OS\Debian::TRIXIE ? 'msodbcsql18' : '^msodbcsql[0-9]+$';
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function getUbuntuPackage(OS\Ubuntu $os)
+    {
+        // Microsoft doesn't publish the driver 18 for Ubuntu 16.04 and earlier
+        if ($this->needsDriver17() || $os->getNumericVersion() <= OS\Ubuntu::XENIAL) {
+            return 'msodbcsql17';
+        }
+
+        return 'msodbcsql18';
     }
 }

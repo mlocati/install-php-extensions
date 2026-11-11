@@ -38,7 +38,7 @@ final class libedit extends SystemDependency
                 ['libedit-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['libedit2'],
                 ['libedit-dev']

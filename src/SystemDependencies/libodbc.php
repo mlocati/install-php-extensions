@@ -39,7 +39,20 @@ final class libodbc extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_BOOKWORM) {
+            if ($this->os->getNumericVersion() <= OS\Debian::BOOKWORM) {
+                return new Packages(
+                    ['libodbc1'],
+                    ['unixodbc-dev']
+                );
+            }
+
+            return new Packages(
+                ['libodbc2'],
+                ['unixodbc-dev']
+            );
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::FOCAL) {
                 return new Packages(
                     ['libodbc1'],
                     ['unixodbc-dev']

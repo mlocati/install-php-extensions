@@ -115,7 +115,7 @@ final class swoole extends Extension implements
         $phpVersion = $this->php->getMajorMinorVersion();
         if ($phpVersion <= 506) {
             // 2.0.11 causes a segmentation fault when libpcre-dev is installed (see https://github.com/mlocati/docker-php-extension-installer/issues/1282)
-            return $this->os instanceof OS\Debian ? '2.0.10' : '2.0.11';
+            return $this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu ? '2.0.10' : '2.0.11';
         }
         if ($phpVersion <= 700) {
             return '4.3.6';
@@ -124,7 +124,8 @@ final class swoole extends Extension implements
             return '4.5.10';
         }
         if ($phpVersion <= 704) {
-            return '4.8.11';
+            // 4.8.11 and 4.8.12 don't include <cstdint>, so they can't be compiled with GCC 13+
+            return '4.8.13';
         }
         if ($this->php->getBits() === 32) {
             // 32-bit systems are not supported since 5.1 (see https://github.com/swoole/swoole-src/issues/5198#issuecomment-1820162178), and 5.0 doesn't compile with PHP 8.3+
@@ -169,7 +170,19 @@ final class swoole extends Extension implements
      */
     public function getRequiredExtensions($version)
     {
-        return [];
+        // swoole.so uses the symbols of the extensions it hooks
+        $result = [];
+        if (self::isVersionAtLeast($version, '2.1.2')) {
+            $result[] = mysqlnd::HANDLE;
+        }
+        if (self::isVersionAtLeast($version, '4.6.0')) {
+            $result[] = curl::HANDLE;
+        }
+        if (self::isVersionAtLeast($version, '5.0.0')) {
+            $result[] = pdo::HANDLE;
+        }
+
+        return $result;
     }
 
     /**
@@ -194,13 +207,13 @@ final class swoole extends Extension implements
         if (self::usesPostgreSQL($version)) {
             $result[] = SystemDependencies\libpq::HANDLE;
         }
-        if (self::isAtLeast($version, '4.6.0')) {
+        if (self::isVersionAtLeast($version, '4.6.0')) {
             $result[] = SystemDependencies\libcurl::HANDLE;
         }
-        if (self::isAtLeast($version, '4.7.0')) {
+        if (self::isVersionAtLeast($version, '4.7.0')) {
             $result[] = SystemDependencies\libcares::HANDLE;
         }
-        if (self::isAtLeast($version, '5.0.1')) {
+        if (self::isVersionAtLeast($version, '5.0.1')) {
             $result[] = SystemDependencies\libbrotli::HANDLE;
         }
         if ($this->usesSQLite($version)) {
@@ -215,7 +228,7 @@ final class swoole extends Extension implements
         if ($this->usesFirebird($version)) {
             $result[] = SystemDependencies\libfbclient::HANDLE;
         }
-        if (self::isAtLeast($version, '6.2.0')) {
+        if (self::isVersionAtLeast($version, '6.2.0')) {
             $result[] = SystemDependencies\libssh2::HANDLE;
         }
 
@@ -235,7 +248,7 @@ final class swoole extends Extension implements
             // Otherwise configure detects the machine architecture and swoole fails to compile its x86_64 assembly code
             $result[] = $this->os instanceof OS\Alpine ? '--build=i686-linux-musl' : '--build=i686-linux-gnu';
         }
-        if (!self::isAtLeast($version, '2.1.2')) {
+        if (!self::isVersionAtLeast($version, '2.1.2')) {
             return $result;
         }
         if (in_array(sockets::HANDLE, $this->php->getInstalledExtensions(), true)) {
@@ -244,26 +257,26 @@ final class swoole extends Extension implements
         }
         $result[] = '--enable-mysqlnd';
         // Since 6.2.0 OpenSSL is always enabled: --with-openssl-dir only accepts a directory
-        if (!self::isAtLeast($version, '6.2.0')) {
+        if (!self::isVersionAtLeast($version, '6.2.0')) {
             $result[] = '--enable-openssl';
         }
         // Since 5.0.0 HTTP/2 is always enabled
-        if (!self::isAtLeast($version, '5.0.0')) {
+        if (!self::isVersionAtLeast($version, '5.0.0')) {
             $result[] = '--enable-http2';
         }
         if (self::usesPostgreSQL($version)) {
-            $result[] = self::isAtLeast($version, '5.0.0') ? '--enable-swoole-pgsql' : '--enable-coroutine-postgresql';
+            $result[] = self::isVersionAtLeast($version, '5.0.0') ? '--enable-swoole-pgsql' : '--enable-coroutine-postgresql';
         }
-        if (self::isAtLeast($version, '4.5.6') && !self::isAtLeast($version, '5.0.0')) {
+        if (self::isVersionAtLeast($version, '4.5.6') && !self::isVersionAtLeast($version, '5.0.0')) {
             $result[] = '--enable-swoole-json';
         }
-        if (self::isAtLeast($version, '4.6.0')) {
+        if (self::isVersionAtLeast($version, '4.6.0')) {
             $result[] = '--enable-swoole-curl';
         }
-        if (self::isAtLeast($version, '4.7.0')) {
+        if (self::isVersionAtLeast($version, '4.7.0')) {
             $result[] = '--enable-cares';
         }
-        if (self::isAtLeast($version, '5.0.1')) {
+        if (self::isVersionAtLeast($version, '5.0.1')) {
             $result[] = '--enable-brotli';
         }
         if ($this->usesSQLite($version)) {
@@ -272,34 +285,23 @@ final class swoole extends Extension implements
         if ($this->usesZstd($version)) {
             $result[] = '--enable-zstd';
         }
-        if ($this->php->isThreadSafe() && self::isAtLeast($version, '6.0.0')) {
+        if ($this->php->isThreadSafe() && self::isVersionAtLeast($version, '6.0.0')) {
             $result[] = '--enable-swoole-thread';
         }
         if ($this->usesIOUring($version, $context->getOptionValues())) {
             $result[] = '--enable-iouring';
-            if (self::isAtLeast($version, '6.2.0')) {
+            if (self::isVersionAtLeast($version, '6.2.0')) {
                 $result[] = '--enable-uring-socket';
             }
         }
         if ($this->usesFirebird($version)) {
             $result[] = '--with-swoole-firebird';
         }
-        if (self::isAtLeast($version, '6.2.0')) {
+        if (self::isVersionAtLeast($version, '6.2.0')) {
             $result[] = '--with-swoole-ssh2';
         }
 
         return $result;
-    }
-
-    /**
-     * @param string $version
-     * @param non-empty-string $minimum
-     *
-     * @return bool
-     */
-    private static function isAtLeast($version, $minimum)
-    {
-        return $version === '' || version_compare($version, $minimum) >= 0;
     }
 
     /**
@@ -311,7 +313,7 @@ final class swoole extends Extension implements
      */
     private static function usesPostgreSQL($version)
     {
-        return self::isAtLeast($version, '5.0.0') || (self::isAtLeast($version, '2.1.2') && !self::isAtLeast($version, '4.4.0'));
+        return self::isVersionAtLeast($version, '5.0.0') || (self::isVersionAtLeast($version, '2.1.2') && !self::isVersionAtLeast($version, '4.4.0'));
     }
 
     /**
@@ -321,7 +323,7 @@ final class swoole extends Extension implements
      */
     private function usesSQLite($version)
     {
-        return self::isAtLeast($version, '5.1.0');
+        return self::isVersionAtLeast($version, '5.1.0');
     }
 
     /**
@@ -331,12 +333,19 @@ final class swoole extends Extension implements
      */
     private function usesZstd($version)
     {
-        if (!self::isAtLeast($version, '6.0.0')) {
+        if (!self::isVersionAtLeast($version, '6.0.0')) {
             return false;
         }
 
-        // swoole requires libzstd 1.4.0+, but Debian Buster provides 1.3.8
-        return !$this->os instanceof OS\Debian || $this->os->getNumericVersion() >= OS\Debian::VERSION_BULLSEYE;
+        // swoole requires libzstd 1.4.0+, but Debian Buster provides 1.3.8 and Ubuntu 18.04 provides 1.3.3
+        if ($this->os instanceof OS\Debian) {
+            return $this->os->getNumericVersion() >= OS\Debian::BULLSEYE;
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            return $this->os->getNumericVersion() >= OS\Ubuntu::FOCAL;
+        }
+
+        return true;
     }
 
     /**
@@ -346,16 +355,22 @@ final class swoole extends Extension implements
      */
     private function usesIOUring($version, Option\Values $options)
     {
-        if (!self::isAtLeast($version, '6.0.0') || $options->hasCustomValue(self::OPTION_WITHOUT_IOURING)) {
+        if (!self::isVersionAtLeast($version, '6.0.0') || $options->hasCustomValue(self::OPTION_WITHOUT_IOURING)) {
             return false;
         }
         if ($this->os instanceof OS\Alpine) {
             // Alpine 3.19 fails with "invalid use of incomplete type 'const struct statx'"; swoole 6.2.0+ requires liburing 2.8+, available since Alpine 3.21
-            return $this->os->getNumericVersion() >= (self::isAtLeast($version, '6.2.0') ? 321 : 320);
+            return $this->os->getNumericVersion() >= (self::isVersionAtLeast($version, '6.2.0') ? 321 : 320);
+        }
+        // swoole requires liburing 2.0+ (2.5+ for 6.0.0, 2.8+ for 6.2.0): we only use it where it's known to work
+        if ($this->os instanceof OS\Debian) {
+            return $this->os->getNumericVersion() >= OS\Debian::TRIXIE;
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            return $this->os->getNumericVersion() >= OS\Ubuntu::RESOLUTE;
         }
 
-        // swoole requires liburing 2.0+ (2.5+ for 6.0.0, 2.8+ for 6.2.0): we only use it where it's known to work
-        return $this->os instanceof OS\Debian && $this->os->getNumericVersion() >= OS\Debian::VERSION_TRIXIE;
+        return false;
     }
 
     /**
@@ -365,7 +380,7 @@ final class swoole extends Extension implements
      */
     private function usesFirebird($version)
     {
-        if (!self::isAtLeast($version, '6.2.0')) {
+        if (!self::isVersionAtLeast($version, '6.2.0')) {
             return false;
         }
 

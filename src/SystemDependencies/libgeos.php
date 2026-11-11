@@ -38,7 +38,7 @@ final class libgeos extends SystemDependency
                 ['geos-dev']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libgeos-c1(v[0-9]*)?$'],
                 ['libgeos-dev']

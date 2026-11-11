@@ -44,6 +44,16 @@ class liburing extends SystemDependency
                 ['liburing-dev']
             );
         }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::FOCAL) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['liburing2'],
+                ['liburing-dev']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

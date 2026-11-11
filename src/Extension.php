@@ -31,4 +31,15 @@ abstract class Extension implements Extension\DeclaresIdentity
         $this->php = $php;
         $this->os = $os;
     }
+
+    /**
+     * @param string $version the version of the extension (empty for the latest one)
+     * @param non-empty-string $minimum
+     *
+     * @return bool
+     */
+    protected static function isVersionAtLeast($version, $minimum)
+    {
+        return $version === '' || version_compare($version, $minimum) >= 0;
+    }
 }

@@ -39,7 +39,17 @@ final class libnode extends SystemDependency
             );
         }
         if ($this->os instanceof OS\Debian) {
-            if ($this->os->getNumericVersion() <= OS\Debian::VERSION_STRETCH) {
+            if ($this->os->getNumericVersion() <= OS\Debian::STRETCH) {
+                throw $this->createNotProvidedException();
+            }
+
+            return new Packages(
+                ['^libnode[0-9]+$'],
+                ['libnode-dev']
+            );
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            if ($this->os->getNumericVersion() <= OS\Ubuntu::BIONIC) {
                 throw $this->createNotProvidedException();
             }
 

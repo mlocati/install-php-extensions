@@ -214,18 +214,6 @@ try {
     if ($options->getFlag('create-enable-scripts') && !$inDockerPHPImage) {
         throw new IPEException\InvalidOption('The --create-enable-scripts option is available only in the official Docker PHP images');
     }
-    $app->when(Installer\Enabler::class)
-        ->needs('$skipCheck')
-        ->give(static function () use ($options) {
-            return $options->getFlag('skip-check');
-        })
-    ;
-    $app->when(Installer\Enabler::class)
-        ->needs('$createEnableScripts')
-        ->give(static function () use ($options) {
-            return $options->getFlag('create-enable-scripts');
-        })
-    ;
     $iniBasename = $options->getString('ini-basename');
     if ($iniBasename === '') {
         $iniBasename = $inDockerPHPImage ? Installer\Enabler::INI_BASENAME_COMPAT : Installer\Enabler::INI_BASENAME_DEFAULT;
@@ -234,12 +222,16 @@ try {
     } elseif ($iniBasename !== Installer\Enabler::INI_BASENAME_COMPAT && !preg_match(Installer\Enabler::RX_VALID_INI_BASENAME, $iniBasename)) {
         throw new IPEException\InvalidOption("Invalid value of the --ini-basename option ('{$iniBasename}'): it must contain {priority} followed by {name} (once each), and only letters, digits, _, - and . (but it can't start or end with a dot)");
     }
-    $app->when(Installer\Enabler::class)
-        ->needs('$iniBasename')
-        ->give(static function () use ($iniBasename) {
-            return $iniBasename;
-        })
-    ;
+    $app->extend(
+        Installer\Enabler\Options::class,
+        static function (Installer\Enabler\Options $enablerOptions) use ($options, $iniBasename) {
+            return $enablerOptions
+                ->withSkipCheck($options->getFlag('skip-check'))
+                ->withCreateEnableScripts($options->getFlag('create-enable-scripts'))
+                ->withIniBasename($iniBasename)
+            ;
+        }
+    );
 
     // Configure the system packagers
     $app->when(SystemPackager\APT\OnDebian::class)
@@ -271,6 +263,7 @@ try {
             return $resolverOptions
                 ->withIgnoreUnknownExtensions($options->getFlag('ignore-unknown-extensions'))
                 ->withOnUnsupportedExtensions($options->getString('unsupported-extensions'))
+                ->withSystemPackages($options->getString('system-packages'))
             ;
         }
     );
@@ -293,44 +286,49 @@ try {
         ));
     }
 
-    if ($options->getBool('fix-letsencrypt', $inDockerPHPImage)) {
-        $app->make(Service\LetsEncryptFixer::class)->fix($os);
-    }
-    $report = new Installer\Report();
-    if ($askedExtensions !== []) {
-        $state = $app->make(Installer\State::class)
-            ->withSystemDependencyOptions($options->getSystemDependencyOptions())
-        ;
-        $resolvedExtensions = $app->make(Extension\Asked\Resolver::class)->resolveAskedExtensions($askedExtensions, $state);
-        foreach ($resolvedExtensions as $resolvedExtension) {
-            $logger->info("Resolved extension: {$resolvedExtension}");
+    $state = $app->make(Installer\State::class)
+        ->withSystemDependencyOptions($options->getSystemDependencyOptions())
+    ;
+    try {
+        if ($options->getBool('fix-letsencrypt', $inDockerPHPImage)) {
+            $app->make(Service\LetsEncryptFixer::class)->fix($os);
         }
-        if ($os instanceof OS\Windows) {
-            $logger->warning('Installing extensions on Windows is not implemented yet');
-        } else {
-            $report = $app->make(Installer\ExtensionsInstaller::class)->install($resolvedExtensions, $state, !$options->get('dont-enable'), !$options->getBool('keep-systempackager-cache', !$inDockerPHPImage));
-            if (!$options->getFlag('create-enable-scripts')) {
-                showHowToEnable($fs, $report, $logger);
+        $report = new Installer\Report();
+        if ($askedExtensions !== []) {
+            $resolvedExtensions = $app->make(Extension\Asked\Resolver::class)->resolveAskedExtensions($askedExtensions, $state);
+            foreach ($resolvedExtensions as $resolvedExtension) {
+                $logger->info("Resolved extension: {$resolvedExtension}");
+            }
+            if ($os instanceof OS\Windows) {
+                $logger->warning('Installing extensions on Windows is not implemented yet');
+            } else {
+                $report = $app->make(Installer\ExtensionsInstaller::class)->install($resolvedExtensions, $state, !$options->get('dont-enable'), !$options->getBool('keep-systempackager-cache', !$inDockerPHPImage));
+                if (!$options->getFlag('create-enable-scripts')) {
+                    showHowToEnable($fs, $report, $logger);
+                }
             }
         }
-    }
-    if ($options->getStringList('enable') !== [] || $options->getStringList('disable') !== []) {
-        $enabler = $app->make(Installer\Enabler::class);
-        foreach ($options->getStringList('disable') as $iniFile) {
-            $logger->info($enabler->disableIniFile($iniFile) ? "Disabled {$iniFile}" : "{$iniFile} was already disabled");
+        if ($options->getStringList('enable') !== [] || $options->getStringList('disable') !== []) {
+            $enabler = $app->make(Installer\Enabler::class);
+            foreach ($options->getStringList('disable') as $iniFile) {
+                $logger->info($enabler->disableIniFile($iniFile) ? "Disabled {$iniFile}" : "{$iniFile} was already disabled");
+            }
+            foreach ($options->getStringList('enable') as $iniFile) {
+                $logger->info($enabler->enableIniFile($iniFile) ? "Enabled {$iniFile}" : "{$iniFile} was already enabled");
+            }
         }
-        foreach ($options->getStringList('enable') as $iniFile) {
-            $logger->info($enabler->enableIniFile($iniFile) ? "Enabled {$iniFile}" : "{$iniFile} was already enabled");
+        savePackageList($fs, $options->getString('save-persistent-packages-to'), $report->getSystemPackages()->getPersistent());
+        savePackageList($fs, $options->getString('save-volatile-packages-to'), $report->getSystemPackages()->getVolatile());
+        saveReport($fs, $options->getString('save-report-to'), $report);
+        if ($options->get('install-composer')) {
+            $app->make(Installer\CACertificatesInstaller::class)->install();
+            $app->make(Service\ComposerInstaller::class)->install(
+                $options->getString('composer-path'),
+                $options->getString('composer-version')
+            );
         }
-    }
-    savePackageList($fs, $options->getString('save-persistent-packages-to'), $report->getSystemPackages()->getPersistent());
-    savePackageList($fs, $options->getString('save-volatile-packages-to'), $report->getSystemPackages()->getVolatile());
-    saveReport($fs, $options->getString('save-report-to'), $report);
-    if ($options->get('install-composer')) {
-        $app->make(Service\ComposerInstaller::class)->install(
-            $options->getString('composer-path'),
-            $options->getString('composer-version')
-        );
+    } finally {
+        $state->shutdown($logger);
     }
 } catch (IPEException $x) {
     $logger->emergency($x);

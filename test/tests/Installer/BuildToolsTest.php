@@ -6,6 +6,7 @@ use IPE\Exception;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\Filesystem\VolatileDirectory;
+use IPE\Installer\BuildOptions;
 use IPE\Installer\BuildTools;
 use IPE\PHPInfo;
 use IPE\Test\Support\TestCase;
@@ -147,6 +148,26 @@ final class BuildToolsTest extends TestCase
     /**
      * @return void
      */
+    public function testIncludeDir()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--include-dir'])))->andReturn([0, "/usr/local/include/php\n"]);
+        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        self::assertSame('/usr/local/include/php', $buildTools->getIncludeDir());
+        // The result is cached
+        self::assertSame('/usr/local/include/php', $buildTools->getIncludeDir());
+
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(false);
+        $fs->shouldReceive('resolveCommand')->with('php-config')->andReturn('');
+        self::assertSame('', (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getIncludeDir());
+    }
+
+    /**
+     * @return void
+     */
     public function testLibdir()
     {
         $fs = self::createFilesystem();
@@ -156,14 +177,14 @@ final class BuildToolsTest extends TestCase
 
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(506);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(801);
         self::assertSame('', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
     }
 
     /**
      * @return array<array{string, int, string, string}> the path of gcc, its exit code, its output, and the expected libdir
      */
-    public static function provideLibdirOnPHP55()
+    public static function provideLibdirOnOldPHP()
     {
         return [
             ['/usr/bin/gcc', 0, "x86_64-linux-gnu\n", 'lib/x86_64-linux-gnu'],
@@ -174,7 +195,7 @@ final class BuildToolsTest extends TestCase
     }
 
     /**
-     * @dataProvider provideLibdirOnPHP55
+     * @dataProvider provideLibdirOnOldPHP
      *
      * @param string $gcc
      * @param int $rc
@@ -183,11 +204,11 @@ final class BuildToolsTest extends TestCase
      *
      * @return void
      */
-    public function testLibdirOnPHP55($gcc, $rc, $output, $expected)
+    public function testLibdirOnOldPHP($gcc, $rc, $output, $expected)
     {
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(505);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(700);
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn($gcc);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('gcc', ['-print-multiarch'])))->andReturn([$rc, $output]);
@@ -197,7 +218,7 @@ final class BuildToolsTest extends TestCase
     /**
      * @return void
      */
-    public function testLibdirOnPHP55ConfiguredWithIt()
+    public function testLibdirOnOldPHPConfiguredWithIt()
     {
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--with-libdir=lib64'");
@@ -319,6 +340,71 @@ final class BuildToolsTest extends TestCase
     }
 
     /**
+     * @return list<array{int, string}>
+     */
+    public static function provideStackProtectorFlagCases()
+    {
+        return [[0, '-fstack-protector-strong'], [1, '-fstack-protector']];
+    }
+
+    /**
+     * @dataProvider provideStackProtectorFlagCases
+     *
+     * @param int $rc
+     * @param string $expected
+     *
+     * @return void
+     */
+    public function testStackProtectorFlag($rc, $expected)
+    {
+        $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
+        $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('/usr/bin/cc');
+        $fs->shouldReceive('createVolatileDirectory')->once()->andReturn(new VolatileDirectory('/tmp/x', $fs));
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('cc', ['-fstack-protector-strong', '-c', '/tmp/x/test.c', '-o', '/tmp/x/test.o'])->withOutput(Command::OUTPUT_DISCARD)))->andReturn([$rc, '']);
+        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        self::assertSame($expected, $buildTools->getStackProtectorFlag());
+        // The result is cached
+        self::assertSame($expected, $buildTools->getStackProtectorFlag());
+    }
+
+    /**
+     * @return array<array{int, array<string, string>}> the PHP version, and the expected configure environment
+     */
+    public static function provideConfigureEnvironment()
+    {
+        return [
+            [703, ['SED' => 'sed', 'PKG_CONFIG' => 'pkg-config']],
+            [704, []],
+        ];
+    }
+
+    /**
+     * @dataProvider provideConfigureEnvironment
+     *
+     * @param int $phpVersion
+     * @param array<string, string> $expected
+     *
+     * @return void
+     */
+    public function testConfigureEnvironment($phpVersion, array $expected)
+    {
+        $php = self::createPHPInfo();
+        $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
+        self::assertSame($expected, (new BuildTools($php, self::createFilesystem(), new \IPE\Logger()))->getConfigureEnvironment());
+    }
+
+    /**
+     * @return void
+     */
+    public function testStackProtectorFlagWithoutCompiler()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('');
+        $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('');
+        self::assertSame('-fstack-protector-strong', (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getStackProtectorFlag());
+    }
+
+    /**
      * @return void
      */
     public function testProcessorCount()
@@ -347,5 +433,19 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('getconf')->andReturn('');
         $fs->shouldReceive('isFile')->with('/proc/cpuinfo')->andReturn(false);
         self::assertSame(1, (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getProcessorCount());
+    }
+
+    /**
+     * @return void
+     */
+    public function testParallelJobs()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('');
+        $fs->shouldReceive('resolveCommand')->with('getconf')->andReturn('');
+        $fs->shouldReceive('isFile')->with('/proc/cpuinfo')->andReturn(false);
+        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        self::assertSame(1, $buildTools->getParallelJobs(new BuildOptions()));
+        self::assertSame(3, $buildTools->getParallelJobs((new BuildOptions())->withParallelJobs(3)));
     }
 }

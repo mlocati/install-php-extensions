@@ -402,7 +402,7 @@ final class FactoryTest extends TestCase
                 ],
                 [
                     'getDisplayName' => 'Debian 8 (Jessie)',
-                    'getNumericVersion' => OS\Debian::VERSION_JESSIE,
+                    'getNumericVersion' => OS\Debian::JESSIE,
                     'getCodename' => 'jessie',
                 ],
             ],
@@ -421,7 +421,7 @@ final class FactoryTest extends TestCase
                 ],
                 [
                     'getDisplayName' => 'Debian 13 (Trixie)',
-                    'getNumericVersion' => OS\Debian::VERSION_TRIXIE,
+                    'getNumericVersion' => OS\Debian::TRIXIE,
                     'getCodename' => 'trixie',
                 ],
             ],
@@ -446,6 +446,25 @@ final class FactoryTest extends TestCase
                     'getCodename' => 'noble',
                     'getVersion' => '24.04.3 LTS',
                     'getNumericVersion' => 2404,
+                ],
+            ],
+            [
+                [
+                    'NAME="Ubuntu"',
+                    'VERSION="14.04.6 LTS, Trusty Tahr"',
+                    'ID=ubuntu',
+                    'ID_LIKE=debian',
+                    'PRETTY_NAME="Ubuntu 14.04.6 LTS"',
+                    'VERSION_ID="14.04"',
+                    'HOME_URL="http://www.ubuntu.com/"',
+                    'SUPPORT_URL="http://help.ubuntu.com/"',
+                    'BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"',
+                ],
+                [
+                    'getDisplayName' => 'Ubuntu 14.04.6 LTS (Trusty Tahr)',
+                    'getCodename' => 'trusty',
+                    'getVersion' => '14.04.6 LTS',
+                    'getNumericVersion' => 1404,
                 ],
             ],
         ];

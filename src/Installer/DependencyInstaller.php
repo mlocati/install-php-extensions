@@ -48,13 +48,17 @@ final class DependencyInstaller
             $alreadyInstalled = self::findInstalled($required->getPersistent(), $installedBefore);
         }
         $volatile = [];
+        $volatileWithVersions = [];
         if ($required->getVolatile() !== []) {
             // Expanded together with the persistent ones, otherwise a build dependency may pull in a package that conflicts with them.
             // Packages needed at runtime are never volatile, even if a build dependency pulls them in.
-            $volatile = array_values(array_diff(
-                array_keys($this->packager->expandPackageList(array_merge($required->getPersistent(), $required->getVolatile()))),
-                $persistent
-            ));
+            foreach ($this->packager->expandPackageList(array_merge($required->getPersistent(), $required->getVolatile())) as $name => $version) {
+                if (!in_array($name, $persistent, true)) {
+                    $volatile[] = $name;
+                    // Without the version, the packager may pick a newer one (for example, php8.4-dev would upgrade the installed php8.4-* packages)
+                    $volatileWithVersions[] = $this->packager->formatPackageNameWithVersion($name, $version);
+                }
+            }
         }
         if ($alreadyInstalled !== []) {
             $this->logger->info('Marking as manually installed the already available packages: ' . implode(' ', $alreadyInstalled));
@@ -65,7 +69,7 @@ final class DependencyInstaller
             $this->logger->info('Packages to be kept after the installation: ' . ($persistent === [] ? '(none)' : implode(' ', $persistent)));
             $this->logger->info('Packages to be used only for the installation: ' . ($volatile === [] ? '(none)' : implode(' ', $volatile)));
             try {
-                $this->packager->installPackages($toInstall);
+                $this->packager->installPackages(array_merge($persistent, $volatileWithVersions));
             } catch (Exception\SystemPackager $x) {
                 // A partial installation may break the packager (apk refuses any later operation, for example)
                 try {

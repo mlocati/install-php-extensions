@@ -8,6 +8,7 @@ use IPE\SystemDependencies;
 
 final class xsl extends Extension implements
     Extension\BundledInPHPSource,
+    Extension\DependsOnExtensions,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -66,6 +67,26 @@ final class xsl extends Extension implements
     public static function getBundledPHPVersions()
     {
         return '*';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        return [dom::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 
     /**

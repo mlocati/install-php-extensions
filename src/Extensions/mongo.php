@@ -86,6 +86,6 @@ final class mongo extends Extension implements
     {
         $version = $context->getVersion();
 
-        return $version === '' || version_compare($version, '1.5.0') >= 0 ? ['--with-mongo-sasl'] : [];
+        return self::isVersionAtLeast($version, '1.5.0') ? ['--with-mongo-sasl'] : [];
     }
 }

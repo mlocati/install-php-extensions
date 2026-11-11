@@ -86,7 +86,11 @@ final class gearman extends Extension implements
             return '2.1.4';
         }
         // Newer versions may have this problem: undefined symbol: zif_gearman_client_set_ssl
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_BUSTER && ($phpVersion === 801 || $phpVersion === 802)) {
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::BUSTER && ($phpVersion === 801 || $phpVersion === 802)) {
+            return '2.1.4';
+        }
+        // Ubuntu 18.04 and 20.04 provide the same libgearman of Debian Buster (1.1.18)
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() >= OS\Ubuntu::BIONIC && $this->os->getNumericVersion() <= OS\Ubuntu::FOCAL && ($phpVersion === 801 || $phpVersion === 802)) {
             return '2.1.4';
         }
 

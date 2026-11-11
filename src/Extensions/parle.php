@@ -110,6 +110,6 @@ final class parle extends Extension implements
     {
         $version = $context->getVersion();
 
-        return $version === '' || version_compare($version, '0.8.4') >= 0 ? ['--enable-parle-utf32'] : [];
+        return self::isVersionAtLeast($version, '0.8.4') ? ['--enable-parle-utf32'] : [];
     }
 }

@@ -35,19 +35,40 @@ final class DockerImage
     private $rc;
 
     /**
+     * @var string
+     */
+    private $baseImage;
+
+    /**
+     * @var list<non-empty-string>
+     */
+    private $setupCommands;
+
+    /**
+     * @var string
+     */
+    private $phpBinary;
+
+    /**
      * @param non-empty-string $name eg 'php:8.4-cli-alpine3.21'
      * @param non-empty-string $os eg 'alpine3.21'
      * @param non-empty-string $phpVersion major.minor
      * @param bool $zts
      * @param bool $rc
+     * @param string $baseImage empty string to pull $name, otherwise $name is built locally from this image
+     * @param list<non-empty-string> $setupCommands the shell commands that build the image from $baseImage
+     * @param string $phpBinary empty string for 'php'
      */
-    public function __construct($name, $os, $phpVersion, $zts, $rc)
+    public function __construct($name, $os, $phpVersion, $zts, $rc, $baseImage = '', array $setupCommands = [], $phpBinary = '')
     {
         $this->name = $name;
         $this->os = $os;
         $this->phpVersion = $phpVersion;
         $this->zts = $zts;
         $this->rc = $rc;
+        $this->baseImage = $baseImage;
+        $this->setupCommands = $setupCommands;
+        $this->phpBinary = $phpBinary;
     }
 
     /**
@@ -88,5 +109,39 @@ final class DockerImage
     public function isRC()
     {
         return $this->rc;
+    }
+
+    /**
+     * @return string empty string if the image must be pulled, otherwise the image to build it from
+     */
+    public function getBaseImage()
+    {
+        return $this->baseImage;
+    }
+
+    /**
+     * @return list<non-empty-string> the shell commands that build the image from getBaseImage()
+     */
+    public function getSetupCommands()
+    {
+        return $this->setupCommands;
+    }
+
+    /**
+     * @return non-empty-string eg 'php' or 'php84'
+     */
+    public function getPHPBinary()
+    {
+        return $this->phpBinary === '' ? 'php' : $this->phpBinary;
+    }
+
+    /**
+     * How many times the CI installs every extension in this image: when PHP is installed by the system packager, also with --system-packages=never.
+     *
+     * @return int
+     */
+    public function getInstallationsPerExtension()
+    {
+        return $this->baseImage === '' ? 1 : 2;
     }
 }

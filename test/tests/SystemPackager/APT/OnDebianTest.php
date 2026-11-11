@@ -57,8 +57,8 @@ final class OnDebianTest extends TestCase
     public static function provideMaxOpenFilesCases()
     {
         return [
-            [OS\Debian::VERSION_JESSIE, true],
-            [OS\Debian::VERSION_STRETCH, false],
+            [OS\Debian::JESSIE, true],
+            [OS\Debian::STRETCH, false],
         ];
     }
 
@@ -105,7 +105,7 @@ final class OnDebianTest extends TestCase
         $fs->shouldReceive('escapeShellArg')->with('update')->andReturn('update');
         $fs->shouldReceive('escapeShellArg')->with('-qy')->andReturn('-qy');
         $fs->shouldNotReceive('writeFile')->with('/etc/apt/apt.conf.d/99-ipe-no-check-valid-until', M::any());
-        $packager = new OnDebian(self::createOS(OS\Debian::VERSION_JESSIE, 'jessie', $fs), ['fixArchived' => true]);
+        $packager = new OnDebian(self::createOS(OS\Debian::JESSIE, 'jessie', $fs), ['fixArchived' => true]);
         $packager->refresh();
     }
 
@@ -119,7 +119,7 @@ final class OnDebianTest extends TestCase
             "deb http://archive.debian.org/debian bullseye main\ndeb http://snapshot.debian.org/archive/debian-security/20260903T220410Z bullseye-security main\ndeb http://archive.debian.org/debian bullseye-updates main\n"
         );
         $fs->shouldReceive('writeFile')->once()->with('/etc/apt/apt.conf.d/99-ipe-no-check-valid-until', "Acquire::Check-Valid-Until \"false\";\n");
-        $packager = new OnDebian(self::createOS(OS\Debian::VERSION_BULLSEYE, 'bullseye', $fs), ['fixArchived' => true]);
+        $packager = new OnDebian(self::createOS(OS\Debian::BULLSEYE, 'bullseye', $fs), ['fixArchived' => true]);
         $packager->refresh();
     }
 
@@ -133,7 +133,7 @@ final class OnDebianTest extends TestCase
             "deb http://mirror.example.com/debian-security bullseye-security main\n"
         );
         $fs->shouldReceive('writeFile')->once()->with('/etc/apt/apt.conf.d/99-ipe-no-check-valid-until', M::type('string'));
-        $packager = new OnDebian(self::createOS(OS\Debian::VERSION_BULLSEYE, 'bullseye', $fs), ['fixArchived' => true, 'archiveUrls' => ['security' => 'http://mirror.example.com/debian-security']]);
+        $packager = new OnDebian(self::createOS(OS\Debian::BULLSEYE, 'bullseye', $fs), ['fixArchived' => true, 'archiveUrls' => ['security' => 'http://mirror.example.com/debian-security']]);
         $packager->refresh();
     }
 
@@ -147,7 +147,7 @@ final class OnDebianTest extends TestCase
             "deb http://archive.debian.org/debian buster main\n#deb http://security.debian.org/debian-security buster/updates main\n#deb http://deb.debian.org/debian buster-updates main\n"
         );
         $fs->shouldReceive('exists')->with('/etc/apt/sources.list.d/buster.list')->andReturn(false);
-        $packager = new OnDebian(self::createOS(OS\Debian::VERSION_BUSTER, 'buster', $fs), ['fixArchived' => true, 'archiveUrls' => ['security' => '', 'updates' => '']]);
+        $packager = new OnDebian(self::createOS(OS\Debian::BUSTER, 'buster', $fs), ['fixArchived' => true, 'archiveUrls' => ['security' => '', 'updates' => '']]);
         $packager->refresh();
     }
 
@@ -161,7 +161,7 @@ final class OnDebianTest extends TestCase
             "deb http://archive.debian.org/debian-security buster/updates main\n"
         );
         $fs->shouldReceive('exists')->with('/etc/apt/sources.list.d/buster.list')->andReturn(false);
-        (new OnDebian(self::createOS(OS\Debian::VERSION_BUSTER, 'buster', $fs), ['fixArchived' => true]))->refresh();
+        (new OnDebian(self::createOS(OS\Debian::BUSTER, 'buster', $fs), ['fixArchived' => true]))->refresh();
     }
 
     /**
@@ -172,7 +172,7 @@ final class OnDebianTest extends TestCase
         $fs = M::mock(Filesystem::class);
         $fs->shouldNotReceive('readFile');
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('apt-get', ['update', '-qy'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
-        $packager = new OnDebian(self::createOS(OS\Debian::VERSION_BOOKWORM, 'bookworm', $fs), ['fixArchived' => true]);
+        $packager = new OnDebian(self::createOS(OS\Debian::BOOKWORM, 'bookworm', $fs), ['fixArchived' => true]);
         $packager->refresh();
     }
 }

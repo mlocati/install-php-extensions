@@ -95,7 +95,8 @@ final class redis extends Extension implements
      */
     public function getRequiredExtensions($version)
     {
-        return [];
+        // redis provides a session handler: without session it can't be loaded
+        return [session::HANDLE];
     }
 
     /**
@@ -140,13 +141,13 @@ final class redis extends Extension implements
         if (in_array(igbinary::HANDLE, $installed, true)) {
             $result[] = '--enable-redis-igbinary';
         }
-        if ($version !== '' && version_compare($version, '5.0.0') < 0) {
+        if (!self::isVersionAtLeast($version, '5.0.0')) {
             return $result;
         }
         if ($this->systemProvidesZstd()) {
             $result[] = '--enable-redis-zstd';
         }
-        if ($version !== '' && version_compare($version, '6.0.0') < 0) {
+        if (!self::isVersionAtLeast($version, '6.0.0')) {
             return $result;
         }
         if (in_array(msgpack::HANDLE, $installed, true)) {
@@ -167,6 +168,13 @@ final class redis extends Extension implements
      */
     private function systemProvidesZstd()
     {
-        return !$this->os instanceof OS\Debian || $this->os->getNumericVersion() > OS\Debian::VERSION_STRETCH;
+        if ($this->os instanceof OS\Debian) {
+            return $this->os->getNumericVersion() > OS\Debian::STRETCH;
+        }
+        if ($this->os instanceof OS\Ubuntu) {
+            return $this->os->getNumericVersion() > OS\Ubuntu::XENIAL;
+        }
+
+        return true;
     }
 }

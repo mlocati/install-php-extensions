@@ -98,7 +98,7 @@ final class RegistryTest extends TestCase
     public function testDefaultsAreUsedWithoutSetOptions()
     {
         $os = M::mock(OS\Debian::class);
-        $os->shouldReceive('getNumericVersion')->andReturn(OS\Debian::VERSION_BOOKWORM);
+        $os->shouldReceive('getNumericVersion')->andReturn(OS\Debian::BOOKWORM);
         $registry = (new Registry(self::createContainer($os), new Validator(new \IPE\Logger()), new \IPE\Logger()))->registerClass(FakeThirdPartyLibrary::class)->registerClass(libaspell::class);
         $dependency = $registry->getDependencyByHandle(FakeThirdPartyLibrary::getHandle());
         self::assertInstanceOf(FakeThirdPartyLibrary::class, $dependency);

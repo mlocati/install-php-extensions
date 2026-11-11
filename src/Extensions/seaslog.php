@@ -5,8 +5,7 @@ namespace IPE\Extensions;
 use IPE\Extension;
 
 final class seaslog extends Extension implements
-    Extension\AvailableOnPECL,
-    Extension\ProvidesCompilerFlags
+    Extension\AvailableOnPECL
 {
     /**
      * @public
@@ -62,15 +61,5 @@ final class seaslog extends Extension implements
     public static function getPECLCategory()
     {
         return 'Logging';
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
-     */
-    public function getCompilerFlags(Extension\BuildContext $context)
-    {
-        return '-Wno-incompatible-pointer-types';
     }
 }

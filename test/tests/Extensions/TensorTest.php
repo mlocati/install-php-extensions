@@ -46,31 +46,30 @@ final class TensorTest extends TestCase
     /**
      * @return array<array{class-string<\IPE\OS>, int, bool}> the OS, its version, and whether the OpenBLAS headers must be included explicitly
      */
-    public static function provideCompilerFlags()
+    public static function provideConfigureEnvironment()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, true],
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER, false],
+            [OS\Debian::class, OS\Debian::STRETCH, true],
+            [OS\Debian::class, OS\Debian::BUSTER, false],
             [OS\Alpine::class, 312, false],
         ];
     }
 
     /**
-     * @dataProvider provideCompilerFlags
+     * @dataProvider provideConfigureEnvironment
      *
      * @param class-string<\IPE\OS> $osClass
      * @param int $osVersion
-     * @param bool $expected
+     * @param bool $openBLAS
      *
      * @return void
      */
-    public function testCompilerFlags($osClass, $osVersion, $expected)
+    public function testConfigureEnvironment($osClass, $osVersion, $openBLAS)
     {
         $os = M::mock($osClass);
         self::assertInstanceOf(OS::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
-        $flags = (new tensor(M::mock(PHPInfo::class), $os))->getCompilerFlags(self::createBuildContext());
-        self::assertStringContainsString('-Wno-incompatible-pointer-types', $flags);
-        self::assertSame($expected, strpos($flags, '-I/usr/include/openblas') !== false);
+        $expected = $openBLAS ? ['CPPFLAGS' => '-I/usr/include/openblas'] : [];
+        self::assertSame($expected, (new tensor(M::mock(PHPInfo::class), $os))->getConfigureEnvironment(self::createBuildContext()));
     }
 }

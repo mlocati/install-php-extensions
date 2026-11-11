@@ -11,7 +11,6 @@ final class rrd extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\PatchesSourceCode,
-    Extension\ProvidesCompilerFlags,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -88,16 +87,6 @@ final class rrd extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\librrd::HANDLE];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
-     */
-    public function getCompilerFlags(Extension\BuildContext $context)
-    {
-        return '-Wno-incompatible-pointer-types';
     }
 
     /**

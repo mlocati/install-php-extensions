@@ -1,0 +1,98 @@
+<?php
+
+namespace IPE\Extensions;
+
+use IPE\Extension;
+use IPE\Option;
+use IPE\SystemDependencies;
+
+final class dom extends Extension implements
+    Extension\BundledInPHPSource,
+    Extension\ProvidesConfigureEnvironment,
+    Extension\RequiresSystemDependencies
+{
+    /**
+     * @public
+     * @var string
+     */
+    const HANDLE = 'dom';
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension::getHandle()
+     */
+    public static function getHandle()
+    {
+        return self::HANDLE;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension::getSupportedPHPVersions()
+     */
+    public static function getSupportedPHPVersions()
+    {
+        return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension::getInstalledNames()
+     */
+    public static function getInstalledNames()
+    {
+        return [
+            'dom',
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\BundledInPHPSource::getPHPSourceExtDirectoryName()
+     */
+    public static function getPHPSourceExtDirectoryName()
+    {
+        return 'dom';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\BundledInPHPSource::getBundledPHPVersions()
+     */
+    public static function getBundledPHPVersions()
+    {
+        return '*';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\RequiresSystemDependencies::getRequiredSystemDependencies()
+     */
+    public function getRequiredSystemDependencies($version, Option\Values $options)
+    {
+        return [SystemDependencies\libxml2::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
+     */
+    public function getConfigureEnvironment(Extension\BuildContext $context)
+    {
+        if ($this->php->getMajorMinorVersion() < 805) {
+            return [];
+        }
+        // Since PHP 8.5 the lexbor headers are in ext/lexbor, and PHP doesn't install them: dom includes them both as lexbor/... and as ext/lexbor/lexbor/...
+        $phpSourceDirectory = dirname(dirname($context->getSourceDirectory()));
+        $fs = $this->os->getFilesystem();
+
+        return ['CPPFLAGS' => '-I' . $fs->escapeShellArg("{$phpSourceDirectory}/ext/lexbor") . ' -I' . $fs->escapeShellArg($phpSourceDirectory)];
+    }
+}

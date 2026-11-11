@@ -11,6 +11,7 @@ final class xmldiff extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\DependsOnExtensions,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -87,7 +88,34 @@ final class xmldiff extends Extension implements
     public function getDefaultVersionRequirements()
     {
         // Newer versions don't compile with the old GCC of this system
-        return $this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::VERSION_JESSIE ? '1.1.4' : '';
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::JESSIE) {
+            return '1.1.4';
+        }
+        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::TRUSTY) {
+            return '1.1.4';
+        }
+
+        return '';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        return [dom::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 
     /**

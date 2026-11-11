@@ -10,8 +10,8 @@ declare(strict_types=1);
  * - php scripts/ci-plan-extension-tests.php --quick [<commit before> <commit after>]
  *   For pushes and manual runs: install one extension in a few Docker images (if the commits are specified, only if relevant files changed)
  * Writes to the file specified by the GITHUB_OUTPUT environment variable (if set):
- * - distros: the JSON array of the operating systems of the Docker images to be used (empty if there's nothing to test)
- * - tests: the JSON array of the tests, each one with the space-separated extensions, the PHP version, whether PHP is thread-safe, and the options of install-php-extensions (if any)
+ * - jobs: the JSON array of the jobs, each one with the operating system of the Docker images, the group of the tests, and the PHP version (empty string for all) (empty if there's nothing to test)
+ * - tests: the JSON array of the tests, each one with the space-separated extensions, the PHP version, whether PHP is thread-safe, the options of install-php-extensions (if any), and the group (if not the default one)
  */
 
 namespace IPE\Scripts\CI\PlanExtensionTests;
@@ -21,6 +21,7 @@ use IPE\Dev\DockerImage;
 use IPE\Dev\DockerImages;
 use IPE\Dev\ExtensionFactory;
 use IPE\Dev\Git;
+use IPE\Dev\SlowExtensions;
 use IPE\Extension;
 
 set_error_handler(
@@ -48,7 +49,7 @@ const PATHS_REQUIRING_TESTS_REGEX = [
     '{^scripts/ci-(?:plan|run)-extension-tests\.php$}',
     '{^\.github/workflows/tests\.yml$}',
     '{^test/extensions/_bootstrap\.php$}',
-    '{^src/Dev/DockerImages?\.php$}',
+    '{^src/Dev/(?:DockerImages?|SlowExtensions)\.php$}',
 ];
 
 /**
@@ -57,6 +58,13 @@ const PATHS_REQUIRING_TESTS_REGEX = [
 const QUICK_TEST_EXTENSION = 'calendar';
 
 const QUICK_TEST_PHP_VERSION = '8.5';
+
+const MAX_JOBS_PER_MATRIX = 256;
+
+/**
+ * When the Docker images of an operating system install every extension more than these times, its job is split by PHP version (GitHub Actions stops the jobs after 6 hours).
+ */
+const MAX_INSTALLATIONS_PER_EXTENSION = 8;
 
 /**
  * The extensions to be tested more times, each time with different install-php-extensions options (an empty list means the default options).
@@ -259,13 +267,14 @@ function isQuickTestNeeded(?array $commits): bool
 }
 
 /**
- * The most recent Alpine and Debian.
+ * The most recent Alpine and Debian of the official Docker PHP images.
  *
  * @return list<string>
  */
 function getQuickTestOperatingSystems(): array
 {
-    $all = DockerImages::getOperatingSystems();
+    $officialImages = array_filter(DockerImages::getAll(), static fn (DockerImage $image): bool => $image->getBaseImage() === '');
+    $all = array_values(array_unique(array_map(static fn (DockerImage $image): string => $image->getOS(), $officialImages)));
     $alpine = array_values(array_filter($all, static fn (string $os): bool => str_starts_with($os, 'alpine')));
     $debian = array_values(array_diff($all, $alpine));
 
@@ -273,7 +282,7 @@ function getQuickTestOperatingSystems(): array
 }
 
 /**
- * The handle of the supported extension (if any) of an argument like "xdebug" or "xdebug:^3.3".
+ * The class of the supported extension (if any) of an argument like "xdebug", "xdebug:^3.3" or "xdebug/xdebug".
  *
  * @param array<string, class-string<Extension>> $extensionClasses
  *
@@ -281,7 +290,24 @@ function getQuickTestOperatingSystems(): array
  */
 function getExtensionClass(string $argument, array $extensionClasses): ?string
 {
-    return $extensionClasses[explode(':', $argument, 2)[0]] ?? null;
+    $name = explode(':', $argument, 2)[0];
+    if (!str_contains($name, '/')) {
+        return $extensionClasses[$name] ?? null;
+    }
+
+    return array_find($extensionClasses, static fn (string $class): bool => is_subclass_of($class, Extension\AvailableAsComposerPackage::class) && strcasecmp($class::getComposerPackageName(), $name) === 0);
+}
+
+/**
+ * The tests with slow extensions are grouped by those extensions, so that they are run in their own jobs (the other tests end sooner, and no job exceeds the GitHub time limit); the other tests are in the default group (an empty string).
+ *
+ * @param list<class-string<Extension>> $classes
+ */
+function getTestGroup(array $classes): string
+{
+    $slowHandles = array_values(array_intersect(SlowExtensions::getHandles(), array_map(static fn (string $class): string => $class::getHandle(), $classes)));
+
+    return implode('+', $slowHandles);
 }
 
 /**
@@ -326,7 +352,7 @@ function getOptionVariants(array $classes): array
  * @param list<string> $allPHPVersions sorted from the most recent
  * @param list<string> $operatingSystems
  *
- * @return list<array{extensions: string, options: list<string>, php: string, zts: bool, os: non-empty-list<string>}> os: the operating systems of the Docker images to be used
+ * @return list<array{extensions: string, options: list<string>, php: string, zts: bool, group: string, os: non-empty-list<string>}> os: the operating systems of the Docker images to be used
  */
 function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVersions, array $operatingSystems): array
 {
@@ -346,6 +372,10 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
             $classes[] = $class;
             $phpVersions = array_values(array_intersect($phpVersions, $class::getSupportedPHPVersions()));
         }
+    }
+    $group = getTestGroup($classes);
+    if ($group !== '') {
+        echo "  - Tested in the jobs of {$group}\n";
     }
     $optionVariants = getOptionVariants($classes);
     if (count($optionVariants) > 1) {
@@ -367,7 +397,7 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
             continue;
         }
         foreach ($optionVariants as $options) {
-            $result[] = ['extensions' => implode(' ', $test->extensions), 'options' => $options, 'php' => $phpVersion, 'zts' => $zts, 'os' => $imageOperatingSystems];
+            $result[] = ['extensions' => implode(' ', $test->extensions), 'options' => $options, 'php' => $phpVersion, 'zts' => $zts, 'group' => $group, 'os' => $imageOperatingSystems];
         }
     }
     if ($result === []) {
@@ -376,6 +406,62 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
         echo "  => to be tested on:\n";
         foreach ($result as $item) {
             echo "     - PHP {$item['php']}" . ($item['zts'] ? ' (ZTS)' : '') . ($item['options'] === [] ? '' : ' with ' . implode(' ', $item['options'])) . ': ' . implode(', ', $item['os']) . "\n";
+        }
+    }
+
+    return $result;
+}
+
+/**
+ * The operating systems whose Docker images install every extension more than MAX_INSTALLATIONS_PER_EXTENSION times.
+ *
+ * @return list<string>
+ */
+function getOperatingSystemsToSplit(): array
+{
+    $installations = [];
+    foreach (DockerImages::getAll() as $image) {
+        $installations[$image->getOS()][$image->getPHPVersion()] = $image->getInstallationsPerExtension();
+    }
+
+    return array_keys(array_filter($installations, static fn (array $perPHPVersion): bool => array_sum($perPHPVersion) > MAX_INSTALLATIONS_PER_EXTENSION));
+}
+
+/**
+ * One job for every operating system used by every group of tests.
+ * The default group is split by PHP version on the operating systems returned by getOperatingSystemsToSplit() (the other groups test one slow extension each).
+ *
+ * @param list<array{php: string, group: string, os: non-empty-list<string>}> $tests
+ * @param list<string> $operatingSystems
+ *
+ * @return list<array{distro: string, group: string, php: string}>
+ */
+function getJobs(array $tests, array $operatingSystems): array
+{
+    $usedOperatingSystems = [];
+    $phpVersions = [];
+    foreach ($tests as $test) {
+        $usedOperatingSystems[$test['group']] = array_merge($usedOperatingSystems[$test['group']] ?? [], $test['os']);
+        if ($test['group'] === '') {
+            foreach ($test['os'] as $os) {
+                $phpVersions[$os][] = $test['php'];
+            }
+        }
+    }
+    ksort($usedOperatingSystems, SORT_STRING);
+    $operatingSystemsToSplit = getOperatingSystemsToSplit();
+    $result = [];
+    foreach ($usedOperatingSystems as $group => $groupOperatingSystems) {
+        foreach (array_intersect($operatingSystems, $groupOperatingSystems) as $os) {
+            if ($group !== '' || !in_array($os, $operatingSystemsToSplit, true)) {
+                $result[] = ['distro' => $os, 'group' => $group, 'php' => ''];
+                continue;
+            }
+            $osPHPVersions = array_values(array_unique($phpVersions[$os]));
+            usort($osPHPVersions, static fn (string $a, string $b): int => version_compare($a, $b));
+            foreach ($osPHPVersions as $phpVersion) {
+                $result[] = ['distro' => $os, 'group' => $group, 'php' => $phpVersion];
+            }
         }
     }
 
@@ -483,10 +569,13 @@ function main(array $argv): int
             echo "No extensions to be tested\n";
         }
         usort($tests, static fn (array $a, array $b): int => strcmp($a['extensions'], $b['extensions']) ?: version_compare($a['php'], $b['php']));
-        $usedOperatingSystems = array_merge([], ...array_map(static fn (array $test): array => $test['os'], $tests));
+        $jobs = getJobs($tests, $operatingSystems);
+        if (count($jobs) > MAX_JOBS_PER_MATRIX) {
+            throw new \RuntimeException('Too many jobs (' . count($jobs) . '): GitHub Actions supports up to ' . MAX_JOBS_PER_MATRIX . ' jobs per matrix');
+        }
         // Not the operating systems: they may be many, and the size of an environment variable is limited
-        writeOutput('tests', array_map(static fn (array $test): array => ['extensions' => $test['extensions'], 'php' => $test['php'], 'zts' => $test['zts']] + ($test['options'] === [] ? [] : ['options' => $test['options']]), $tests));
-        writeOutput('distros', array_values(array_intersect($operatingSystems, $usedOperatingSystems)));
+        writeOutput('tests', array_map(static fn (array $test): array => ['extensions' => $test['extensions'], 'php' => $test['php'], 'zts' => $test['zts']] + ($test['options'] === [] ? [] : ['options' => $test['options']]) + ($test['group'] === '' ? [] : ['group' => $test['group']]), $tests));
+        writeOutput('jobs', $jobs);
     } catch (\Throwable $x) {
         fwrite(STDERR, rtrim((string) $x) . "\n");
 

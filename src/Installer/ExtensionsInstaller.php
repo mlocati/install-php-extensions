@@ -8,7 +8,9 @@ use IPE\Extension\Resolved;
 use IPE\Installer\Report\InstalledExtension;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\Service\PHPSystemPackage;
 use IPE\SystemDependency;
+use IPE\SystemPackager\Packages;
 
 /**
  * Installs resolved extensions: system packages and dependencies, compilation or binary installation, activation and cleanup.
@@ -60,7 +62,12 @@ final class ExtensionsInstaller
      */
     private $resolver;
 
-    public function __construct(OS\Posix $os, PHPInfo $php, SystemDependency\Registry $dependencyRegistry, Compiler $compiler, BinaryInstaller $binaryInstaller, VendorArchivePreparer $vendorArchivePreparer, Enabler $enabler, Extension\Asked\Resolver $resolver, \IPE\Logger $logger)
+    /**
+     * @var \IPE\Service\PHPSystemPackage
+     */
+    private $phpSystemPackage;
+
+    public function __construct(OS\Posix $os, PHPInfo $php, SystemDependency\Registry $dependencyRegistry, Compiler $compiler, BinaryInstaller $binaryInstaller, VendorArchivePreparer $vendorArchivePreparer, Enabler $enabler, Extension\Asked\Resolver $resolver, PHPSystemPackage $phpSystemPackage, \IPE\Logger $logger)
     {
         $this->logger = $logger;
         $this->os = $os;
@@ -71,6 +78,7 @@ final class ExtensionsInstaller
         $this->vendorArchivePreparer = $vendorArchivePreparer;
         $this->enabler = $enabler;
         $this->resolver = $resolver;
+        $this->phpSystemPackage = $phpSystemPackage;
     }
 
     /**
@@ -88,8 +96,11 @@ final class ExtensionsInstaller
     public function installAsked(array $askedExtensions, array $systemDependencyOptions = [], $enable = true, $deleteSystemPackagerCache = true)
     {
         $state = (new State($this->php, $this->os->getFilesystem()))->withSystemDependencyOptions($systemDependencyOptions);
-
-        return $this->install($this->resolver->resolveAskedExtensions($askedExtensions, $state), $state, $enable, $deleteSystemPackagerCache);
+        try {
+            return $this->install($this->resolver->resolveAskedExtensions($askedExtensions, $state), $state, $enable, $deleteSystemPackagerCache);
+        } finally {
+            $state->shutdown($this->logger);
+        }
     }
 
     /**
@@ -107,11 +118,28 @@ final class ExtensionsInstaller
         $systemPackager = $this->os->getSystemPackager();
         $dependencies = $this->dependencyRegistry->resolveDependencies($this->collectDependencyHandles($resolvedExtensions));
         $packages = $this->dependencyRegistry->collectSystemPackages($dependencies, $state);
+        $extensionPackages = [];
+        $needsPhpize = false;
         foreach ($resolvedExtensions as $resolvedExtension) {
-            if ($resolvedExtension->getOrigin() !== Resolved::ORIGIN_BINARY || $resolvedExtension->getKnownExtension() instanceof Extension\BuildsModule) {
-                $packages = $packages->withVolatile($systemPackager->getPhpizeRequirements());
-                break;
+            $origin = $resolvedExtension->getOrigin();
+            if ($origin === Resolved::ORIGIN_SYSTEM_PACKAGE) {
+                $extensionPackages[] = $resolvedExtension->getPath();
+            } elseif ($origin === Resolved::ORIGIN_BINARY) {
+                $needsPhpize = $needsPhpize || $resolvedExtension->getKnownExtension() instanceof Extension\BuildsModule;
+            } elseif ($origin !== Resolved::ORIGIN_DISABLED) {
+                $needsPhpize = true;
             }
+        }
+        if ($extensionPackages !== []) {
+            $packages = $packages->merge(new Packages($extensionPackages));
+        }
+        if ($needsPhpize) {
+            $phpizeRequirements = $systemPackager->getPhpizeRequirements();
+            $developmentPackage = $this->phpSystemPackage->getDevelopmentPackage();
+            if ($developmentPackage !== '') {
+                $phpizeRequirements[] = $developmentPackage;
+            }
+            $packages = $packages->withVolatile($phpizeRequirements);
         }
         $dependencyInstaller = new DependencyInstaller($systemPackager, $this->logger);
         $installedDependencies = $dependencyInstaller->install($packages);
@@ -132,6 +160,13 @@ final class ExtensionsInstaller
                 $dependency->finalize($state);
             }
             if (!$enable) {
+                foreach ($installedExtensions as $installedExtension) {
+                    if ($installedExtension->getMethod() === InstalledExtension::METHOD_SYSTEM_PACKAGE) {
+                        foreach (array_keys($installedExtension->getIniFiles()) as $iniFile) {
+                            $this->enabler->disableIniFile($iniFile);
+                        }
+                    }
+                }
                 $enableScripts = $this->enabler->disableEnabledExtensions();
                 foreach ($moduleNames as $index => $moduleName) {
                     if (isset($enableScripts[$moduleName])) {
@@ -163,6 +198,9 @@ final class ExtensionsInstaller
     {
         $result = [];
         foreach ($resolvedExtensions as $resolvedExtension) {
+            if (in_array($resolvedExtension->getOrigin(), [Resolved::ORIGIN_DISABLED, Resolved::ORIGIN_SYSTEM_PACKAGE], true)) {
+                continue;
+            }
             $knownExtension = $resolvedExtension->getKnownExtension();
             if ($knownExtension instanceof Extension\RequiresSystemDependencies) {
                 $result = array_merge($result, $knownExtension->getRequiredSystemDependencies($resolvedExtension->getVersion(), $resolvedExtension->getOptionValues()));
@@ -189,6 +227,38 @@ final class ExtensionsInstaller
     private function installExtension(Resolved $resolvedExtension, State $state, $enable)
     {
         $startedAt = microtime(true);
+        $knownExtension = $resolvedExtension->getKnownExtension();
+        if ($resolvedExtension->getOrigin() === Resolved::ORIGIN_DISABLED && $knownExtension !== null) {
+            $iniFile = $resolvedExtension->getPath();
+            $this->logger->info("Enabling {$iniFile}");
+            $loadedModules = $this->enabler->reenable($knownExtension, $iniFile);
+            $this->logger->info('Enabled: ' . implode(', ', $loadedModules));
+
+            return [new InstalledExtension($resolvedExtension, InstalledExtension::METHOD_ENABLED, [], null, [$iniFile => true], $loadedModules, [], microtime(true) - $startedAt), ''];
+        }
+        if ($resolvedExtension->getOrigin() === Resolved::ORIGIN_SYSTEM_PACKAGE && $knownExtension !== null) {
+            // The package has already been installed with the system dependencies
+            try {
+                $loadedModules = $this->enabler->checkEnabled($knownExtension);
+            } catch (Exception\IO $x) {
+                // The package doesn't enable the module if the administrator disabled it before removing the package
+                $disabledIniFile = $this->enabler->getDisabledIniFile($knownExtension);
+                if ($disabledIniFile === '') {
+                    // Some packages ship a disabled ini file (like php84-pecl-xdebug of Alpine)
+                    $iniFile = $this->enabler->findIniFile($knownExtension);
+                    if ($iniFile === '' || $this->enabler->isIniFileActive($iniFile)) {
+                        throw $x;
+                    }
+                    $disabledIniFile = $iniFile;
+                }
+                $this->logger->info("Enabling {$disabledIniFile}");
+                $loadedModules = $this->enabler->reenable($knownExtension, $disabledIniFile);
+            }
+            $this->logger->info('Enabled by the package: ' . implode(', ', $loadedModules));
+            $iniFile = $this->enabler->findIniFile($knownExtension);
+
+            return [new InstalledExtension($resolvedExtension, InstalledExtension::METHOD_SYSTEM_PACKAGE, [], null, $iniFile === '' ? [] : [$iniFile => true], $loadedModules, [], microtime(true) - $startedAt), ''];
+        }
         if ($resolvedExtension->getOrigin() === Resolved::ORIGIN_BINARY) {
             $this->logger->info("Installing {$resolvedExtension}");
             $filesBefore = $this->listModuleAndIniFiles();
@@ -197,7 +267,6 @@ final class ExtensionsInstaller
                 if (!$enable) {
                     $this->logger->warning("The installer of the vendor of {$resolvedExtension} always enables the extension");
                 }
-                $knownExtension = $resolvedExtension->getKnownExtension();
                 $loadedModules = [];
                 if ($knownExtension !== null) {
                     $loadedModules = $this->enabler->checkEnabled($knownExtension);

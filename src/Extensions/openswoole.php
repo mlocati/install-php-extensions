@@ -13,6 +13,7 @@ final class openswoole extends Extension implements
     Extension\DeclaresPriority,
     Extension\DependsOnExtensions,
     Extension\ProvidesConfigureArguments,
+    Extension\ProvidesConfigureEnvironment,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -99,7 +100,8 @@ final class openswoole extends Extension implements
      */
     public function getRequiredExtensions($version)
     {
-        return [];
+        // Because of --enable-mysqlnd and of the curl hooks
+        return [mysqlnd::HANDLE, curl::HANDLE];
     }
 
     /**
@@ -135,10 +137,10 @@ final class openswoole extends Extension implements
             // The configure script requires the headers of the sockets extension
             $result[] = '--enable-sockets';
         }
-        if ($version === '' || version_compare($version, '4.8.0') >= 0) {
+        if (self::isVersionAtLeast($version, '4.8.0')) {
             $result[] = '--with-postgres';
         }
-        if ($version === '' || version_compare($version, '22.0.0') >= 0) {
+        if (self::isVersionAtLeast($version, '22.0.0')) {
             $result[] = '--enable-hook-curl';
         } else {
             $result[] = '--enable-swoole-json';
@@ -146,6 +148,17 @@ final class openswoole extends Extension implements
         }
 
         return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
+     */
+    public function getConfigureEnvironment(Extension\BuildContext $context)
+    {
+        // Before 22.1.0 include/swoole_proxy.h uses uint8_t without including <cstdint>, which GCC 13+ doesn't include indirectly
+        return self::isVersionAtLeast($context->getVersion(), '22.1.0') ? [] : ['CXXFLAGS' => '-include cstdint'];
     }
 
     /**

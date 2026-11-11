@@ -55,5 +55,7 @@ If you write `-STOP-` in a `Test:` line, the older commits won't be inspected, a
 Test: xdebug -STOP-
 ```
 
+The extensions that take long to be compiled (listed in `src/Dev/SlowExtensions.php`) are tested in their own jobs.
+
 If a pull request changes the code of IPE (like `bin/install-php-extensions` or the PHP files in `src`), how it's built, or how the extensions are tested, at least one extension must be tested, otherwise the tests fail.
 If no extension needs to be tested, write `Test: -STOP-`.

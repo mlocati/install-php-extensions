@@ -12,7 +12,7 @@ final class tensor extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\PatchesSourceCode,
-    Extension\ProvidesCompilerFlags,
+    Extension\ProvidesConfigureEnvironment,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -106,16 +106,12 @@ final class tensor extends Extension implements
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
      */
-    public function getCompilerFlags(Extension\BuildContext $context)
+    public function getConfigureEnvironment(Extension\BuildContext $context)
     {
         // On Debian Stretch, /usr/include/cblas.h comes from libblas-dev and doesn't declare the OpenBLAS functions
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::VERSION_STRETCH) {
-            return '-Wno-incompatible-pointer-types -I/usr/include/openblas';
-        }
-
-        return '-Wno-incompatible-pointer-types';
+        return $this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::STRETCH ? ['CPPFLAGS' => '-I/usr/include/openblas'] : [];
     }
 
     /**

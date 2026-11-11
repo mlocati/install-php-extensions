@@ -35,26 +35,30 @@ final class WithWgetCommand extends WithCommand
      */
     protected function buildDownloadArguments($url, $filename)
     {
-        $args = [];
+        $args = [
+            // Print only the errors and a single line for each download
+            '-nv',
+            // User-Agent header
+            '-U', $this->buildUserAgent('WgetCommand'),
+            // Save to file
+            '-O', $filename,
+        ];
         if ($this->hasProxy()) {
             $proxyUrl = $this->getProxyUrl(true);
-            $args[] = '-e';
-            $args[] = 'use_proxy=yes';
-            $args[] = '-e';
-            $args[] = "https_proxy={$proxyUrl}";
-            $args[] = '-e';
-            $args[] = "http_proxy={$proxyUrl}";
+            $args = array_merge($args, [
+                // Use the proxy, for both HTTPS and HTTP
+                '-e', 'use_proxy=yes',
+                '-e', "https_proxy={$proxyUrl}",
+                '-e', "http_proxy={$proxyUrl}",
+            ]);
         }
         if ($this->isInsecure()) {
+            // Don't validate the server certificate
             $args[] = '--no-check-certificate';
         }
+        $args[] = $url;
 
-        return array_merge($args, [
-            '-U', $this->buildUserAgent('WgetCommand'),
-            '-nv',
-            '-O', $filename,
-            $url,
-        ]);
+        return $args;
     }
 
     /**

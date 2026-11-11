@@ -3,13 +3,15 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
+use IPE\OS;
+use IPE\SystemPackager;
 
 final class phalcon extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\DependsOnExtensions,
-    Extension\ProvidesCompilerFlags
+    Extension\ProvidesSystemPackageNames
 {
     /**
      * @public
@@ -102,7 +104,13 @@ final class phalcon extends Extension implements
      */
     public function getRequiredExtensions($version)
     {
-        return $version !== '' && version_compare($version, '5.0.0') < 0 ? [psr::HANDLE] : [];
+        // Besides PDO, phalcon implements SessionHandlerInterface: without session it can't be loaded
+        $result = [pdo::HANDLE, session::HANDLE];
+        if (!self::isVersionAtLeast($version, '5.0.0')) {
+            $result[] = psr::HANDLE;
+        }
+
+        return $result;
     }
 
     /**
@@ -118,10 +126,16 @@ final class phalcon extends Extension implements
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\Extension\ProvidesCompilerFlags::getCompilerFlags()
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
      */
-    public function getCompilerFlags(Extension\BuildContext $context)
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
     {
-        return '-Wno-incompatible-pointer-types';
+        if (!$this->os instanceof OS\Posix || !$this->os->getSystemPackager() instanceof SystemPackager\APT) {
+            return null;
+        }
+        $source = $phpPackage->getSource();
+
+        // The repositories of Ondrej Sury include the major version of Phalcon in the names of the packages (for example, php7.4-phalcon5), and phpX.Y-phalcon is a dummy package with another version
+        return ["{$source}-phalcon5", "{$source}-phalcon4", "{$source}-phalcon3", "{$source}-phalcon"];
     }
 }

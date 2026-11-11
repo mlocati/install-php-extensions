@@ -126,14 +126,18 @@ final class DownloaderTest extends TestCase
      */
     public function testWgetCommand($usingProxy, array $config)
     {
-        $downloader = Downloader\WithWgetCommand::createIfAvailable($config, self::$fs, new \IPE\Logger());
+        $downloaders = array_values(array_filter([
+            Downloader\WithWgetCommand::createIfAvailable($config, self::$fs, new \IPE\Logger()),
+            Downloader\WithBusyBoxWgetCommand::createIfAvailable($config, self::$fs, new \IPE\Logger()),
+        ]));
         if (!self::isWgetCommandDownloaderAvailable()) {
-            self::assertNull($downloader);
+            self::assertSame([], $downloaders);
 
             return;
         }
-        self::assertInstanceOf(Downloader\WithWgetCommand::class, $downloader);
-        self::checkDownloader($downloader, $usingProxy);
+        // wget is either GNU wget or BusyBox wget
+        self::assertCount(1, $downloaders);
+        self::checkDownloader($downloaders[0], $usingProxy);
     }
 
     /**
@@ -515,7 +519,8 @@ final class DownloaderTest extends TestCase
         /** @var bool|null $result */
         static $result;
         if ($result === null) {
-            $result = in_array('http', array_map('strtolower', stream_get_wrappers()), true);
+            $streamWrappers = array_map('strtolower', stream_get_wrappers());
+            $result = in_array('http', $streamWrappers, true) && in_array('https', $streamWrappers, true);
         }
 
         return $result;

@@ -14,6 +14,8 @@ use IPE\Extension\Source;
 use IPE\Extension\Version;
 use IPE\Extensions;
 use IPE\Filesystem;
+use IPE\Installer\CACertificatesInstaller;
+use IPE\Installer\Enabler;
 use IPE\Installer\PHPSourceProvider;
 use IPE\Installer\State;
 use IPE\Installer\VendorArchivePreparer;
@@ -22,6 +24,9 @@ use IPE\OS;
 use IPE\PHPInfo;
 use IPE\Service\Container;
 use IPE\Service\JSON;
+use IPE\Service\PHPSystemPackage;
+use IPE\SystemPackager;
+use IPE\Test\Support\DependencyInstallerTest\FakePackager;
 use IPE\Test\Support\ResolverTest\FakeBinaryAndPECLExtension;
 use IPE\Test\Support\ResolverTest\FakeBinaryExtension;
 use IPE\Test\Support\ResolverTest\FakeBinaryInstallerExtension;
@@ -134,13 +139,26 @@ final class ResolverTest extends TestCase
     }
 
     /**
+     * @return \IPE\OS\Alpine
+     */
+    private static function createAlpineOS()
+    {
+        $os = M::mock(OS\Alpine::class);
+        $os->shouldReceive('getSystemPackager')->andReturn(new FakePackager($os, [], []));
+
+        return $os;
+    }
+
+    /**
      * @param \IPE\Extension\Asked\Resolver\Options|null $options
      * @param list<\IPE\Extension> $additionalExtensions
      * @param \IPE\OS|null $os
+     * @param \IPE\Installer\Enabler|null $enabler
+     * @param \IPE\Service\PHPSystemPackage|null $phpSystemPackage
      *
      * @return \IPE\Extension\Asked\Resolver
      */
-    private static function createResolver(PHPInfo $php, $options = null, array $additionalExtensions = [], $os = null)
+    private static function createResolver(PHPInfo $php, $options = null, array $additionalExtensions = [], $os = null, $enabler = null, $phpSystemPackage = null)
     {
         $downloader = self::createDownloader();
         $archiveExtractor = new Filesystem\ArchiveExtractor(self::$fs, new \IPE\Logger());
@@ -176,6 +194,10 @@ final class ResolverTest extends TestCase
             new Manifest\Reader(new \IPE\Logger()),
             new Option\Validator(new \IPE\Logger()),
             new Extension\UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger())),
+            $enabler === null ? new Enabler($php, self::$fs, new \IPE\Logger(), new Enabler\Options()) : $enabler,
+            $phpSystemPackage === null ? new PHPSystemPackage($php, $os) : $phpSystemPackage,
+            // Not a POSIX system, so it never installs anything
+            new CACertificatesInstaller(self::createOS(), new \IPE\Logger()),
             new \IPE\Logger()
         );
     }
@@ -209,7 +231,7 @@ final class ResolverTest extends TestCase
         self::assertSame([], self::createResolver($php)->resolveAskedExtensions([], $state));
         $this->expectException(Exception\UnsupportedOS::class);
         $this->expectExceptionMessage('PHP 5.5 is not supported on Alpine');
-        self::createResolver($php, null, [], M::mock(OS\Alpine::class))->resolveAskedExtensions([], $state);
+        self::createResolver($php, null, [], self::createAlpineOS())->resolveAskedExtensions([], $state);
     }
 
     /**
@@ -218,7 +240,7 @@ final class ResolverTest extends TestCase
     public function testPHP56OnAlpine()
     {
         $php = self::createPHP('5.6.40');
-        self::assertSame([], self::createResolver($php, null, [], M::mock(OS\Alpine::class))->resolveAskedExtensions([], new State($php, self::$fs)));
+        self::assertSame([], self::createResolver($php, null, [], self::createAlpineOS())->resolveAskedExtensions([], new State($php, self::$fs)));
     }
 
     /**
@@ -980,6 +1002,254 @@ final class ResolverTest extends TestCase
         self::assertSame(['apcu', 'fake_b', 'fake_a'], self::describe($resolved));
         self::assertSame([false, false, true], array_map(static function (Resolved $extension) { return $extension->isAsked(); }, $resolved));
         self::assertSame([['fake_b'], ['fake_a'], []], array_map(static function (Resolved $extension) { return $extension->getRequiredBy(); }, $resolved));
+    }
+
+    /**
+     * @param array<string, string> $disabledIniFiles the keys are the handles of the disabled extensions
+     *
+     * @return \IPE\Installer\Enabler
+     */
+    private static function createEnablerWithDisabled(array $disabledIniFiles)
+    {
+        $enabler = M::mock(Enabler::class);
+        $enabler->shouldReceive('getDisabledIniFile')->andReturnUsing(static function (Extension $extension) use ($disabledIniFiles) {
+            return isset($disabledIniFiles[$extension::getHandle()]) ? $disabledIniFiles[$extension::getHandle()] : '';
+        });
+
+        return $enabler;
+    }
+
+    /**
+     * @return void
+     */
+    public function testDisabledExtension()
+    {
+        $php = self::createPHP('8.3.0');
+        $state = new State($php, self::$fs);
+        $resolver = self::createResolver($php, null, [], null, self::createEnablerWithDisabled(['apcu' => '/etc/php/8.3/mods-available/apcu.ini']));
+        $resolved = self::resolveOne($resolver, new Asked\FromHandle('apcu', '^5'), $state);
+        self::assertSame(Resolved::ORIGIN_DISABLED, $resolved->getOrigin());
+        self::assertSame('/etc/php/8.3/mods-available/apcu.ini', $resolved->getPath());
+        self::assertSame('', $resolved->getVersion());
+        self::assertSame('apcu (installed but disabled)', (string) $resolved);
+        self::assertSame([], $state->getSkippedExtensions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testDisabledRequiredExtension()
+    {
+        $php = self::createPHP('8.3.0');
+        $resolver = self::createResolver(
+            $php,
+            null,
+            [new FakeDependentExtensionA($php, self::createOS(), ['apcu'])],
+            null,
+            self::createEnablerWithDisabled(['apcu' => '/etc/php/8.3/mods-available/apcu.ini'])
+        );
+        $resolved = $resolver->resolveAskedExtensions([new Asked\FromHandle('fake_a', '')], new State($php, self::$fs));
+        self::assertSame(['apcu', 'fake_a'], self::describe($resolved));
+        self::assertSame(Resolved::ORIGIN_DISABLED, $resolved[0]->getOrigin());
+        self::assertSame(['fake_a'], $resolved[0]->getRequiredBy());
+    }
+
+    /**
+     * @param \IPE\SystemPackager\Package|null $phpPackage NULL if PHP hasn't been installed by the system packager
+     * @param array<non-empty-string, list<\IPE\SystemPackager\Package>> $available
+     * @param array<non-empty-string, list<non-empty-string>> $expansions
+     *
+     * @return \IPE\Service\PHPSystemPackage
+     */
+    private static function createPHPSystemPackage($phpPackage, array $available = [], array $expansions = [])
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
+        $os = M::mock(OS\Debian::class);
+        $packager = new FakePackager($os, [], $expansions);
+        $packager->owningPackage = $phpPackage;
+        $packager->available = $available;
+        $os->shouldReceive('getSystemPackager')->andReturn($packager);
+
+        return new PHPSystemPackage($php, $os);
+    }
+
+    /**
+     * @param string $systemPackages
+     * @param string $onUnsupported
+     *
+     * @return \IPE\Extension\Asked\Resolver
+     */
+    private static function createResolverWithMcryptPackage(PHPInfo $php, $systemPackages, $onUnsupported = Options::ONUNSUPPORTED_ABORT)
+    {
+        $phpSystemPackage = self::createPHPSystemPackage(new SystemPackager\Package('php7.1-cli', '7.1.33-1', 'php7.1'), [
+            'php7.1-mcrypt' => [new SystemPackager\Package('php7.1-mcrypt', '7.1.33-1', 'php7.1')],
+        ]);
+        $options = (new Options())->withSystemPackages($systemPackages)->withOnUnsupportedExtensions($onUnsupported);
+
+        return self::createResolver($php, $options, [], null, null, $phpSystemPackage);
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackage()
+    {
+        $php = self::createPHP('7.1.33');
+        $state = new State($php, self::$fs);
+        $resolved = self::resolveOne(self::createResolverWithMcryptPackage($php, Options::SYSTEMPACKAGES_AUTO), new Asked\FromHandle('mcrypt', '^7'), $state);
+        self::assertSame(Resolved::ORIGIN_SYSTEM_PACKAGE, $resolved->getOrigin());
+        self::assertSame('php7.1-mcrypt=7.1.33-1', $resolved->getPath());
+        self::assertSame('7.1.33', $resolved->getVersion());
+        self::assertSame('mcrypt 7.1.33 (from the system package php7.1-mcrypt=7.1.33-1)', (string) $resolved);
+        $resolved = self::resolveOne(self::createResolverWithMcryptPackage($php, Options::SYSTEMPACKAGES_ONLY), new Asked\FromHandle('mcrypt', ''), $state);
+        self::assertSame(Resolved::ORIGIN_SYSTEM_PACKAGE, $resolved->getOrigin());
+        $resolved = self::resolveOne(self::createResolverWithMcryptPackage($php, Options::SYSTEMPACKAGES_NEVER), new Asked\FromHandle('mcrypt', ''), $state);
+        self::assertSame(Resolved::ORIGIN_BUNDLED, $resolved->getOrigin());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageNotSatisfyingTheVersionRequirements()
+    {
+        $php = self::createPHP('7.1.33');
+        $state = new State($php, self::$fs);
+        $resolved = self::resolveOne(self::createResolverWithMcryptPackage($php, Options::SYSTEMPACKAGES_AUTO), new Asked\FromHandle('mcrypt', '1.0.7'), $state);
+        self::assertSame(Resolved::ORIGIN_PECL, $resolved->getOrigin());
+        self::assertSame('1.0.7', $resolved->getVersion());
+        try {
+            self::createResolverWithMcryptPackage($php, Options::SYSTEMPACKAGES_ONLY)->resolveAskedExtensions([new Asked\FromHandle('mcrypt', '1.0.7')], $state);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedExtension $x) {
+            self::assertStringContainsString("system package: the package php7.1-mcrypt 7.1.33-1 doesn't satisfy the version requirements", $x->getMessage());
+        }
+        $resolver = self::createResolverWithMcryptPackage($php, Options::SYSTEMPACKAGES_ONLY, Options::ONUNSUPPORTED_SKIP);
+        self::assertSame([], $resolver->resolveAskedExtensions([new Asked\FromHandle('mcrypt', '1.0.7')], $state));
+        self::assertCount(1, $state->getSkippedExtensions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageInstallingAnotherPHP()
+    {
+        $php = self::createPHP('7.1.33');
+        $state = new State($php, self::$fs);
+        $phpSystemPackage = self::createPHPSystemPackage(
+            new SystemPackager\Package('php7.1-cli', '7.1.33-1', 'php7.1'),
+            ['php7.1-mcrypt' => [new SystemPackager\Package('php7.1-mcrypt', '1.0.7-1', 'php-mcrypt')]],
+            ['php7.1-mcrypt' => ['php7.1-mcrypt', 'php-common', 'php8.5-common', 'php8.5-cli']]
+        );
+        $resolved = self::resolveOne(self::createResolver($php, null, [], null, null, $phpSystemPackage), new Asked\FromHandle('mcrypt', ''), $state);
+        self::assertSame(Resolved::ORIGIN_BUNDLED, $resolved->getOrigin());
+        $resolver = self::createResolver($php, (new Options())->withSystemPackages(Options::SYSTEMPACKAGES_ONLY), [], null, null, $phpSystemPackage);
+        try {
+            $resolver->resolveAskedExtensions([new Asked\FromHandle('mcrypt', '')], $state);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedExtension $x) {
+            self::assertStringContainsString('system package: the package php7.1-mcrypt 1.0.7-1 would install packages of another PHP version (php8.5-common, php8.5-cli)', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageWithRestrictedVersion()
+    {
+        $php = self::createPHP('7.1.33');
+        $state = new State($php, self::$fs);
+        $options = (new Options())->withSystemPackages(Options::SYSTEMPACKAGES_ONLY);
+        $phpPackage = new SystemPackager\Package('php7.1-cli', '7.1.33-1', 'php7.1');
+        $phpSystemPackage = self::createPHPSystemPackage($phpPackage, ['php7.1-mongodb' => [new SystemPackager\Package('php7.1-mongodb', '1.11.1+1.9.2+1.7.5-1', 'php-mongodb')]]);
+        try {
+            self::createResolver($php, $options, [], null, null, $phpSystemPackage)->resolveAskedExtensions([new Asked\FromHandle('mongodb', '')], $state);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedExtension $x) {
+            self::assertStringContainsString("system package: the package php7.1-mongodb 1.11.1+1.9.2+1.7.5-1 can't be used", $x->getMessage());
+        }
+        $phpSystemPackage = self::createPHPSystemPackage($phpPackage, ['php7.1-mongodb' => [new SystemPackager\Package('php7.1-mongodb', '1.16.2-1', 'php-mongodb')]]);
+        $resolved = self::resolveOne(self::createResolver($php, $options, [], null, null, $phpSystemPackage), new Asked\FromHandle('mongodb', ''), $state);
+        self::assertSame(Resolved::ORIGIN_SYSTEM_PACKAGE, $resolved->getOrigin());
+        self::assertSame('1.16.2', $resolved->getVersion());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageWithOptions()
+    {
+        $php = self::createPHP('8.3.0');
+        $state = new State($php, self::$fs);
+        $phpSystemPackage = self::createPHPSystemPackage(new SystemPackager\Package('php8.3-cli', '8.3.0-1', 'php8.3'), [
+            'php8.3-fakeext' => [new SystemPackager\Package('php8.3-fakeext', '1.0-1', 'php-fakeext')],
+        ]);
+        $resolver = self::createResolver($php, null, [], null, null, $phpSystemPackage);
+        self::assertSame(Resolved::ORIGIN_SYSTEM_PACKAGE, self::resolveOne($resolver, new Asked\FromHandle('fakeext', ''), $state)->getOrigin());
+        // The packages are built without the options
+        self::assertSame(Resolved::ORIGIN_BUNDLED, self::resolveOne($resolver, new Asked\FromHandle('fakeext', '', ['enable-fake-debug' => true]), $state)->getOrigin());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageNotAvailable()
+    {
+        $php = self::createPHP('7.1.33');
+        $state = new State($php, self::$fs);
+        $phpSystemPackage = self::createPHPSystemPackage(new SystemPackager\Package('php7.1-cli', '7.1.33-1', 'php7.1'));
+        $resolved = self::resolveOne(self::createResolver($php, null, [], null, null, $phpSystemPackage), new Asked\FromHandle('mcrypt', ''), $state);
+        self::assertSame(Resolved::ORIGIN_BUNDLED, $resolved->getOrigin());
+        try {
+            self::createResolver($php, (new Options())->withSystemPackages(Options::SYSTEMPACKAGES_ONLY), [], null, null, $phpSystemPackage)->resolveAskedExtensions([new Asked\FromHandle('mcrypt', '')], $state);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedExtension $x) {
+            self::assertStringContainsString('system package: no package is available for the installed PHP', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testOnlySystemPackagesWithoutPHPPackage()
+    {
+        $php = self::createPHP('7.1.33');
+        $options = (new Options())->withSystemPackages(Options::SYSTEMPACKAGES_ONLY);
+        $this->expectException(Exception\UnsupportedOS::class);
+        self::createResolver($php, $options, [], null, null, self::createPHPSystemPackage(null))->resolveAskedExtensions([new Asked\FromHandle('mcrypt', '')], new State($php, self::$fs));
+    }
+
+    /**
+     * @return void
+     */
+    public function testOnlySystemPackagesWithoutHandle()
+    {
+        $php = self::createPHP('7.1.33');
+        $state = new State($php, self::$fs);
+        $asked = [new Asked\FromDirectory(self::getAssetPath('directories/conflicting-old'))];
+        try {
+            self::createResolverWithMcryptPackage($php, Options::SYSTEMPACKAGES_ONLY)->resolveAskedExtensions($asked, $state);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedExtension $x) {
+            self::assertStringContainsString('would be compiled, but the extensions must be installed only from the system packages', $x->getMessage());
+        }
+        self::assertSame([], self::createResolverWithMcryptPackage($php, Options::SYSTEMPACKAGES_ONLY, Options::ONUNSUPPORTED_SKIP)->resolveAskedExtensions($asked, $state));
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageRequiresExtensions()
+    {
+        $php = self::createPHP('8.3.0');
+        $phpSystemPackage = self::createPHPSystemPackage(new SystemPackager\Package('php8.3-cli', '8.3.0-1', 'php8.3'), [
+            'php8.3-fake-a' => [new SystemPackager\Package('php8.3-fake-a', '1.0-1', 'php-fake-a')],
+        ]);
+        $resolver = self::createResolver($php, null, [new FakeDependentExtensionA($php, self::createOS(), ['apcu'])], null, null, $phpSystemPackage);
+        // Some packages don't depend on the packages of the extensions they need
+        $resolved = $resolver->resolveAskedExtensions([new Asked\FromHandle('fake_a', '')], new State($php, self::$fs));
+        self::assertSame(['apcu', 'fake_a'], self::describe($resolved));
+        self::assertSame(Resolved::ORIGIN_SYSTEM_PACKAGE, $resolved[1]->getOrigin());
     }
 
     /**

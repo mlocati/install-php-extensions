@@ -92,14 +92,130 @@ final class APK extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\SystemPackager::formatPackageNameWithVersion()
+     */
+    public function formatPackageNameWithVersion($name, $version)
+    {
+        return "{$name}={$version}";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getCACertificates()
+     *
+     * @return array{non-empty-string, non-empty-string}
+     */
+    public function getCACertificates()
+    {
+        return ['/etc/ssl/certs/ca-certificates.crt', 'ca-certificates'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getPHPDevelopmentPackageName()
+     */
+    public function getPHPDevelopmentPackageName(Package $phpPackage)
+    {
+        return "{$phpPackage->getSource()}-dev";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getPHPExtensionPackageCandidates()
+     */
+    public function getPHPExtensionPackageCandidates(Package $phpPackage, $extensionName)
+    {
+        $name = strtolower($extensionName);
+        $result = [];
+        // Most of the PECL packages don't provide the name without "pecl-" (for example, php84-pecl-imagick)
+        foreach (["{$phpPackage->getSource()}-{$name}", "{$phpPackage->getSource()}-pecl-{$name}"] as $candidate) {
+            if ($this->validatePackageName($candidate, false)) {
+                $result[] = $candidate;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\SystemPackager::doInstallPackages()
      */
     protected function doInstallPackages(array $packages)
     {
-        list($rc) = $this->os->getFilesystem()->run(Command::create('apk', array_merge(['add'], $this->forceOverwrite ? ['--force-overwrite'] : [], $packages))->withOutput(Command::OUTPUT_SHOW));
+        $fs = $this->os->getFilesystem();
+        list($rc) = $fs->run(Command::create('apk', array_merge(['add'], $this->forceOverwrite ? ['--force-overwrite'] : [], $packages))->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('apk add failed');
         }
+        $pinned = [];
+        foreach ($packages as $package) {
+            $name = (string) preg_replace('/[<>=~].*$/', '', $package);
+            if ($name !== $package && $name !== '') {
+                $pinned[] = $name;
+            }
+        }
+        if ($pinned !== []) {
+            // apk keeps the version constraints in the "world" file, and they would block the upgrades
+            list($rc) = $fs->run(Command::create('apk', array_merge(['add'], $pinned))->withOutput(Command::OUTPUT_SHOW));
+            if ($rc !== 0) {
+                throw new Exception\SystemPackager('apk add failed');
+            }
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::doFindAvailablePackage()
+     */
+    protected function doFindAvailablePackage($name, $version)
+    {
+        $fs = $this->os->getFilesystem();
+        // It also finds the packages providing $name (for example, php83-pecl-redis provides php83-redis)
+        list($rc, $output) = $fs->run(Command::create('apk', array_merge(['search', '--exact'], $version === '' ? [] : ['--all'], [$name]))->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0) {
+            return null;
+        }
+        $found = null;
+        $match = null;
+        foreach (Regex::split('/[\r\n]+/', $output, -1, true) as $line) {
+            // Like "php83-pecl-redis-6.3.0-r0"
+            if (preg_match('/^(?<name>\S+?)-(?<version>\d[^\s\-]*-r\d+)$/D', trim($line), $match) && ($version === '' || $match['version'] === $version)) {
+                $found = $match;
+                break;
+            }
+        }
+        if ($found === null) {
+            return null;
+        }
+        list($rc, $output) = $fs->run(Command::create('apk', ['list', '--available', $found['name']])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        // Like "php83-pdo_mysql-8.3.36-r0 x86_64 {php83} (PHP-3.01) [installed]"
+        if ($rc !== 0 || !preg_match('/^' . preg_quote("{$found['name']}-{$found['version']}", '/') . ' \S+ \{(?<origin>[^}\s]+)\}/m', $output, $match)) {
+            return null;
+        }
+
+        return new Package($found['name'], $found['version'], $match['origin']);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getUpstreamVersion()
+     */
+    public function getUpstreamVersion($version)
+    {
+        $match = null;
+        // Without the suffixes like _rc1 or _p2, and the release of the package (-r0)
+        if (!preg_match('/^(?<upstream>\d+(?:\.\d+)*[a-z]?)/', $version, $match)) {
+            return '';
+        }
+
+        return $match['upstream'];
     }
 
     /**
@@ -161,6 +277,29 @@ final class APK extends SystemPackager
         }
 
         return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getInstalledPackageOwningFile()
+     */
+    public function getInstalledPackageOwningFile($path)
+    {
+        $fs = $this->os->getFilesystem();
+        list($rc, $output) = $fs->run(Command::create('apk', ['info', '--quiet', '--who-owns', $path])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        $name = trim($output);
+        if ($rc !== 0 || $name === '' || !$this->validatePackageName($name, false)) {
+            return null;
+        }
+        list($rc, $output) = $fs->run(Command::create('apk', ['list', '--installed', $name])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        $match = null;
+        // Like "php84-8.4.27-r0 x86_64 {php84} (PHP-3.01 BSD-3-Clause) [installed]"
+        if ($rc !== 0 || !preg_match('/^' . preg_quote($name, '/') . '-(?<version>\d\S*) \S+ \{(?<origin>[^}\s]+)\}/m', $output, $match)) {
+            return null;
+        }
+
+        return new Package($name, $match['version'], $match['origin']);
     }
 
     /**

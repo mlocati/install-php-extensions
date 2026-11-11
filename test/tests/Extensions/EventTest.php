@@ -17,12 +17,12 @@ final class EventTest extends TestCase
     public static function provideOpenSSLArguments()
     {
         return [
-            [OS\Debian::class, OS\Debian::VERSION_JESSIE, 'OpenSSL 1.0.1t  3 May 2016', '--with-event-openssl'],
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018', '--without-event-openssl'],
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, 'OpenSSL 1.1.0j  20 Nov 2018', '--with-event-openssl'],
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, 'LibreSSL 2.6.5', '--with-event-openssl'],
-            [OS\Debian::class, OS\Debian::VERSION_STRETCH, '', '--with-event-openssl'],
-            [OS\Debian::class, OS\Debian::VERSION_BUSTER, 'OpenSSL 1.1.1d  10 Sep 2019', '--with-event-openssl'],
+            [OS\Debian::class, OS\Debian::JESSIE, 'OpenSSL 1.0.1t  3 May 2016', '--with-event-openssl'],
+            [OS\Debian::class, OS\Debian::STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018', '--without-event-openssl'],
+            [OS\Debian::class, OS\Debian::STRETCH, 'OpenSSL 1.1.0j  20 Nov 2018', '--with-event-openssl'],
+            [OS\Debian::class, OS\Debian::STRETCH, 'LibreSSL 2.6.5', '--with-event-openssl'],
+            [OS\Debian::class, OS\Debian::STRETCH, '', '--with-event-openssl'],
+            [OS\Debian::class, OS\Debian::BUSTER, 'OpenSSL 1.1.1d  10 Sep 2019', '--with-event-openssl'],
             [OS\Alpine::class, 308, 'OpenSSL 1.0.2u  20 Dec 2019', '--with-event-openssl'],
         ];
     }

@@ -78,80 +78,62 @@ class PHPSourceProvider
      */
     private function fetch(State $state)
     {
-        if ($this->archiveExtractor->canHandleFormat(ArchiveFormat::TAR_XZ)) {
-            $fileExtension = '.tar.xz';
-        } else {
-            $fileExtension = '.tar.gz';
-        }
-        $urls = $this->getPHPSourceURLs($state->getPHP()->getVersion(), $fileExtension);
-        if ($urls !== []) {
+        $phpVersion = $state->getPHP()->getVersion();
+        $sources = self::getPHPSourceURLs($phpVersion, $this->archiveExtractor->canHandleFormat(ArchiveFormat::TAR_XZ));
+        if ($sources !== []) {
             $downloadToVolatile = $state->getVolatileDir()->getFilesystem()->createVolatileDirectory();
-            foreach ($urls as $index => $url) {
-                $downloadToFile = $downloadToVolatile->getPath() . '/php-src' . $index . $fileExtension;
+            foreach ($sources as $index => list($url, $format)) {
+                $downloadToFile = $downloadToVolatile->getPath() . "/php-src{$index}.{$format}";
                 try {
                     $this->downloader->saveAs($url, $downloadToFile);
                 } catch (Exception\IO\NotFound $_) {
                     continue;
                 }
-                $dir = $state->getVolatileDir()->createSubdir();
 
-                return $this->archiveExtractor->extractTo($downloadToFile, $dir);
+                return $this->archiveExtractor->extractTo($downloadToFile, $state->getVolatileDir()->createSubdir(), $format);
             }
         }
-        $downloadToVolatile = $state->getVolatileDir()->getFilesystem()->createVolatileDirectory();
 
-        throw new Exception\IO("Unable to determine the location of the source code for PHP {$state->getPHP()->getVersion()}");
+        throw new Exception\IO("Unable to find the source code of PHP {$phpVersion}");
     }
 
     /**
      * @param non-empty-string $phpVersion
-     * @param non-empty-string $fileExtension
+     * @param bool $allowXZ can we extract tar.xz archives? (they are smaller than the tar.gz ones)
      *
-     * @return list<non-empty-string>
+     * @return list<array{non-empty-string, \IPE\Filesystem\ArchiveFormat::TAR_GZ|\IPE\Filesystem\ArchiveFormat::TAR_XZ}> the URLs and the formats of the archives
      */
-    private function getPHPSourceURLs($phpVersion, $fileExtension)
+    private static function getPHPSourceURLs($phpVersion, $allowXZ)
     {
         $matches = null;
-        if (!preg_match('#^(?<base>\d+\.\d+\.\d+)(?<stability>(alpha|beta|RC)\d+)?$#D', $phpVersion, $matches)) {
+        // The distributions add their suffixes (for example 8.1.2-1ubuntu2.14), -dev is used for the snapshots that weren't released
+        if (!preg_match('#^(?<base>(?<majorMinor>\d+\.\d+)\.\d+)(?<stability>(?:alpha|beta|RC)\d+)?(?<suffix>.*)$#sD', $phpVersion, $matches) || strpos($matches['suffix'], '-dev') === 0) {
             return [];
         }
         $base = $matches['base'];
-        $stability = isset($matches['stability']) ? $matches['stability'] : '';
-        if ($stability === '') {
-            return [
-                "https://www.php.net/distributions/php-{$base}{$fileExtension}",
-            ];
-        }
+        $stability = $matches['stability'];
+        $format = $allowXZ ? ArchiveFormat::TAR_XZ : ArchiveFormat::TAR_GZ;
         $result = [];
-        if (strpos($base, '8.6.') === 0) {
-            $result[] = "https://downloads.php.net/~daniels/php-{$base}{$stability}{$fileExtension}";
-            $result[] = "https://downloads.php.net/~mbeccati/php-{$base}{$stability}{$fileExtension}";
-            $result[] = "https://downloads.php.net/~svpernova09/php-{$base}{$stability}{$fileExtension}";
+        if ($stability === '') {
+            $result[] = ["https://www.php.net/distributions/php-{$base}.{$format}", $format];
+        } else {
+            $releaseManagers = [
+                '8.6' => ['daniels', 'mbeccati', 'svpernova09'],
+                '8.5' => ['daniels', 'edorian'],
+                '8.4' => ['calvinb', 'saki'],
+                '8.3' => ['jakub', 'eric'],
+                '8.2' => ['sergey', 'pierrick'],
+                '8.1' => ['patrickallaert', 'ramsey'],
+                '8.0' => ['pollita', 'derick'],
+            ];
+            if (isset($releaseManagers[$matches['majorMinor']])) {
+                foreach ($releaseManagers[$matches['majorMinor']] as $releaseManager) {
+                    $result[] = ["https://downloads.php.net/~{$releaseManager}/php-{$base}{$stability}.{$format}", $format];
+                }
+            }
         }
-        if (strpos($base, '8.5.') === 0) {
-            $result[] = "https://downloads.php.net/~daniels/php-{$base}{$stability}{$fileExtension}";
-            $result[] = "https://downloads.php.net/~edorian/php-{$base}{$stability}{$fileExtension}";
-        }
-        if (strpos($base, '8.4.') === 0) {
-            $result[] = "https://downloads.php.net/~calvinb/php-{$base}{$stability}{$fileExtension}";
-            $result[] = "https://downloads.php.net/~saki/php-{$base}{$stability}{$fileExtension}";
-        }
-        if (strpos($base, '8.3.') === 0) {
-            $result[] = "https://downloads.php.net/~jakub/php-{$base}{$stability}{$fileExtension}";
-            $result[] = "https://downloads.php.net/~eric/php-{$base}{$stability}{$fileExtension}";
-        }
-        if (strpos($base, '8.2.') === 0) {
-            $result[] = "https://downloads.php.net/~sergey/php-{$base}{$stability}{$fileExtension}";
-            $result[] = "https://downloads.php.net/~pierrick/php-{$base}{$stability}{$fileExtension}";
-        }
-        if (strpos($base, '8.1.') === 0) {
-            $result[] = "https://downloads.php.net/~patrickallaert/php-{$base}{$stability}{$fileExtension}";
-            $result[] = "https://downloads.php.net/~ramsey/php-{$base}{$stability}{$fileExtension}";
-        }
-        if (strpos($base, '8.0.') === 0) {
-            $result[] = "https://downloads.php.net/~pollita/php-{$base}{$stability}{$fileExtension}";
-            $result[] = "https://downloads.php.net/~derick/php-{$base}{$stability}{$fileExtension}";
-        }
+        // Last resort: the archives of the tags lack the files generated for the releases (for example by re2c)
+        $result[] = ["https://github.com/php/php-src/archive/refs/tags/php-{$base}{$stability}." . ArchiveFormat::TAR_GZ, ArchiveFormat::TAR_GZ];
 
         return $result;
     }

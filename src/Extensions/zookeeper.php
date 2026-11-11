@@ -10,6 +10,7 @@ use IPE\SystemDependencies;
 final class zookeeper extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\DependsOnExtensions,
     Extension\DeclaresThreadSafetySupport,
     Extension\PatchesSourceCode,
     Extension\RequiresSystemDependencies
@@ -156,5 +157,26 @@ final class zookeeper extends Extension implements
                 $fs->writeFile($file, $patched);
             }
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // zookeeper provides a session handler: without session it can't be loaded
+        return [session::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }

@@ -32,6 +32,16 @@ final class FakePackager extends SystemPackager
     public $failInstall = false;
 
     /**
+     * @var \IPE\SystemPackager\Package|null the package that owns every file
+     */
+    public $owningPackage;
+
+    /**
+     * @var array<non-empty-string, list<\IPE\SystemPackager\Package>> the packages available in the repositories, by the name that finds them (it may be a virtual package)
+     */
+    public $available = [];
+
+    /**
      * @param list<non-empty-string> $installed
      * @param array<non-empty-string, list<non-empty-string>> $expansions
      */
@@ -55,6 +65,78 @@ final class FakePackager extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\SystemPackager::formatPackageNameWithVersion()
+     */
+    public function formatPackageNameWithVersion($name, $version)
+    {
+        return "{$name}={$version}";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getCACertificates()
+     *
+     * @return array{non-empty-string, non-empty-string}
+     */
+    public function getCACertificates()
+    {
+        return ['/etc/ssl/certs/ca-certificates.crt', 'ca-certificates'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getPHPDevelopmentPackageName()
+     */
+    public function getPHPDevelopmentPackageName(SystemPackager\Package $phpPackage)
+    {
+        return "{$phpPackage->getSource()}-dev";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getPHPExtensionPackageCandidates()
+     */
+    public function getPHPExtensionPackageCandidates(SystemPackager\Package $phpPackage, $extensionName)
+    {
+        // Like APT
+        $name = "{$phpPackage->getSource()}-" . str_replace('_', '-', strtolower($extensionName));
+
+        return $this->validatePackageName($name, false) ? [$name] : [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::doFindAvailablePackage()
+     */
+    protected function doFindAvailablePackage($name, $version)
+    {
+        $this->log[] = $version === '' ? "find {$name}" : "find {$name}={$version}";
+        foreach (isset($this->available[$name]) ? $this->available[$name] : [] as $package) {
+            if ($version === '' || $package->getVersion() === $version) {
+                return $package;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getUpstreamVersion()
+     */
+    public function getUpstreamVersion($version)
+    {
+        return (string) preg_replace('/-.*$/', '', $version);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\SystemPackager::refresh()
      */
     public function refresh()
@@ -72,6 +154,16 @@ final class FakePackager extends SystemPackager
         $this->log[] = 'list';
 
         return $this->installed;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getInstalledPackageOwningFile()
+     */
+    public function getInstalledPackageOwningFile($path)
+    {
+        return $this->owningPackage;
     }
 
     /**
@@ -103,7 +195,12 @@ final class FakePackager extends SystemPackager
         if ($this->failInstall) {
             throw new Exception\SystemPackager('install failed');
         }
-        $this->installed = array_values(array_unique(array_merge($this->installed, $packages)));
+        foreach ($packages as $package) {
+            list($name) = explode('=', $package, 2);
+            if ($name !== '' && !in_array($name, $this->installed, true)) {
+                $this->installed[] = $name;
+            }
+        }
     }
 
     /**
@@ -163,6 +260,6 @@ final class FakePackager extends SystemPackager
      */
     protected function validatePackageName($name, $mayIncludeVersion)
     {
-        return preg_match('/^(\^.+\$|[a-z0-9][a-z0-9+.-]*)$/D', $name) === 1;
+        return preg_match($mayIncludeVersion ? '/^(\^.+\$|[a-z0-9][a-z0-9+._-]*(=\S+)?)$/D' : '/^(\^.+\$|[a-z0-9][a-z0-9+._-]*)$/D', $name) === 1;
     }
 }

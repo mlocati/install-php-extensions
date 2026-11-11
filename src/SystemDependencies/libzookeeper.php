@@ -51,7 +51,7 @@ final class libzookeeper extends CompiledLibrary
                 ['maven', 'automake', 'libtool', 'openjdk8']
             );
         }
-        if ($this->os instanceof OS\Debian) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages(
                 ['^libzookeeper-mt2(t64)?$'],
                 ['libzookeeper-mt-dev']

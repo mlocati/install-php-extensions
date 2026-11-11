@@ -2,6 +2,7 @@
 
 namespace IPE\Extension;
 
+use IPE\Installer\BuildOptions;
 use IPE\Option;
 
 /**
@@ -9,6 +10,11 @@ use IPE\Option;
  */
 final class BuildContext
 {
+    /**
+     * @var \IPE\Installer\BuildOptions
+     */
+    private $buildOptions;
+
     /**
      * @var non-empty-string
      */
@@ -28,11 +34,12 @@ final class BuildContext
      * @param non-empty-string $sourceDirectory the directory containing config.m4 (or the root directory of the archive, for the hooks that say so)
      * @param string $version the extension version (empty string if unknown)
      */
-    public function __construct($sourceDirectory, $version, Option\Values $optionValues)
+    public function __construct($sourceDirectory, $version, Option\Values $optionValues, BuildOptions $buildOptions)
     {
         $this->sourceDirectory = $sourceDirectory;
         $this->version = $version;
         $this->optionValues = $optionValues;
+        $this->buildOptions = $buildOptions;
     }
 
     /**
@@ -61,5 +68,15 @@ final class BuildContext
     public function getOptionValues()
     {
         return $this->optionValues;
+    }
+
+    /**
+     * Use \IPE\Installer\BuildTools::getParallelJobs() for the number of parallel jobs.
+     *
+     * @return \IPE\Installer\BuildOptions
+     */
+    public function getBuildOptions()
+    {
+        return $this->buildOptions;
     }
 }

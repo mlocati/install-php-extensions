@@ -141,6 +141,8 @@ jobs:
             os: ubuntu-latest
             php-version: "8.5"
             check-pull-request: true
+            # The tests that depend on external data (they download about 90 MB) run only in one job of the weekly run
+            phpunit-online-checks: ${{ github.event_name == 'schedule' && 'true' || '' }}
           -
             os: windows-latest
             php-version: "5.5"
@@ -180,8 +182,7 @@ jobs:
         name: Run PHPUnit
         env:
           IPE_TEST_PULL_REQUEST_BASE: ${{ matrix.check-pull-request && github.event_name == 'pull_request' && 'HEAD^1' || '' }}
-        # Pull requests shouldn't fail because of changes elsewhere (the weekly run checks them)
-        run: composer --no-interaction --ansi run-script phpunit ${{ github.event_name == 'pull_request' && '-- --exclude-group online' || '' }}
+        run: composer --no-interaction --ansi run-script phpunit ${{ !matrix.phpunit-online-checks && '-- --exclude-group online' || '' }}
 
   build-phar:
     name: Build PHAR
@@ -263,7 +264,7 @@ jobs:
     name: Plan the extension tests
     runs-on: ubuntu-latest
     outputs:
-      distros: ${{ steps.plan.outputs.distros }}
+      jobs: ${{ steps.plan.outputs.jobs }}
       tests: ${{ steps.plan.outputs.tests }}
     steps:
       -
@@ -302,16 +303,16 @@ jobs:
           esac
 
   test-extensions:
-    name: Test extensions on ${{ matrix.distro }}
+    name: Test ${{ matrix.group || 'extensions' }} on ${{ matrix.distro }}${{ matrix.php && format(' with PHP {0}', matrix.php) || '' }}
     needs:
       - phpunit
       - build-phar
       - plan-extension-tests
-    if: needs.plan-extension-tests.outputs.distros != '[]'
+    if: needs.plan-extension-tests.outputs.jobs != '[]'
     strategy:
       fail-fast: false
       matrix:
-        distro: ${{ fromJSON(needs.plan-extension-tests.outputs.distros) }}
+        include: ${{ fromJSON(needs.plan-extension-tests.outputs.jobs) }}
     runs-on: ubuntu-latest
     steps:
       -
@@ -342,4 +343,4 @@ jobs:
         name: Test extensions
         env:
           IPE_EXTENSION_TESTS: ${{ needs.plan-extension-tests.outputs.tests }}
-        run: php scripts/ci-run-extension-tests.php "${{ matrix.distro }}" install-php-extensions
+        run: php scripts/ci-run-extension-tests.php "${{ matrix.distro }}" install-php-extensions "${{ matrix.group }}" "${{ matrix.php }}"

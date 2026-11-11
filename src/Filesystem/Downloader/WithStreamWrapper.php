@@ -34,7 +34,8 @@ final class WithStreamWrapper extends AbstractDownloader
     public static function createIfAvailable(array $config, Filesystem $fs, \IPE\Logger $logger)
     {
         $streamWrappers = array_map('strtolower', stream_get_wrappers());
-        if (!in_array('http', $streamWrappers, true)) {
+        // Without the openssl extension there's only http, but most of the URLs are https
+        if (!in_array('http', $streamWrappers, true) || !in_array('https', $streamWrappers, true)) {
             return null;
         }
 

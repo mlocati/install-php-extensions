@@ -88,7 +88,7 @@ final class xdebug extends Extension implements
     public function getConflictingExtensions($version)
     {
         // ddtrace disables itself with any Xdebug on PHP 7.0, and with Xdebug < 2.9.5 on newer PHP versions
-        if ($this->php->getMajorMinorVersion() <= 700 || ($version !== '' && version_compare($version, '2.9.5') < 0)) {
+        if ($this->php->getMajorMinorVersion() <= 700 || !self::isVersionAtLeast($version, '2.9.5')) {
             return [ddtrace::HANDLE];
         }
 
