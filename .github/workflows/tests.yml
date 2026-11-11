@@ -35,6 +35,7 @@ jobs:
               scripts/check-release-tag.php
               scripts/ci-plan-extension-tests.php
               scripts/ci-run-extension-tests.php
+              scripts/update-contributing.php
               scripts/update-readme.php
               test/phpstan
               test/support/Log/PSRLogger23.php
@@ -188,6 +189,43 @@ jobs:
         env:
           IPE_TEST_PULL_REQUEST_BASE: ${{ matrix.check-pull-request && github.event_name == 'pull_request' && 'HEAD^1' || '' }}
         run: composer --no-interaction --ansi run-script phpunit ${{ !matrix.phpunit-online-checks && '-- --exclude-group online' || '' }}
+
+  update-contributing:
+    name: Update CONTRIBUTING.md
+    needs:
+      - phpunit
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: none
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Update CONTRIBUTING.md
+        run: |
+          php scripts/update-contributing.php
+          if git diff --quiet -- CONTRIBUTING.md; then
+            echo "CONTRIBUTING.md didn't change: nothing to commit"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Update CONTRIBUTING.md' -- CONTRIBUTING.md
+          # The push fails if main changed in the meantime: a later run will update CONTRIBUTING.md
+          if git push origin HEAD:main; then
+            echo "CONTRIBUTING.md has been updated and pushed to main with the commit $(git rev-parse HEAD)"
+          else
+            echo '::warning::Failed to push the updated CONTRIBUTING.md'
+          fi
 
   build-phar:
     name: Build PHAR

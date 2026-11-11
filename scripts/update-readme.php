@@ -14,7 +14,7 @@ namespace IPE\Scripts\Readme\Update;
 
 use IPE\CLI\Argv;
 use IPE\Dev\ExtensionFactory;
-use IPE\Dev\Readme\DynamicSection;
+use IPE\Dev\Markdown\Readme;
 use IPE\Extension;
 
 set_error_handler(
@@ -25,8 +25,6 @@ set_error_handler(
 );
 
 define('IPE_CLI_ROOT_DIR', dirname(__DIR__));
-
-const README_PATH = IPE_CLI_ROOT_DIR . '/README.md';
 
 const EXTENSION_NOTES_DIR = __DIR__ . '/extension-notes';
 
@@ -403,33 +401,13 @@ function main(): int
         $extensionClasses = getExtensionClasses($app);
         $notes = collectExtensionNotes($extensionClasses);
         $definitions = $app->build(Argv\InstallPHPExtensions::class)->getDefinitions();
-        $readme = file_get_contents(README_PATH);
-        if ($readme === false) {
-            throw new \RuntimeException('Failed to read README.md');
-        }
-        $lines = explode("\n", rtrim(str_replace("\r\n", "\n", $readme), "\n"));
-        $generatedSections = [
-            DynamicSection::SECTION_SUPPORTED_EXTENSIONS => generateExtensionsTable($extensionClasses, $notes, getAllPHPVersions($extensionClasses)),
-            DynamicSection::SECTION_GENERAL_CLI_OPTIONS => generateCLIOptions($definitions),
-            DynamicSection::SECTION_EXTENSION_NOTES => generateExtensionNotes($notes),
-            DynamicSection::SECTION_SYSTEM_DEPENDENCY_OPTIONS => generateSystemDependencyOptions($definitions),
-        ];
-        foreach ($generatedSections as $sectionIdentifier => $generatedLines) {
-            $section = DynamicSection::extractFrom($sectionIdentifier, $lines);
-            if ($section === null) {
-                throw new \RuntimeException("Unable to find the section {$sectionIdentifier} in README.md");
-            }
-            $lines = $section->withGeneratedContent($generatedLines)->getReadmeLines();
-        }
-        $newReadme = implode("\n", $lines) . "\n";
-        if ($newReadme === $readme) {
-            echo "README.md is already up to date\n";
-        } else {
-            if (file_put_contents(README_PATH, $newReadme) === false) {
-                throw new \RuntimeException('Failed to write README.md');
-            }
-            echo "README.md updated\n";
-        }
+        $updated = new Readme()->update([
+            Readme::SECTION_SUPPORTED_EXTENSIONS => generateExtensionsTable($extensionClasses, $notes, getAllPHPVersions($extensionClasses)),
+            Readme::SECTION_GENERAL_CLI_OPTIONS => generateCLIOptions($definitions),
+            Readme::SECTION_EXTENSION_NOTES => generateExtensionNotes($notes),
+            Readme::SECTION_SYSTEM_DEPENDENCY_OPTIONS => generateSystemDependencyOptions($definitions),
+        ]);
+        echo $updated ? "README.md updated\n" : "README.md is already up to date\n";
     } catch (\RuntimeException $x) {
         fwrite(STDERR, $x->getMessage() . "\n");
         $rc = 1;

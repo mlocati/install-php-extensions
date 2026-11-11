@@ -1,6 +1,6 @@
 # Notes for AI agents
 
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before changing anything: it explains which parts of `README.md` must not be edited, and how to choose the extensions tested in pull requests (with `Test:` lines in the commit messages).
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before changing anything: it explains which parts of `README.md` and `CONTRIBUTING.md` must not be edited, and how to choose the extensions tested in pull requests (with `Test:` lines in the commit messages).
 
 Other things to know:
 

@@ -2,20 +2,11 @@
 
 Pull requests are welcome!
 
-## The README file
+## Generated sections
 
-Some sections of `README.md` are generated automatically when a new version is released.
+Some sections of `README.md` are generated automatically when a new version is released, and some sections of `CONTRIBUTING.md` are generated automatically when the `main` branch changes.
 
-They are delimited by lines like
-```
-<!-- START OF ... -->
-```
-
-and
-
-```
-<!-- END OF ... -->
-```
+They are delimited by lines like `<!-- START OF ... -->` and `<!-- END OF ... -->`.
 
 Please don't change them in your pull requests (the tests check it).
 
@@ -48,7 +39,14 @@ Test-PHP: 8.3 8.4
 
 For the extensions not supported by IPE we strongly suggest using `Test-PHP:`: otherwise the tests will fail with the PHP versions that the extension doesn't support.
 
-The commits are inspected starting from the most recent one: if an extension (or a group of extensions joined with `+`) is listed in more than one commit, only the most recent commit is considered (including its `Test-PHP:` line); this applies also to the extensions tested automatically because their files have been changed.
+Likewise, you can limit the distros of the Docker images with a `Test-Distro:` line, using the names listed in [Available distros](#available-distros) (`*` matches any sequence of characters):
+
+```
+Test: xdebug
+Test-Distro: alpine3.24 trixie *-sury
+```
+
+The commits are inspected starting from the most recent one: if an extension (or a group of extensions joined with `+`) is listed in more than one commit, only the most recent commit is considered (including its `Test-PHP:` and `Test-Distro:` lines); this applies also to the extensions tested automatically because their files have been changed.
 If you write `-STOP-` in a `Test:` line, the older commits won't be inspected, and the extensions whose files have been changed won't be tested automatically:
 
 ```
@@ -59,3 +57,10 @@ The extensions that take long to be compiled (listed in `src/Dev/SlowExtensions.
 
 If a pull request changes the code of IPE (like `bin/install-php-extensions` or the PHP files in `src`), how it's built, or how the extensions are tested, at least one extension must be tested, otherwise the tests fail.
 If no extension needs to be tested, write `Test: -STOP-`.
+
+### Available distros
+
+The distros whose names end with `-apk` or `-apt` use the PHP packages of the distro, and the ones ending with `-sury` use the PHP packages of [packages.sury.org](https://packages.sury.org/php/); the other ones use the official Docker PHP images.
+
+<!-- START OF TEST DISTROS -->
+<!-- END OF TEST DISTROS -->
