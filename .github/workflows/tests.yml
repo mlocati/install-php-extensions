@@ -8,6 +8,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      phpunit-online-tests:
+        description: Run the PHPUnit tests that depend on external data
+        type: boolean
+        default: false
   schedule:
     - cron: "0 6 * * 1"
 
@@ -141,8 +146,8 @@ jobs:
             os: ubuntu-latest
             php-version: "8.5"
             check-pull-request: true
-            # The tests that depend on external data (they download about 90 MB) run only in one job of the weekly run
-            phpunit-online-checks: ${{ github.event_name == 'schedule' && 'true' || '' }}
+            # The tests that depend on external data (they download about 90 MB) run only in one job of the weekly run, or when requested in manual runs
+            phpunit-online-checks: ${{ (github.event_name == 'schedule' || inputs.phpunit-online-tests) && 'true' || '' }}
           -
             os: windows-latest
             php-version: "5.5"
