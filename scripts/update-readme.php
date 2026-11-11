@@ -95,7 +95,8 @@ function generateExtensionsTable(array $extensionClasses, array $notes, array $p
             $line .= "[&#x24D8;](#{$handle})";
         }
         if (is_a($class, Extension\AvailableAsComposerPackage::class, true)) {
-            $line .= '<br><small>' . escapeTableCell(escapeText($class::getComposerPackageName())) . '</small>';
+            // GitHub strips <small>
+            $line .= '<br><sub>' . escapeTableCell(escapeText($class::getComposerPackageName())) . '</sub>';
         }
         $line .= ' |';
         $supportedPHPVersions = $class::getSupportedPHPVersions();
