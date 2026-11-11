@@ -39,7 +39,14 @@ Test-PHP: 8.3 8.4
 
 For the extensions not supported by IPE we strongly suggest using `Test-PHP:`: otherwise the tests will fail with the PHP versions that the extension doesn't support.
 
-The commits are inspected starting from the most recent one: if an extension (or a group of extensions joined with `+`) is listed in more than one commit, only the most recent commit is considered (including its `Test-PHP:` line); this applies also to the extensions tested automatically because their files have been changed.
+Likewise, you can limit the distros of the Docker images with a `Test-Distro:` line, using the names listed in [Available distros](#available-distros) (`*` matches any sequence of characters):
+
+```
+Test: xdebug
+Test-Distro: alpine3.24 trixie *-sury
+```
+
+The commits are inspected starting from the most recent one: if an extension (or a group of extensions joined with `+`) is listed in more than one commit, only the most recent commit is considered (including its `Test-PHP:` and `Test-Distro:` lines); this applies also to the extensions tested automatically because their files have been changed.
 If you write `-STOP-` in a `Test:` line, the older commits won't be inspected, and the extensions whose files have been changed won't be tested automatically:
 
 ```

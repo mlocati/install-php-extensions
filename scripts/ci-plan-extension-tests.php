@@ -78,15 +78,24 @@ const OPTION_VARIANTS = [
     ],
 ];
 
+/**
+ * A mistake in the commit messages: only its message is shown.
+ */
+final class InvalidRequestException extends \RuntimeException
+{
+}
+
 final class RequestedTest
 {
     /**
      * @param non-empty-list<non-empty-string> $extensions
      * @param list<non-empty-string>|null $phpVersions NULL for all the PHP versions
+     * @param non-empty-list<string>|null $operatingSystems NULL for all the operating systems
      */
     public function __construct(
         public readonly array $extensions,
         public readonly ?array $phpVersions,
+        public readonly ?array $operatingSystems,
         public readonly string $source,
     ) {
     }
@@ -144,6 +153,27 @@ function splitList(string $list): array
 }
 
 /**
+ * @param non-empty-string $pattern an operating system, or a pattern with "*" wildcards
+ *
+ * @throws InvalidRequestException
+ *
+ * @return non-empty-list<string>
+ */
+function resolveOperatingSystems(string $pattern): array
+{
+    $regex = '/^' . str_replace('\*', '.*', preg_quote($pattern, '/')) . '$/Di';
+    $result = array_values(array_filter(DockerImages::getOperatingSystems(), static fn (string $os): bool => preg_match($regex, $os) === 1));
+    if ($result === []) {
+        throw new InvalidRequestException(<<<EOT
+            Test-Distro: {$pattern} doesn't match any distro.
+            See the available distros at https://github.com/mlocati/install-php-extensions/blob/main/CONTRIBUTING.md#available-distros
+            EOT);
+    }
+
+    return $result;
+}
+
+/**
  * Inspect the commits starting from the most recent one, until a "-STOP-" is found.
  *
  * @throws \RuntimeException
@@ -160,11 +190,19 @@ function collectTestsFromCommits(string $base, string $head): array
         echo "- {$shortHash} ", $message[0] ?? '', "\n";
         $tests = [];
         $phpVersions = null;
+        $operatingSystems = null;
         $stop = false;
         foreach ($message as $line) {
             if (preg_match('/^\s*Test-PHP:(.*)$/i', $line, $matches)) {
                 echo '  ', trim($line), "\n";
                 $phpVersions = array_merge($phpVersions ?? [], splitList($matches[1]));
+                continue;
+            }
+            if (preg_match('/^\s*Test-Distro:(.*)$/i', $line, $matches)) {
+                echo '  ', trim($line), "\n";
+                foreach (splitList($matches[1]) as $pattern) {
+                    $operatingSystems = array_merge($operatingSystems ?? [], resolveOperatingSystems($pattern));
+                }
                 continue;
             }
             if ($stop || !preg_match('/^\s*Test:(.*)$/i', $line, $matches)) {
@@ -173,7 +211,7 @@ function collectTestsFromCommits(string $base, string $head): array
             echo '  ', trim($line), "\n";
             foreach (splitList($matches[1]) as $item) {
                 if ($item === '-STOP-') {
-                    // Keep reading the message: Test-PHP may follow
+                    // Keep reading the message: Test-PHP and Test-Distro may follow
                     $stop = true;
                     break;
                 }
@@ -184,7 +222,12 @@ function collectTestsFromCommits(string $base, string $head): array
             }
         }
         foreach ($tests as $extensions) {
-            $result[] = new RequestedTest($extensions, $phpVersions === null ? null : array_values(array_unique($phpVersions)), "commit {$shortHash}");
+            $result[] = new RequestedTest(
+                $extensions,
+                $phpVersions === null ? null : array_values(array_unique($phpVersions)),
+                $operatingSystems === null ? null : array_values(array_unique($operatingSystems)),
+                "commit {$shortHash}",
+            );
         }
         if ($stop) {
             echo "  -STOP- found: the older commits are not inspected, and the extensions whose files have been changed are not tested automatically\n";
@@ -221,7 +264,7 @@ function collectTestsFromChanges(array $changedFiles, array $extensionClasses): 
     $handles = array_keys($handles);
     sort($handles, SORT_STRING);
 
-    return array_map(static fn (string $handle): RequestedTest => new RequestedTest([$handle], null, 'changed files'), $handles);
+    return array_map(static fn (string $handle): RequestedTest => new RequestedTest([$handle], null, null, 'changed files'), $handles);
 }
 
 /**
@@ -361,6 +404,10 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
     } else {
         echo '  - Requested PHP versions: ',implode(', ', $test->phpVersions), "\n";
         $phpVersions = array_values(array_intersect($allPHPVersions, $test->phpVersions));
+    }
+    if ($test->operatingSystems !== null) {
+        echo '  - Requested distros: ', implode(', ', $test->operatingSystems), "\n";
+        $operatingSystems = array_values(array_intersect($operatingSystems, $test->operatingSystems));
     }
     $classes = [];
     foreach ($test->extensions as $extension) {
@@ -549,7 +596,7 @@ function main(array $argv): int
             }
             $operatingSystems = DockerImages::getOperatingSystems();
         } else {
-            $requestedTests = isQuickTestNeeded($commits) ? [new RequestedTest([QUICK_TEST_EXTENSION], [QUICK_TEST_PHP_VERSION], 'quick test')] : [];
+            $requestedTests = isQuickTestNeeded($commits) ? [new RequestedTest([QUICK_TEST_EXTENSION], [QUICK_TEST_PHP_VERSION], null, 'quick test')] : [];
             $operatingSystems = getQuickTestOperatingSystems();
         }
         $tests = [];
@@ -576,6 +623,10 @@ function main(array $argv): int
         // Not the operating systems: they may be many, and the size of an environment variable is limited
         writeOutput('tests', array_map(static fn (array $test): array => ['extensions' => $test['extensions'], 'php' => $test['php'], 'zts' => $test['zts']] + ($test['options'] === [] ? [] : ['options' => $test['options']]) + ($test['group'] === '' ? [] : ['group' => $test['group']]), $tests));
         writeOutput('jobs', $jobs);
+    } catch (InvalidRequestException $x) {
+        fwrite(STDERR, $x->getMessage() . "\n");
+
+        return 1;
     } catch (\Throwable $x) {
         fwrite(STDERR, rtrim((string) $x) . "\n");
 
