@@ -368,13 +368,14 @@ final class BuildToolsTest extends TestCase
     }
 
     /**
-     * @return array<array{int, array<string, string>}> the PHP version, and the expected configure environment
+     * @return array<array{int, string, array<string, string>}> the PHP version, the resolved pkg-config, and the expected configure environment
      */
     public static function provideConfigureEnvironment()
     {
         return [
-            [703, ['SED' => 'sed', 'PKG_CONFIG' => 'pkg-config']],
-            [704, []],
+            [703, '/usr/bin/pkg-config', ['SED' => 'sed', 'PKG_CONFIG' => '/usr/bin/pkg-config']],
+            [703, '', ['SED' => 'sed']],
+            [704, '/usr/bin/pkg-config', []],
         ];
     }
 
@@ -382,15 +383,30 @@ final class BuildToolsTest extends TestCase
      * @dataProvider provideConfigureEnvironment
      *
      * @param int $phpVersion
+     * @param string $pkgConfig
      * @param array<string, string> $expected
      *
      * @return void
      */
-    public function testConfigureEnvironment($phpVersion, array $expected)
+    public function testConfigureEnvironment($phpVersion, $pkgConfig, array $expected)
     {
         $php = self::createPHPInfo();
         $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
-        self::assertSame($expected, (new BuildTools($php, self::createFilesystem(), new \IPE\Logger()))->getConfigureEnvironment());
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('resolveCommand')->with('pkg-config')->andReturn($pkgConfig);
+        self::assertSame($expected, (new BuildTools($php, $fs, new \IPE\Logger()))->getConfigureEnvironment());
+    }
+
+    /**
+     * @return void
+     */
+    public function testPkgConfigIsCached()
+    {
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('resolveCommand')->once()->with('pkg-config')->andReturn('');
+        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        self::assertSame('', $buildTools->getPkgConfig());
+        self::assertSame('', $buildTools->getPkgConfig());
     }
 
     /**

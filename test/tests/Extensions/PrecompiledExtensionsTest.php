@@ -553,6 +553,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
         $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
+        $fs->shouldReceive('resolveCommand')->with('pkg-config')->andReturn('/usr/bin/pkg-config');
         $fs->shouldReceive('run')->andReturnUsing(static function (Command $command) use (&$commands) {
             switch ($command->getCommand()) {
                 case '/usr/local/bin/php-config':
@@ -581,7 +582,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $expectedEnvironment = ['PHP_HOME' => '/usr/local'];
         if ($phpVersion < 704) {
             $expectedEnvironment['SED'] = 'sed';
-            $expectedEnvironment['PKG_CONFIG'] = 'pkg-config';
+            $expectedEnvironment['PKG_CONFIG'] = '/usr/bin/pkg-config';
         }
         if ($needsPlatform) {
             $expectedEnvironment['PLATFORM'] = 'linux';

@@ -77,6 +77,7 @@ final class CassandraTest extends TestCase
         $fs->shouldReceive('isFile')->with('/usr/local/bin/phpize')->andReturn(true);
         $fs->shouldReceive('isFile')->with('/usr/local/bin/make')->andReturn(true);
         $fs->shouldReceive('resolveCommand')->with('make')->andReturn('/usr/local/bin/make');
+        $fs->shouldReceive('resolveCommand')->with('pkg-config')->andReturn('/usr/bin/pkg-config');
         $fs->shouldReceive('run')->andReturnUsing(static function (Command $command) use (&$commands) {
             if ($command->getArguments() === ['--version']) {
                 return [0, "PHP Api Version:         20180731\n"];
@@ -96,6 +97,6 @@ final class CassandraTest extends TestCase
         $buildOptions = (new BuildOptions())->withParallelJobs(2);
         self::assertSame('/ext/cassandra.so', (new cassandra($php, $os))->buildModule(self::createBuildContext('', null, '/src', $buildOptions), new BuildTools($php, $fs, new \IPE\Logger())));
         self::assertSame('./configure', $commands[1]->getCommand());
-        self::assertSame(['SED' => 'sed', 'PKG_CONFIG' => 'pkg-config'], $commands[1]->getEnvironment());
+        self::assertSame(['SED' => 'sed', 'PKG_CONFIG' => '/usr/bin/pkg-config'], $commands[1]->getEnvironment());
     }
 }
