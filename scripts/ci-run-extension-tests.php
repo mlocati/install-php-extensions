@@ -17,7 +17,15 @@ use IPE\Dev\SlowExtensions;
 
 set_error_handler(
     static function (int $errno, string $errstr, string $errfile = '', int $errline = 0): never {
-        throw new \RuntimeException("Error {$errno}: {$errstr}" . ($errfile === '' ? '' : " in {$errfile}" . ($errline === 0 ? '' : " at line {$errline}")));
+        throw new \RuntimeException(
+            "Error {$errno}: {$errstr}"
+            . (
+                $errfile === '' ? '' : " in {$errfile}"
+                . (
+                    $errline === 0 ? '' : " at line {$errline}"
+                )
+            ),
+        );
     },
     -1,
 );
@@ -80,7 +88,13 @@ function printGroup(string $title, string $contents): void
  */
 function printError(string $title, string $message): void
 {
-    $escape = static fn (string $value, bool $isProperty): string => strtr($value, ['%' => '%25', "\r" => '%0D', "\n" => '%0A'] + ($isProperty ? [':' => '%3A', ',' => '%2C'] : []));
+    $escape = static fn (
+        string $value,
+        bool $isProperty,
+    ): string => strtr(
+        $value,
+        ['%' => '%25', "\r" => '%0D', "\n" => '%0A'] + ($isProperty ? [':' => '%3A', ',' => '%2C'] : []),
+    );
 
     echo '::error title=', $escape($title, true), '::', $escape($message, false), "\n";
 }
@@ -115,7 +129,10 @@ function prepareImage(DockerImage $image): array
         throw new \RuntimeException("Failed to create the directory {$dir}");
     }
     try {
-        if (file_put_contents("{$dir}/Dockerfile", "FROM {$image->getBaseImage()}\nRUN " . implode(" \\\n    && ", $image->getSetupCommands()) . "\n") === false) {
+        if (file_put_contents(
+            "{$dir}/Dockerfile",
+            "FROM {$image->getBaseImage()}\nRUN " . implode(" \\\n    && ", $image->getSetupCommands()) . "\n",
+        ) === false) {
             throw new \RuntimeException("Failed to write {$dir}/Dockerfile");
         }
 
@@ -234,7 +251,12 @@ function getTests(string $os, string $group, string $phpVersion): array
         if (!is_array($test) || !is_string($test['extensions'] ?? null) || !is_string($test['php'] ?? null) || !is_bool($test['zts'] ?? null)) {
             throw new \RuntimeException('Invalid test in IPE_EXTENSION_TESTS: ' . json_encode($test, JSON_THROW_ON_ERROR));
         }
-        $extensions = array_values(array_filter(explode(' ', $test['extensions']), static fn (string $extension): bool => $extension !== ''));
+        $extensions = array_values(
+            array_filter(
+                explode(' ', $test['extensions']),
+                static fn (string $extension): bool => $extension !== '',
+            ),
+        );
         $rawOptions = $test['options'] ?? [];
         $options = is_array($rawOptions) ? array_values(array_filter($rawOptions, is_string(...))) : [];
         $testGroup = $test['group'] ?? '';
@@ -250,7 +272,17 @@ function getTests(string $os, string $group, string $phpVersion): array
             }
             $result[] = ['extensions' => $extensions, 'options' => $options, 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image];
             // Test also the compilation of the extensions (unless they are compiled anyway)
-            if ($image->getInstallationsPerExtension() > 1 && !array_any($options, static fn (string $option): bool => str_starts_with($option, '--system-packages')) && !array_all($extensions, static fn (string $extension): bool => SlowExtensions::isWithoutSystemPackage($extension, $os, $test['php']))) {
+            if (
+                $image->getInstallationsPerExtension() > 1
+                && !array_any(
+                    $options,
+                    static fn (string $option): bool => str_starts_with($option, '--system-packages'),
+                )
+                && !array_all(
+                    $extensions,
+                    static fn (string $extension): bool => SlowExtensions::isWithoutSystemPackage($extension, $os, $test['php']),
+                )
+            ) {
                 $result[] = ['extensions' => $extensions, 'options' => array_merge($options, ['--system-packages=never']), 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image];
             }
         }
@@ -277,7 +309,9 @@ function main(array $argv): int
         /** @var array<string, bool> $preparedImages */
         $preparedImages = [];
         foreach (getTests($os, $group, $phpVersion) as $test) {
-            $description = implode(' ', $test['extensions']) . ($test['options'] === [] ? '' : ' (' . implode(' ', $test['options']) . ')') . " on PHP {$test['php']}" . ($test['zts'] ? ' (ZTS)' : '');
+            $description = implode(' ', $test['extensions'])
+                . ($test['options'] === [] ? '' : ' (' . implode(' ', $test['options']) . ')')
+                . " on PHP {$test['php']}" . ($test['zts'] ? ' (ZTS)' : '');
             $image = $test['image']->getName();
             echo "### {$description}\n";
             if (!isset($preparedImages[$image])) {
