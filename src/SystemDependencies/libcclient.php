@@ -92,15 +92,16 @@ final class libcclient extends SystemDependency
                     ['libkrb5-dev', 'libc-client-dev']
                 );
             }
+            // libc-client2007e of Debian 12 is installed with dpkg: apt would remove it with its dependencies installed by libkrb5-dev
             if ($this->isInstalled()) {
                 return new Packages(
-                    ['sgml-base'],
+                    ['libgssapi-krb5-2', 'sgml-base'],
                     ['libkrb5-dev']
                 );
             }
 
             return new Packages(
-                ['sgml-base'],
+                ['libgssapi-krb5-2', 'sgml-base'],
                 ['libkrb5-dev', 'libpam0g-dev']
             );
         }

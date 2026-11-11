@@ -331,8 +331,8 @@ final class BundledLibrariesTest extends TestCase
         $state = self::createState();
         self::assertPackages(['c-client'], ['krb5-dev', 'imap-dev'], self::createLibcclient(OS\Alpine::class, 321)->getSystemPackages($state));
         self::assertPackages(['libc-client2007e'], ['libkrb5-dev', 'libc-client-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::BOOKWORM)->getSystemPackages($state));
-        self::assertPackages(['sgml-base'], ['libkrb5-dev', 'libpam0g-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::TRIXIE)->getSystemPackages($state));
-        self::assertPackages(['sgml-base'], ['libkrb5-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::TRIXIE, ['/usr/lib/libc-client.so.2007e', '/usr/include/c-client/utf8.h'])->getSystemPackages($state));
+        self::assertPackages(['libgssapi-krb5-2', 'sgml-base'], ['libkrb5-dev', 'libpam0g-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::TRIXIE)->getSystemPackages($state));
+        self::assertPackages(['libgssapi-krb5-2', 'sgml-base'], ['libkrb5-dev'], self::createLibcclient(OS\Debian::class, OS\Debian::TRIXIE, ['/usr/lib/libc-client.so.2007e', '/usr/include/c-client/utf8.h'])->getSystemPackages($state));
         self::assertSame(['lib-openssl'], self::createLibcclient(OS\Debian::class, OS\Debian::TRIXIE)->getRequiredDependencies());
     }
 }
