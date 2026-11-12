@@ -385,6 +385,7 @@ EOT;
             self::installedPackages(['glibc', 'libcurl-minimal']),
             ['dnf', array_merge(['install', '--assumeno', '--setopt=install_weak_deps=False'], $keepInstalled, ['libcurl-devel']), 1, $output, Command::OUTPUT_CAPTURE_ALL],
             ['dnf', array_merge(['install', '-y', '--setopt=install_weak_deps=False'], $keepInstalled, ['libcurl-devel-7.76.1-40.el9_8.8']), 0, '', Command::OUTPUT_SHOW],
+            ['dnf', ['mark', 'install', 'libcurl-devel-7.76.1-40.el9_8.8'], 0, '', Command::OUTPUT_SHOW],
         ]));
         self::assertSame(['libcurl-devel' => '7.76.1-40.el9_8.8'], $dnf->expandPackageList(['libcurl-devel']));
         $dnf->installPackages(['libcurl-devel-7.76.1-40.el9_8.8']);

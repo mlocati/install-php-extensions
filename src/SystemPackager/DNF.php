@@ -289,6 +289,8 @@ abstract class DNF extends SystemPackager
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf install failed');
         }
+        // Some dnf versions (like the one of Amazon Linux 2023) record as dependencies the requested packages that other requested packages require (like libsodium for libsodium-devel-1.0.18), and dnf remove would take them away
+        $this->doMarkAsManuallyInstalled($packages);
     }
 
     /**
