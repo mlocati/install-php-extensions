@@ -135,6 +135,8 @@ final class LocalTest extends TestCase
         $postTimestamp = time();
         $timestamp = $fs->getLastModificationTimestamp($tmpPath . '/file');
         self::assertTrue($preTimestamp <= ($timestamp + 10) && ($timestamp - 10) <= $postTimestamp, "{$preTimestamp} <= {$timestamp} <= {$postTimestamp}");
+        $fs->setLastModificationTimestamp($tmpPath . '/file', 1000000000);
+        self::assertSame(1000000000, $fs->getLastModificationTimestamp($tmpPath . '/file'));
         self::assertSame(['file'], $fs->listDirectoryContents($tmpPath));
         self::assertSame('FooBar', $fs->readFile($tmpPath . '/file'));
         $fs->createSymlink($tmpPath . '/file', $tmpPath . '/fileLink');

@@ -5,6 +5,9 @@ namespace IPE\Filesystem\ArchiveExtractor;
 use IPE\Exception;
 use IPE\Filesystem;
 
+/**
+ * The extractors must keep the modification times of the files: make regenerates the files that look older than their sources (for example, it runs re2c when a .re file is newer than its .c file).
+ */
 abstract class FormatExtractor
 {
     /**

@@ -219,6 +219,27 @@ class Local implements Filesystem
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\Filesystem::setLastModificationTimestamp()
+     */
+    public function setLastModificationTimestamp($path, $timestamp)
+    {
+        list($result, $errorDetails) = self::wrap(static function () use ($path, $timestamp) {
+            $result = touch($path, $timestamp);
+            if ($result === true) {
+                // Before PHP 8.3, touch() doesn't clear the stat cache
+                clearstatcache(true, $path);
+            }
+
+            return $result;
+        }, 'touch');
+        if ($result !== true) {
+            throw new Exception\IO(self::buildErrorMessage("Failed to set the last modification timestamp of '{$path}'", $errorDetails));
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\Filesystem::getFileSize()
      */
     public function getFileSize($path)

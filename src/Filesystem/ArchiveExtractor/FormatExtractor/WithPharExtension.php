@@ -67,6 +67,8 @@ final class WithPharExtension extends FormatExtractor
         }
         $this->logger->debug('Extracting archive with Phar extension', ['archive' => $archive, 'destination' => $destinationDirectory]);
         $this->extractPharData($this->openArchive($archive, \Phar::TAR), $destinationDirectory);
+        // PharData::extractTo() sets the current time
+        $this->restoreModificationTimes($archive, $destinationDirectory);
     }
 
     /**
@@ -114,6 +116,10 @@ final class WithPharExtension extends FormatExtractor
                     }
                 } else {
                     $this->fs->writeFile($path, $entry->getContent());
+                    $mtime = $entry->getMTime();
+                    if ($mtime > 0) {
+                        $this->fs->setLastModificationTimestamp($path, $mtime);
+                    }
                 }
             }
         } catch (\RuntimeException $x) {
@@ -142,5 +148,160 @@ final class WithPharExtension extends FormatExtractor
         if ($result === false) {
             throw new Exception\IO(self::buildErrorMessage("Failed to extract tar to '{$destinationDirectory}'", $errorDetails));
         }
+    }
+
+    /**
+     * The times are read from the tar headers: PharData can't access the entries with GNU long names (like some in the PHP source archives).
+     *
+     * @param non-empty-string $archive
+     * @param non-empty-string $destinationDirectory
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    private function restoreModificationTimes($archive, $destinationDirectory)
+    {
+        $separator = $this->fs->getDirectorySeparator();
+        foreach (self::readTarModificationTimes($archive) as $name => $mtime) {
+            $path = $destinationDirectory . $separator . str_replace('/', $separator, $name);
+            if ($this->fs->isFile($path)) {
+                $this->fs->setLastModificationTimestamp($path, $mtime);
+            }
+        }
+    }
+
+    /**
+     * @param non-empty-string $archive
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return array<non-empty-string, positive-int> the modification times of the regular files, keyed by their relative path
+     */
+    private static function readTarModificationTimes($archive)
+    {
+        list($handle, $errorDetails) = self::wrap(
+            static function () use ($archive) {
+                return fopen($archive, 'rb');
+            },
+            'fopen'
+        );
+        if ($handle === false) {
+            throw new Exception\IO(self::buildErrorMessage("Failed to open the archive '{$archive}'", $errorDetails));
+        }
+        $result = [];
+        try {
+            $longName = null;
+            $pax = [];
+            for (;;) {
+                $header = fread($handle, 512);
+                if (!is_string($header) || strlen($header) !== 512 || trim($header, "\0") === '') {
+                    break;
+                }
+                $type = $header[156];
+                $size = self::parseTarNumber(substr($header, 124, 12));
+                $data = '';
+                if ($type === 'L' || $type === 'x') {
+                    $data = $size > 0 ? (string) fread($handle, $size) : '';
+                    $padding = (512 - $size % 512) % 512;
+                } else {
+                    $padding = $size > 0 ? (int) ceil($size / 512) * 512 : 0;
+                }
+                if ($padding > 0 && fseek($handle, $padding, SEEK_CUR) !== 0) {
+                    throw new Exception\IO("Failed to read the archive '{$archive}'");
+                }
+                if ($type === 'L') {
+                    // GNU long name of the next entry
+                    $longName = rtrim($data, "\0");
+                    continue;
+                }
+                if ($type === 'x') {
+                    // POSIX extended header of the next entry
+                    $pax = self::parsePaxRecords($data);
+                    continue;
+                }
+                if ($longName !== null) {
+                    $name = $longName;
+                } elseif (isset($pax['path'])) {
+                    $name = $pax['path'];
+                } else {
+                    $name = rtrim(substr($header, 0, 100), "\0");
+                    $prefix = rtrim(substr($header, 345, 155), "\0");
+                    // GNU tar uses the prefix field for other data
+                    if ($prefix !== '' && substr($header, 257, 6) === "ustar\0") {
+                        $name = "{$prefix}/{$name}";
+                    }
+                }
+                $mtime = isset($pax['mtime']) ? (int) $pax['mtime'] : self::parseTarNumber(substr($header, 136, 12));
+                $longName = null;
+                $pax = [];
+                $name = (string) preg_replace('_^(\./)+_', '', $name);
+                if ($name === '' || $name[0] === '/' || in_array('..', explode('/', $name), true)) {
+                    continue;
+                }
+                // Regular and contiguous files
+                if ($mtime > 0 && ($type === '0' || $type === "\0" || $type === '7')) {
+                    $result[$name] = $mtime;
+                } else {
+                    // A later entry (like a symbolic link) replaces the file
+                    unset($result[$name]);
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param string $field
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return int
+     */
+    private static function parseTarNumber($field)
+    {
+        $value = trim($field, " \0");
+        if ($value === '') {
+            return 0;
+        }
+        // The base-256 numbers of GNU tar are only needed for files bigger than 8 GB
+        if (!preg_match('/^[0-7]+$/', $value)) {
+            throw new Exception\IO('Unsupported number in the tar header: ' . bin2hex($field));
+        }
+
+        return (int) octdec($value);
+    }
+
+    /**
+     * @param string $data records like "30 mtime=1432668052.123456789\n"
+     *
+     * @return array<string, string>
+     */
+    private static function parsePaxRecords($data)
+    {
+        $result = [];
+        $offset = 0;
+        $length = strlen($data);
+        while ($offset < $length) {
+            $space = strpos($data, ' ', $offset);
+            if ($space === false) {
+                break;
+            }
+            $recordLength = (int) substr($data, $offset, $space - $offset);
+            if ($recordLength <= $space - $offset) {
+                break;
+            }
+            $record = substr($data, $space + 1, $recordLength - ($space - $offset) - 2);
+            $equals = strpos($record, '=');
+            if ($equals !== false) {
+                $result[substr($record, 0, $equals)] = substr($record, $equals + 1);
+            }
+            $offset += $recordLength;
+        }
+
+        return $result;
     }
 }
