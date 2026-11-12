@@ -582,8 +582,9 @@ abstract class DNF extends SystemPackager
      */
     protected function doRemovePackages(array $packages)
     {
-        // dnf also removes the dependencies that are no longer needed
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['remove', '-y'], $packages))->withOutput(Command::OUTPUT_SHOW));
+        // dnf also removes the dependencies that are no longer needed.
+        // The packages were installed by us, but some of them may be protected (for example, cyrus-sasl requires systemd on Amazon Linux 2023)
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['remove', '-y', '--setopt=protected_packages='], $packages))->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf remove failed');
         }

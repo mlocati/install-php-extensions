@@ -551,6 +551,22 @@ EOT;
     /**
      * @return void
      */
+    public function testRemovePackages()
+    {
+        $dnf4 = new DNF\v4(self::createOS([
+            ['dnf', ['remove', '-y', '--setopt=protected_packages=', 'cyrus-sasl', 'systemd'], 0, '', Command::OUTPUT_SHOW],
+        ], false));
+        $dnf4->removePackages(['cyrus-sasl', 'systemd']);
+        $dnf5 = new DNF\v5(self::createOS([
+            ['dnf', ['remove', '-y', '--setopt=protected_packages=', 'openldap-devel'], 1, '', Command::OUTPUT_SHOW],
+        ], false));
+        $this->expectException(Exception\SystemPackager::class);
+        $dnf5->removePackages(['openldap-devel']);
+    }
+
+    /**
+     * @return void
+     */
     public function testRestorePackages()
     {
         $dnf4 = new DNF\v4(self::createOS([
