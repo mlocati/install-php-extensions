@@ -389,7 +389,8 @@ abstract class DNF extends SystemPackager
     }
 
     /**
-     * Get the packages that a transaction would install, upgrade or downgrade.
+     * Get the packages that a transaction would install.
+     * Like with APT and APK, the upgraded packages are not included: otherwise they would be removed with the volatile ones (for example, libcurl-devel upgrades libcurl-minimal, which dnf needs).
      *
      * @param string $output the output of dnf install --assumeno
      *
@@ -404,7 +405,7 @@ abstract class DNF extends SystemPackager
         foreach (Regex::split('/\r?\n/', $output) as $line) {
             if (preg_match('/^\S.*:$/D', $line)) {
                 // Like "Installing:", "Installing dependencies:", "Upgrading:", "Removing:", "Enabling module streams:"
-                $inInstallSection = preg_match('/^(?:Installing|Upgrading|Downgrading|Reinstalling)\b/', $line) === 1;
+                $inInstallSection = preg_match('/^Installing\b/', $line) === 1;
                 $pendingName = '';
                 continue;
             }
@@ -424,7 +425,7 @@ abstract class DNF extends SystemPackager
                 $pendingName = $fields[0];
                 continue;
             }
-            // dnf5 prints the packages replaced by the upgrades, like "   replacing pcre2 x86_64 0:10.47-1.fc44 ..."
+            // dnf5 prints the packages that are replaced (for example, the obsoleted ones), like "   replacing pcre2 x86_64 0:10.47-1.fc44 ..."
             if (count($fields) < 4 || $fields[0] === 'replacing' || !preg_match('/^(?:(?<epoch>\d+):)?(?<versionRelease>[^:\s]+-[^\s\-]+)$/D', $fields[2], $match)) {
                 continue;
             }

@@ -283,7 +283,6 @@ EOT;
         self::assertSame(
             [
                 'php-devel' => '8.0.30-8.el9_8.1',
-                'openssl-libs' => '1:3.5.8-2.el9_8',
                 'python3-dnf-plugin-post-transaction-actions' => '4.3.0-26.el9',
                 'make' => '1:4.3-8.el9',
             ],
@@ -320,7 +319,6 @@ EOT;
         ]));
         self::assertSame(
             [
-                'pcre2' => '10.49-1.fc44',
                 'php-cli' => '8.5.12-1.fc44',
                 'emacs-filesystem' => '1:30.2-2.fc44',
             ],
