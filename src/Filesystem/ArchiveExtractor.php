@@ -110,16 +110,24 @@ class ArchiveExtractor
                 ?: FormatExtractor\WithPharExtension::createIfAvailable($format, $this->fs, $this->logger)
                 ?: FormatExtractor\WithPowershellCommand::createIfAvailable($this->fs, $this->logger);
         }
-        if (in_array($format, [
-            ArchiveFormat::TAR,
-            ArchiveFormat::TAR_GZ,
-            ArchiveFormat::TAR_BZ,
-            ArchiveFormat::TAR_XZ,
-        ], true)) {
+        if ($format === ArchiveFormat::TAR) {
             return
                 FormatExtractor\WithTarCommand::createIfAvailable($format, $this->fs, $this->logger)
                 ?: FormatExtractor\WithPharExtension::createIfAvailable($format, $this->fs, $this->logger)
                 ?: null;
+        }
+        if (in_array($format, [
+            ArchiveFormat::TAR_GZ,
+            ArchiveFormat::TAR_BZ,
+            ArchiveFormat::TAR_XZ,
+        ], true)) {
+            $extractor = FormatExtractor\WithTarCommand::createIfAvailable($format, $this->fs, $this->logger);
+            if ($extractor !== null) {
+                return $extractor;
+            }
+            $tarExtractor = $this->getExtractorForFormat(ArchiveFormat::TAR);
+
+            return $tarExtractor === null ? null : FormatExtractor\WithStreamWrapper::createIfAvailable($format, $this->fs, $this->logger, $tarExtractor);
         }
 
         throw new Exception\InvalidArgument('Invalid argument $format');

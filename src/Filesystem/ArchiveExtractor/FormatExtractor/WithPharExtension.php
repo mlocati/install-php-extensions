@@ -8,17 +8,20 @@ use IPE\Filesystem\ArchiveExtractor\FormatExtractor;
 use IPE\Filesystem\ArchiveFormat;
 use IPE\Traits;
 
+/**
+ * It doesn't handle compressed tar archives: PharData loads them uncompressed in memory, and PharData::decompress() rejects some long names (see WithStreamWrapper).
+ */
 final class WithPharExtension extends FormatExtractor
 {
     use Traits\WarningCatcher;
 
     /**
-     * @var \IPE\Filesystem\ArchiveFormat::TAR|\IPE\Filesystem\ArchiveFormat::TAR_BZ|\IPE\Filesystem\ArchiveFormat::TAR_GZ|\IPE\Filesystem\ArchiveFormat::ZIP
+     * @var \IPE\Filesystem\ArchiveFormat::TAR|\IPE\Filesystem\ArchiveFormat::ZIP
      */
     private $format;
 
     /**
-     * @param \IPE\Filesystem\ArchiveFormat::TAR|\IPE\Filesystem\ArchiveFormat::TAR_BZ|\IPE\Filesystem\ArchiveFormat::TAR_GZ|\IPE\Filesystem\ArchiveFormat::ZIP $format
+     * @param \IPE\Filesystem\ArchiveFormat::TAR|\IPE\Filesystem\ArchiveFormat::ZIP $format
      */
     protected function __construct(Filesystem $fs, \IPE\Logger $logger, $format)
     {
@@ -41,10 +44,7 @@ final class WithPharExtension extends FormatExtractor
         if ($format === ArchiveFormat::TAR) {
             return new self($fs, $logger, $format);
         }
-        if ($format === ArchiveFormat::TAR_BZ) {
-            return array_intersect(['BZIP2', \Phar::BZ2], \Phar::getSupportedCompression()) === [] ? null : new self($fs, $logger, $format);
-        }
-        if ($format === ArchiveFormat::TAR_GZ || $format === ArchiveFormat::ZIP) {
+        if ($format === ArchiveFormat::ZIP) {
             // zip entries are usually deflated, which requires zlib
             return array_intersect(['GZ', \Phar::GZ], \Phar::getSupportedCompression()) === [] ? null : new self($fs, $logger, $format);
         }
@@ -65,31 +65,8 @@ final class WithPharExtension extends FormatExtractor
 
             return;
         }
-        if ($this->format === ArchiveFormat::TAR) {
-            $this->logger->debug('Extracting archive with Phar extension', ['archive' => $archive, 'destination' => $destinationDirectory]);
-            $this->extractPharData($this->openArchive($archive, \Phar::TAR), $destinationDirectory);
-
-            return;
-        }
-        $tmp = $this->fs->createVolatileDirectory();
-        $compressedFile = $tmp->getPath() . '/archive.' . $this->format;
-        $this->fs->copyFile($archive, $compressedFile);
-        $this->logger->debug('Decompressing archive with Phar extension', ['compressedFile' => $compressedFile]);
-        $compressedPhar = $this->openArchive($compressedFile, \Phar::TAR);
-        try {
-            list($decompressedPhar, $errorDetails) = self::wrap(
-                static function () use ($compressedPhar) {
-                    return $compressedPhar->decompress();
-                }
-            );
-        } catch (\BadMethodCallException $x) {
-            throw new Exception\IO($x->getMessage());
-        }
-        if ($errorDetails !== '') {
-            throw new Exception\IO(self::buildErrorMessage("Failed to decompress compressed tar file '{$archive}'", $errorDetails));
-        }
-        $this->logger->debug('Extracting decompressed archive with Phar extension', ['destinationDirectory' => $destinationDirectory]);
-        $this->extractPharData($decompressedPhar, $destinationDirectory);
+        $this->logger->debug('Extracting archive with Phar extension', ['archive' => $archive, 'destination' => $destinationDirectory]);
+        $this->extractPharData($this->openArchive($archive, \Phar::TAR), $destinationDirectory);
     }
 
     /**
