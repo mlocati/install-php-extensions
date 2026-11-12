@@ -44,6 +44,12 @@ final class libyaml extends SystemDependency
                 ['libyaml-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libyaml'],
+                ['libyaml-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

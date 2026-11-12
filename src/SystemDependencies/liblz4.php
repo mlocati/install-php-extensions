@@ -44,6 +44,12 @@ class liblz4 extends SystemDependency
                 ['liblz4-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['lz4-libs'],
+                ['lz4-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

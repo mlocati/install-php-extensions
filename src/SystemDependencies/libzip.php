@@ -44,6 +44,12 @@ final class libzip extends SystemDependency
                 ['libzip-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libzip'],
+                ['libzip-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

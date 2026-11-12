@@ -45,6 +45,12 @@ final class libxslt extends SystemDependency
                 ['libxslt-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libxslt'],
+                ['libxslt-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -84,6 +84,13 @@ class libcurl extends SystemDependency
                 ['libcurl4-openssl-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // dnf needs libcurl (or libcurl-minimal), so it is always installed
+            return new Packages(
+                [],
+                ['libcurl-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -54,6 +54,12 @@ class libzstd extends SystemDependency
                 ['libzstd-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libzstd'],
+                ['libzstd-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

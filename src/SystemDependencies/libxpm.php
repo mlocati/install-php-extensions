@@ -44,6 +44,12 @@ final class libxpm extends SystemDependency
                 ['libxpm-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libXpm'],
+                ['libXpm-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

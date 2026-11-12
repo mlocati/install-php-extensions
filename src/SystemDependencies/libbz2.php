@@ -44,6 +44,12 @@ final class libbz2 extends SystemDependency
                 ['libbz2-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['bzip2-libs'],
+                ['bzip2-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

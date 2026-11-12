@@ -64,6 +64,12 @@ final class libfreetype2 extends SystemDependency
                 ['libfreetype-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['freetype'],
+                ['freetype-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

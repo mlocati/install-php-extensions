@@ -44,6 +44,12 @@ final class libonig extends SystemDependency
                 ['libonig-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['oniguruma'],
+                ['oniguruma-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

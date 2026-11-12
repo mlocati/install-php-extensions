@@ -83,6 +83,12 @@ final class libldap extends SystemDependency
                 ['libldap2-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['openldap'],
+                ['openldap-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

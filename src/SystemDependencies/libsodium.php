@@ -44,6 +44,12 @@ final class libsodium extends SystemDependency
                 ['libsodium-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libsodium'],
+                ['libsodium-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

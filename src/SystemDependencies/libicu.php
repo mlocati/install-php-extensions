@@ -70,6 +70,12 @@ class libicu extends SystemDependency
                 ['libicu-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libicu'],
+                ['libicu-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -44,6 +44,12 @@ final class libxml2 extends SystemDependency
                 ['libxml2-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libxml2'],
+                ['libxml2-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

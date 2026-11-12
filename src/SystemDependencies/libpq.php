@@ -44,6 +44,12 @@ final class libpq extends SystemDependency
                 ['libpq-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libpq'],
+                ['libpq-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
