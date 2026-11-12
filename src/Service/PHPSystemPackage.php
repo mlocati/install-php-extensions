@@ -9,7 +9,7 @@ use IPE\SystemPackager;
 use IPE\SystemPackager\Package;
 
 /**
- * Detects the system package (APT, APK) that installed PHP.
+ * Detects the system package (APT, APK, DNF) that installed PHP.
  */
 final class PHPSystemPackage
 {
@@ -57,6 +57,7 @@ final class PHPSystemPackage
      *
      * @example 'php8.4-dev=8.4.27-1~deb13u1' (Debian, Ubuntu)
      * @example 'php84-dev=8.4.27-r0' (Alpine)
+     * @example 'php-devel-8.3.36-1.module_el9.8.0+330+fdc30075' (RHEL-like systems)
      */
     public function getDevelopmentPackage()
     {
@@ -125,8 +126,8 @@ final class PHPSystemPackage
         $result = [];
         $match = null;
         foreach (array_keys($this->packager->expandPackageList([$this->getInstallArgument($package)])) as $name) {
-            // Like php8.5-cli (APT) or php85-common (APK)
-            if (preg_match('/^(?<source>php\d+(?:\.\d+)?)(?:-|$)/', $name, $match) && $match['source'] !== $phpPackage->getSource()) {
+            // Like php8.5-cli (APT), php85-common (APK) or php85-php-cli (Remi SCL)
+            if (preg_match('/^(?<source>php\d+(?:\.\d+)?(?:-php)?)(?:-|$)/', $name, $match) && $match['source'] !== $phpPackage->getSource()) {
                 $result[] = $name;
             }
         }

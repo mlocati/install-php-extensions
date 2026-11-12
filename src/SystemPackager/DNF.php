@@ -131,16 +131,38 @@ abstract class DNF extends SystemPackager
         foreach ($this->queryAvailablePackages(['--whatprovides', $name]) as $package) {
             $providers[$package->getName()] = true;
         }
-        if (count($providers) !== 1) {
+        if ($providers === []) {
             return null;
         }
-        $provider = key($providers);
-        if ($provider === $name) {
+        $provider = count($providers) === 1 ? key($providers) : $this->findProviderChosenByDnf($name, array_keys($providers));
+        if ($provider === '' || $provider === $name) {
             return null;
         }
         $packages = $this->queryAvailablePackages([$version === '' ? $provider : "{$provider}-{$version}"]);
 
         return $packages === [] ? null : $packages[0];
+    }
+
+    /**
+     * For example, with the modular repository of Remi php-redis is provided by php-pecl-redis6, and by php-pecl-redis5 of EPEL (built for another PHP version).
+     *
+     * @param non-empty-string $name
+     * @param list<non-empty-string> $providers
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if dnf can't install any of them
+     */
+    private function findProviderChosenByDnf($name, array $providers)
+    {
+        try {
+            $transaction = $this->doExpandPackageList([$name]);
+        } catch (Exception\SystemPackager $x) {
+            return '';
+        }
+        $chosen = array_values(array_intersect($providers, array_keys($transaction)));
+
+        return count($chosen) === 1 ? $chosen[0] : '';
     }
 
     /**

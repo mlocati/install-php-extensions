@@ -173,6 +173,12 @@ final class PHPSystemPackageTest extends TestCase
                 ['php84-pecl-redis', 'php84-session', 'php85-common'],
                 ['php85-common'],
             ],
+            [
+                new SystemPackager\Package('php85-php-cli', '8.5.12-1.el9.remi', 'php85-php'),
+                new SystemPackager\Package('php85-php-pecl-redis6', '6.3.0-1.el9.remi', 'php85-php-pecl-redis6'),
+                ['php85-php-pecl-redis6', 'php85-php-pecl-igbinary', 'liblzf', 'php84-php-common'],
+                ['php84-php-common'],
+            ],
         ];
     }
 

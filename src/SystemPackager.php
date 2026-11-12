@@ -73,7 +73,7 @@ abstract class SystemPackager
     /**
      * Find a package in the repositories.
      *
-     * @param non-empty-string $name the name of a package, or of a virtual package provided by a single package
+     * @param non-empty-string $name the name of a package, or of a virtual package provided by a single package (with DNF, by the one that dnf would install)
      * @param string $version empty string for the version that would be installed
      *
      * @throws \IPE\Exception\InvalidArgument

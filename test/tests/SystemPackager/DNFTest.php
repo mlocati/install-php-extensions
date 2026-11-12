@@ -168,10 +168,44 @@ final class DNFTest extends TestCase
             ['dnf', self::repoquery(self::QUERYFORMAT_V5, ['--whatprovides', 'php-nope']), 0, ''],
             ['dnf', self::repoquery(self::QUERYFORMAT_V5, ['php-foo']), 0, ''],
             ['dnf', self::repoquery(self::QUERYFORMAT_V5, ['--whatprovides', 'php-foo']), 0, "php-foo-a|0|1.0|1.fc44|x86_64|php-foo-a-1.0-1.fc44.src.rpm\nphp-foo-b|0|2.0|1.fc44|x86_64|php-foo-b-2.0-1.fc44.src.rpm\n"],
+            ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'php-foo'], 1, "Failed to resolve the transaction:\nProblem: conflicting requests\n", Command::OUTPUT_CAPTURE_ALL],
         ]));
         self::assertNull($dnf->findAvailablePackage('php-nope'));
-        // Provided by more packages
+        // Provided by more packages, and dnf can't install any of them
         self::assertNull($dnf->findAvailablePackage('php-foo'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testVirtualPackageWithMoreProviders()
+    {
+        $transaction = <<<'EOT'
+Dependencies resolved.
+================================================================================
+ Package             Arch    Version                            Repository   Size
+================================================================================
+Installing:
+ php-pecl-redis6     x86_64  6.3.0-1.module_php.8.5.el9.remi    remi-modular 275 k
+Installing dependencies:
+ liblzf              x86_64  3.6-22.el9                         epel          27 k
+
+Transaction Summary
+================================================================================
+Install  2 Packages
+
+Operation aborted.
+EOT;
+        $dnf = new DNF\v4(self::createOS([
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['php-redis']), 0, ''],
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--whatprovides', 'php-redis']), 0, "php-pecl-redis5|0|5.3.7|1.el9|x86_64|php-pecl-redis5-5.3.7-1.el9.src.rpm\nphp-pecl-redis6|0|6.3.0|1.module_php.8.5.el9.remi|x86_64|php-pecl-redis6-6.3.0-1.module_php.8.5.el9.remi.src.rpm\n"],
+            ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'php-redis'], 1, $transaction, Command::OUTPUT_CAPTURE_ALL],
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['php-pecl-redis6']), 0, "php-pecl-redis6|0|6.3.0|1.module_php.8.5.el9.remi|x86_64|php-pecl-redis6-6.3.0-1.module_php.8.5.el9.remi.src.rpm\n"],
+        ]));
+        $package = $dnf->findAvailablePackage('php-redis');
+        self::assertNotNull($package);
+        self::assertSame('php-pecl-redis6', $package->getName());
+        self::assertSame('6.3.0-1.module_php.8.5.el9.remi', $package->getVersion());
     }
 
     /**
