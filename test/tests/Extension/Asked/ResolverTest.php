@@ -1102,6 +1102,7 @@ final class ResolverTest extends TestCase
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
+        $php->shouldReceive('getAPIVersion')->andReturn(20240924);
         $os = M::mock(OS\Debian::class);
         $packager = new FakePackager($os, [], $expansions);
         $packager->owningPackage = $phpPackage;

@@ -73,6 +73,7 @@ final class PHPSystemPackageTest extends TestCase
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
+        $php->shouldReceive('getAPIVersion')->andReturn(20240924);
         $os = M::mock(OS\Posix::class);
         $packager = new FakePackager($os, [], $expansions);
         $packager->owningPackage = $phpPackage;
@@ -147,6 +148,48 @@ final class PHPSystemPackageTest extends TestCase
         self::assertNotNull($package);
         self::assertSame('6.2.0', $subject->getUpstreamVersion($package));
         self::assertSame('php8.4-redis', $subject->getInstallArgument($package));
+    }
+
+    /**
+     * @return array<array{int|null, bool}> the PHP API version the package is built for, and whether it's used
+     */
+    public static function provideExtensionPackageForPHPAPI()
+    {
+        return [
+            [null, true],
+            [20240924, true],
+            [20200930, false],
+        ];
+    }
+
+    /**
+     * @dataProvider provideExtensionPackageForPHPAPI
+     *
+     * @param int|null $apiVersion
+     * @param bool $used
+     *
+     * @return void
+     */
+    public function testExtensionPackageForPHPAPI($apiVersion, $used)
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
+        $php->shouldReceive('getAPIVersion')->andReturn(20240924);
+        $os = M::mock(OS\Posix::class);
+        $packager = new FakePackager($os, [], []);
+        $packager->owningPackage = new SystemPackager\Package('php-cli', '8.4.27-1.el9', 'php');
+        $packager->available = ['php-redis' => [new SystemPackager\Package('php-redis', '6.2.0-1.el9', 'php-pecl-redis6')]];
+        if ($apiVersion !== null) {
+            $packager->apiVersions = ['php-redis' => $apiVersion];
+        }
+        $os->shouldReceive('getSystemPackager')->andReturn($packager);
+        $package = (new PHPSystemPackage($php, $os))->findExtensionPackage(new Extensions\redis(M::mock(PHPInfo::class), M::mock(OS::class)));
+        if ($used) {
+            self::assertNotNull($package);
+            self::assertSame('php-redis', $package->getName());
+        } else {
+            self::assertNull($package);
+        }
     }
 
     /**

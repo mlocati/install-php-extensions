@@ -7,6 +7,7 @@ use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\OS;
 use IPE\SystemPackager\DNF;
+use IPE\SystemPackager\Package;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -149,6 +150,39 @@ final class DNFTest extends TestCase
         self::assertNotNull($package);
         self::assertSame('libzip-devel', $package->getName());
         self::assertSame('libzip', $package->getSource());
+    }
+
+    /**
+     * @return array<array{int, string, bool|null}> the exit code of dnf repoquery --requires, its output, and the expected result
+     */
+    public static function provideBuiltForPHPAPICases()
+    {
+        $requires = "libc.so.6(GLIBC_2.34)(64bit)\nlibsodium.so.23()(64bit)\nphp(api) = %s-64\nphp(zend-abi) = %s-64\nrtld(GNU_HASH)\n";
+
+        return [
+            [0, sprintf($requires, '20230831', '20230831'), true],
+            [0, sprintf($requires, '20200930', '20200930'), false],
+            [0, "php85-php(api) = 20250925-64\nphp85-php(zend-abi) = 20250925-64\n", false],
+            [0, "libc.so.6(GLIBC_2.34)(64bit)\n", null],
+            [1, '', null],
+        ];
+    }
+
+    /**
+     * @dataProvider provideBuiltForPHPAPICases
+     *
+     * @param int $rc
+     * @param string $output
+     * @param bool|null $expected
+     *
+     * @return void
+     */
+    public function testBuiltForPHPAPI($rc, $output, $expected)
+    {
+        $dnf = new DNF\v4(self::createOS([
+            ['dnf', ['repoquery', '--quiet', '--requires', 'php-sodium-8.0.30-3.el9'], $rc, $output],
+        ]));
+        self::assertSame($expected, $dnf->isBuiltForPHPAPI(new Package('php-sodium', '8.0.30-3.el9', 'php-sodium'), 20230831));
     }
 
     /**

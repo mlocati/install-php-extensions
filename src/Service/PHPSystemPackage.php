@@ -100,6 +100,9 @@ final class PHPSystemPackage
                     ? $package
                     : $this->packager->findAvailablePackage($package->getName(), $phpPackage->getVersion());
             }
+            if ($this->packager->isBuiltForPHPAPI($package, $this->php->getAPIVersion()) === false) {
+                continue;
+            }
 
             return $package;
         }

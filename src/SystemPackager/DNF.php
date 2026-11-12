@@ -152,6 +152,28 @@ abstract class DNF extends SystemPackager
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::doIsBuiltForPHPAPI()
+     */
+    protected function doIsBuiltForPHPAPI(Package $package, $apiVersion)
+    {
+        list($rc, $output) = $this->os->getFilesystem()->run($this->createDnfCommand(['repoquery', '--quiet', '--requires', "{$package->getName()}-{$package->getVersion()}"])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        $matches = null;
+        // Like "php(api) = 20230831-64", or "php85-php(api) = 20250925-64" for the Software Collections of Remi
+        if ($rc !== 0 || !preg_match_all('/^(?:\S+-)?php\(api\)\s*=\s*(?<api>\d+)/m', $output, $matches)) {
+            return null;
+        }
+        foreach ($matches['api'] as $api) {
+            if ((int) $api !== $apiVersion) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * For example, with the modular repository of Remi php-redis is provided by php-pecl-redis6, and by php-pecl-redis5 of EPEL (built for another PHP version).
      *
      * @param non-empty-string $name
