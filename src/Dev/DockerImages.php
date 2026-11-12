@@ -47,6 +47,14 @@ final class DockerImages
             'ubuntu24.04-apt',
             'ubuntu24.04-sury',
             'ubuntu26.04-apt',
+            'almalinux8-dnf',
+            'almalinux9-dnf',
+            'almalinux10-dnf',
+            'almalinux9-remi',
+            'almalinux10-remi',
+            'amazonlinux2023-dnf',
+            'fedora44-dnf',
+            'fedora45-dnf',
         ];
     }
 
@@ -145,6 +153,36 @@ final class DockerImages
                 $result[] = self::createSystemImage($os, $phpVersion, $baseImage, self::getAPTCommands($surySetup, $phpVersion));
             }
         }
+        // The packages that PHP extensions require are often in EPEL and CRB, which are disabled by default
+        $enterpriseLinuxSetup = ['dnf install -y epel-release', 'crb enable'];
+        $dnfImages = [
+            // PHP version => setup commands (the default module stream if empty) and package of PHP CLI
+            'almalinux8-dnf' => ['almalinux:8', ['8.2' => [['dnf module enable -y php:8.2'], 'php-cli']]],
+            'almalinux9-dnf' => ['almalinux:9', ['8.0' => [[], 'php-cli'], '8.3' => [['dnf module enable -y php:8.3'], 'php-cli']]],
+            'almalinux10-dnf' => ['almalinux:10', ['8.3' => [[], 'php-cli'], '8.4' => [[], 'php8.4-cli']]],
+        ];
+        foreach ($dnfImages as $os => $data) {
+            list($baseImage, $versions) = $data;
+            foreach ($versions as $phpVersion => $versionData) {
+                list($setup, $package) = $versionData;
+                $result[] = self::createSystemImage($os, $phpVersion, $baseImage, self::getDNFCommands(array_merge($enterpriseLinuxSetup, $setup), $package));
+            }
+        }
+        // See https://rpms.remirepo.net/wizard/
+        foreach (['almalinux9-remi' => 9, 'almalinux10-remi' => 10] as $os => $elVersion) {
+            $remiSetup = array_merge($enterpriseLinuxSetup, ["dnf install -y https://rpms.remirepo.net/enterprise/remi-release-{$elVersion}.rpm"]);
+            foreach (['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'] as $phpVersion) {
+                // Software Collections, like php85-php-cli, installed in /opt/remi/php85
+                $collection = 'php' . str_replace('.', '', $phpVersion);
+                $result[] = self::createSystemImage($os, $phpVersion, "almalinux:{$elVersion}", self::getDNFCommands($remiSetup, "{$collection}-php-cli"), $collection);
+            }
+        }
+        foreach (['8.1', '8.5'] as $phpVersion) {
+            $result[] = self::createSystemImage('amazonlinux2023-dnf', $phpVersion, 'amazonlinux:2023', self::getDNFCommands([], "php{$phpVersion}-cli"));
+        }
+        foreach (['fedora44-dnf' => 'fedora:44', 'fedora45-dnf' => 'fedora:45'] as $os => $baseImage) {
+            $result[] = self::createSystemImage($os, '8.5', $baseImage, self::getDNFCommands([], 'php-cli'));
+        }
 
         return $result;
     }
@@ -178,6 +216,24 @@ final class DockerImages
                 "DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends php{$phpVersion}-cli",
                 // Like most Dockerfiles: IPE must refresh the package lists
                 'rm -rf /var/lib/apt/lists/*',
+            ]
+        );
+    }
+
+    /**
+     * @param list<non-empty-string> $setup the commands that configure the repositories
+     * @param non-empty-string $package the package of PHP CLI
+     *
+     * @return list<non-empty-string>
+     */
+    private static function getDNFCommands(array $setup, $package)
+    {
+        return array_merge(
+            $setup,
+            [
+                "dnf install -y --setopt=install_weak_deps=False {$package}",
+                // Like most Dockerfiles: IPE must refresh the package lists
+                'dnf clean all',
             ]
         );
     }

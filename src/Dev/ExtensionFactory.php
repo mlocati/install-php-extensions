@@ -48,10 +48,12 @@ final class ExtensionFactory
     /**
      * Create an operating system that only provides its system packager (to inspect the names of the system packages).
      *
-     * @param class-string<\IPE\OS\Debian>|class-string<\IPE\OS\Alpine> $osClass
+     * @param class-string<\IPE\OS\Debian>|class-string<\IPE\OS\Alpine>|class-string<\IPE\OS\Posix\RHELLike> $osClass
      * @param class-string<\IPE\SystemPackager> $packagerClass
      *
-     * @return \IPE\OS\Debian|\IPE\OS\Alpine
+     * @throws \RuntimeException
+     *
+     * @return \IPE\OS\Debian|\IPE\OS\Alpine|\IPE\OS\Posix\RHELLike
      */
     public static function createOSWithSystemPackager($osClass, $packagerClass)
     {
@@ -59,7 +61,15 @@ final class ExtensionFactory
         $os = $osReflection->newInstanceWithoutConstructor();
         $packager = (new \ReflectionClass($packagerClass))->newInstanceWithoutConstructor();
         self::setProperty(new \ReflectionProperty(SystemPackager::class, 'os'), $packager, $os);
-        self::setProperty($osReflection->getProperty('systemPackager'), $os, $packager);
+        // The property is private in the parent class of the RHEL-like systems
+        $declaringClass = $osReflection;
+        while (!$declaringClass->hasProperty('systemPackager')) {
+            $declaringClass = $declaringClass->getParentClass();
+            if ($declaringClass === false) {
+                throw new \RuntimeException("{$osClass} doesn't have a system packager");
+            }
+        }
+        self::setProperty($declaringClass->getProperty('systemPackager'), $os, $packager);
 
         return $os;
     }
