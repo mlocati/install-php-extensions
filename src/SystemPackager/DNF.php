@@ -63,6 +63,7 @@ abstract class DNF extends SystemPackager
     {
         return [
             'autoconf',
+            'diffutils',
             'file',
             'gcc',
             'gcc-c++',
