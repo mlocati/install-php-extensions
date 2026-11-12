@@ -5,6 +5,7 @@ namespace IPE\SystemPackager;
 use IPE\Exception;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
+use IPE\OS;
 use IPE\Service\Regex;
 use IPE\SystemPackager;
 
@@ -13,6 +14,11 @@ use IPE\SystemPackager;
  */
 abstract class DNF extends SystemPackager
 {
+    /**
+     * @var non-empty-string
+     */
+    const URL_OPTIONAL_REPOSITORIES = 'https://github.com/mlocati/install-php-extensions#optional-repositories-on-enterprise-linux';
+
     /**
      * Get the class that handles the dnf command available on a system.
      *
@@ -158,6 +164,10 @@ abstract class DNF extends SystemPackager
             if (!preg_match('/^(?<name>[^|\s]+)\|(?<epoch>\d*)\|(?<version>[^|\s]+)\|(?<release>[^|\s]+)\|(?<arch>[^|\s]+)\|(?<sourcerpm>[^|\s]+)$/D', trim($line), $match)) {
                 continue;
             }
+            // The repositories of Oracle Linux also provide the source packages
+            if (in_array($match['arch'], ['src', 'nosrc'], true)) {
+                continue;
+            }
             $package = self::createPackage($match['name'], $match['epoch'], $match['version'], $match['release'], $match['sourcerpm']);
             if (in_array($match['arch'], [$architecture, 'noarch'], true)) {
                 $preferred[] = $package;
@@ -283,10 +293,77 @@ abstract class DNF extends SystemPackager
         list($rc, $output) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['install', '--assumeno', '--setopt=install_weak_deps=False'], $packages)));
         // --assumeno makes dnf fail with "Operation aborted"
         if ($rc !== 0 && !preg_match('/^Operation aborted\b/m', $output)) {
-            throw new Exception\SystemPackager("dnf failed to list the packages:\n{$output}");
+            throw new Exception\SystemPackager(implode("\n", array_merge(['dnf failed to list the packages:', rtrim($output)], $this->explainMissingPackages($output))));
         }
 
         return self::parseTransactionTable($output);
+    }
+
+    /**
+     * Explain where the packages that dnf can't find may be: IPE doesn't enable the optional repositories of Enterprise Linux.
+     *
+     * @param string $output the output of a failed dnf command
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return list<non-empty-string>
+     */
+    private function explainMissingPackages($output)
+    {
+        $matches = null;
+        if (!$this->os instanceof OS\Posix\RHELLike\EnterpriseLinux || !preg_match_all('/^No match for argument: (?<name>\S+)[ \t]*$/m', $output, $matches)) {
+            return [];
+        }
+        $missing = array_values(array_unique($matches['name']));
+        $result = [];
+        foreach ($this->listRepositories(false) as $repository) {
+            if (!preg_match('/^(?:crb|powertools)$|codeready/i', $repository) || preg_match('/debug|source/i', $repository)) {
+                continue;
+            }
+            $found = [];
+            foreach ($missing as $index => $name) {
+                // The missing arguments may be capabilities, like pkgconfig(oniguruma)
+                if ($this->queryAvailablePackages(["--repo={$repository}", '--whatprovides', $name]) !== []) {
+                    $found[] = $name;
+                    unset($missing[$index]);
+                }
+            }
+            if ($found !== []) {
+                $result[] = "The disabled repository {$repository} provides: " . implode(' ', $found);
+            }
+        }
+        if ($missing !== [] && preg_grep('/epel/i', $this->listRepositories(true)) === []) {
+            $result[] = 'EPEL is not enabled, and it may provide: ' . implode(' ', $missing);
+        }
+        if ($result !== []) {
+            $result[] = 'See ' . self::URL_OPTIONAL_REPOSITORIES;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param bool $enabled
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return list<non-empty-string> the IDs of the enabled or disabled repositories
+     */
+    private function listRepositories($enabled)
+    {
+        list($rc, $output) = $this->os->getFilesystem()->run($this->createDnfCommand(['repolist', $enabled ? '--enabled' : '--disabled'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0) {
+            return [];
+        }
+        $result = [];
+        $match = null;
+        foreach (Regex::split('/[\r\n]+/', $output, -1, true) as $line) {
+            if (!preg_match('/^repo id\s/', $line) && preg_match('/^(?<id>\S+)/', $line, $match)) {
+                $result[] = $match['id'];
+            }
+        }
+
+        return $result;
     }
 
     /**

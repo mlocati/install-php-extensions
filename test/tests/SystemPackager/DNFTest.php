@@ -2,6 +2,7 @@
 
 namespace IPE\Test\SystemPackager;
 
+use IPE\Exception;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\OS;
@@ -24,10 +25,11 @@ final class DNFTest extends TestCase
     /**
      * @param list<array{non-empty-string, list<string>, int, string, 4?: string}> $runs the command, its arguments, its exit code, its output, and how the output is handled (default: captured stdout)
      * @param bool $refresh
+     * @param (\IPE\OS&\Mockery\MockInterface)|null $os
      *
      * @return \IPE\OS&\Mockery\MockInterface
      */
-    private static function createOS(array $runs, $refresh = true)
+    private static function createOS(array $runs, $refresh = true, $os = null)
     {
         $fs = M::mock(Filesystem::class);
         if ($refresh) {
@@ -41,7 +43,9 @@ final class DNFTest extends TestCase
             }
             $fs->shouldReceive('run')->once()->with(self::isCommand($command))->andReturn([$run[2], $run[3]]);
         }
-        $os = M::mock(OS::class);
+        if ($os === null) {
+            $os = M::mock(OS::class);
+        }
         $os->shouldReceive('getFilesystem')->andReturn($fs);
         $os->shouldReceive('getRawMachineArchitecture')->andReturn('x86_64');
 
@@ -171,6 +175,18 @@ final class DNFTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testSourcePackagesAreIgnored()
+    {
+        $dnf = new DNF\v4(self::createOS([
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['re2c']), 0, "re2c|0|3.1|3.el10_0|src|re2c-3.1-3.el10_0.src.rpm\n"],
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--whatprovides', 're2c']), 0, "re2c|0|3.1|3.el10_0|src|re2c-3.1-3.el10_0.src.rpm\n"],
+        ]));
+        self::assertNull($dnf->findAvailablePackage('re2c'));
+    }
+
+    /**
      * @return list<array{non-empty-string, string}>
      */
     public static function provideUpstreamVersionCases()
@@ -289,6 +305,50 @@ EOT;
         ]));
         $this->expectException('IPE\Exception\SystemPackager');
         $dnf->expandPackageList(['php-nope']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testExplainMissingPackages()
+    {
+        $packages = ['re2c', 'pkgconfig(oniguruma)', 'libsodium-devel'];
+        $dnf = new DNF\v4(self::createOS([
+            ['dnf', array_merge(['install', '--assumeno', '--setopt=install_weak_deps=False'], $packages), 1, "No match for argument: re2c\nNo match for argument: pkgconfig(oniguruma)\nNo match for argument: libsodium-devel\nError: Unable to find a match: re2c pkgconfig(oniguruma) libsodium-devel\n", Command::OUTPUT_CAPTURE_ALL],
+            ['dnf', ['repolist', '--disabled'], 0, "repo id                    repo name\ncrb                        Rocky Linux 9 - CRB\ncrb-debuginfo              Rocky Linux 9 - CRB - Debug\ndevel                      Rocky Linux 9 - Devel WARNING! FOR BUILDROOT ONLY DO NOT LEAVE ENABLED\n"],
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--repo=crb', '--whatprovides', 're2c']), 0, ''],
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--repo=crb', '--whatprovides', 'pkgconfig(oniguruma)']), 0, "oniguruma-devel|0|6.9.6|1.el9.6|x86_64|oniguruma-6.9.6-1.el9.6.src.rpm\n"],
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--repo=crb', '--whatprovides', 'libsodium-devel']), 0, ''],
+            ['dnf', ['repolist', '--enabled'], 0, "repo id                    repo name\nappstream                  Rocky Linux 9 - AppStream\nbaseos                     Rocky Linux 9 - BaseOS\nextras                     Rocky Linux 9 - Extras\n"],
+        ], true, M::mock(OS\RockyLinux::class)));
+        try {
+            $dnf->expandPackageList($packages);
+            self::fail('The packages should be missing');
+        } catch (Exception\SystemPackager $x) {
+            self::assertStringContainsString("\nThe disabled repository crb provides: pkgconfig(oniguruma)\n", $x->getMessage());
+            self::assertStringContainsString("\nEPEL is not enabled, and it may provide: re2c libsodium-devel\n", $x->getMessage());
+            self::assertStringContainsString("\nSee " . DNF::URL_OPTIONAL_REPOSITORIES, $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testMissingPackagesWithEPEL()
+    {
+        $dnf = new DNF\v4(self::createOS([
+            ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'php-nope'], 1, "No match for argument: php-nope\nError: Unable to find a match: php-nope\n", Command::OUTPUT_CAPTURE_ALL],
+            ['dnf', ['repolist', '--disabled'], 0, "repo id                    repo name\nol9_codeready_builder      Oracle Linux 9 CodeReady Builder (x86_64) - (Unsupported)\n"],
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--repo=ol9_codeready_builder', '--whatprovides', 'php-nope']), 0, ''],
+            ['dnf', ['repolist', '--enabled'], 0, "repo id                    repo name\nol9_appstream              Oracle Linux 9 Application Stream Packages (x86_64)\nol9_developer_EPEL         Oracle Linux 9 EPEL Packages for Development (x86_64)\n"],
+        ], true, M::mock(OS\OracleLinux::class)));
+        try {
+            $dnf->expandPackageList(['php-nope']);
+            self::fail('The package should be missing');
+        } catch (Exception\SystemPackager $x) {
+            self::assertStringNotContainsString('EPEL is not enabled', $x->getMessage());
+            self::assertStringNotContainsString(DNF::URL_OPTIONAL_REPOSITORIES, $x->getMessage());
+        }
     }
 
     /**
