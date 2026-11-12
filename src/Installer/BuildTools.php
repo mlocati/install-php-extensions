@@ -162,6 +162,14 @@ final class BuildTools
         if (preg_match('/--with-libdir=(?<libdir>[^\s\'"]+)/', $this->php->getConfigureCommand(), $matches)) {
             return $matches['libdir'];
         }
+        // The PHP info of some distributions (like AlmaLinux) doesn't include the configure command
+        $phpConfig = $this->getPhpConfig();
+        if ($phpConfig !== '') {
+            list($rc, $output) = $this->fs->run(Command::create($phpConfig, ['--configure-options']));
+            if ($rc === 0 && preg_match('/--with-libdir=(?<libdir>[^\s\'"]+)/', $output, $matches)) {
+                return $matches['libdir'];
+            }
+        }
         // Debian stores the libraries in a multiarch directory: the configure scripts of PHP up to 8.0 often don't look there (for example, the one of pdo_dblib), and both the Docker images of PHP 5.5 and the system PHP packages don't specify it
         if ($this->php->getMajorMinorVersion() > 800 || $this->fs->resolveCommand('gcc') === '') {
             return '';
