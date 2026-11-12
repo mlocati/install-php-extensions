@@ -99,13 +99,14 @@ class Local implements Filesystem
                 }
             }
         } else {
-            list($rc, $output) = $this->run(Command::create('which', [$name]));
+            list($rc, $output) = $this->run(Command::create('command', ['-v', $name]));
         }
 
         if ($rc === 0) {
             foreach (Regex::split('/[\r\n]+/', $output, -1, true) as $resolved) {
                 $resolved = $this->getNativeSystemPath($resolved);
-                if ($this->exists($resolved)) {
+                // command -v prints just the name of the shell builtins
+                if (($this->isWindows() || $resolved[0] === '/') && $this->exists($resolved)) {
                     return $resolved;
                 }
             }
