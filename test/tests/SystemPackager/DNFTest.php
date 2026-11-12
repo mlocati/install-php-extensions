@@ -64,6 +64,16 @@ final class DNFTest extends TestCase
     }
 
     /**
+     * @param list<non-empty-string> $names
+     *
+     * @return array{non-empty-string, list<string>, int, string}
+     */
+    private static function installedPackages(array $names)
+    {
+        return ['rpm', ['--query', '--all', '--queryformat=%{NAME}\n'], 0, $names === [] ? '' : (implode("\n", $names) . "\n")];
+    }
+
+    /**
      * @return list<array{string, class-string<\IPE\SystemPackager\DNF>}>
      */
     public static function provideImplementationClassCases()
@@ -168,6 +178,7 @@ final class DNFTest extends TestCase
             ['dnf', self::repoquery(self::QUERYFORMAT_V5, ['--whatprovides', 'php-nope']), 0, ''],
             ['dnf', self::repoquery(self::QUERYFORMAT_V5, ['php-foo']), 0, ''],
             ['dnf', self::repoquery(self::QUERYFORMAT_V5, ['--whatprovides', 'php-foo']), 0, "php-foo-a|0|1.0|1.fc44|x86_64|php-foo-a-1.0-1.fc44.src.rpm\nphp-foo-b|0|2.0|1.fc44|x86_64|php-foo-b-2.0-1.fc44.src.rpm\n"],
+            self::installedPackages([]),
             ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'php-foo'], 1, "Failed to resolve the transaction:\nProblem: conflicting requests\n", Command::OUTPUT_CAPTURE_ALL],
         ]));
         self::assertNull($dnf->findAvailablePackage('php-nope'));
@@ -199,6 +210,7 @@ EOT;
         $dnf = new DNF\v4(self::createOS([
             ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['php-redis']), 0, ''],
             ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--whatprovides', 'php-redis']), 0, "php-pecl-redis5|0|5.3.7|1.el9|x86_64|php-pecl-redis5-5.3.7-1.el9.src.rpm\nphp-pecl-redis6|0|6.3.0|1.module_php.8.5.el9.remi|x86_64|php-pecl-redis6-6.3.0-1.module_php.8.5.el9.remi.src.rpm\n"],
+            self::installedPackages([]),
             ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'php-redis'], 1, $transaction, Command::OUTPUT_CAPTURE_ALL],
             ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['php-pecl-redis6']), 0, "php-pecl-redis6|0|6.3.0|1.module_php.8.5.el9.remi|x86_64|php-pecl-redis6-6.3.0-1.module_php.8.5.el9.remi.src.rpm\n"],
         ]));
@@ -278,6 +290,7 @@ Total download size: 4 M
 Operation aborted.
 EOT;
         $dnf = new DNF\v4(self::createOS([
+            self::installedPackages([]),
             ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'php-devel', 'make-1:4.3-8.el9'], 1, $output, Command::OUTPUT_CAPTURE_ALL],
         ]));
         self::assertSame(
@@ -315,6 +328,7 @@ Transaction Summary:
 Operation aborted by the user.
 EOT;
         $dnf = new DNF\v5(self::createOS([
+            self::installedPackages([]),
             ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'php-cli', 'pkgconfig(libzip)'], 1, $output, Command::OUTPUT_CAPTURE_ALL],
         ]));
         self::assertSame(
@@ -333,6 +347,7 @@ EOT;
     {
         $output = "Updating and loading repositories:\nRepositories loaded.\nFailed to resolve the transaction:\nNo match for argument: php-nope\n";
         $dnf = new DNF\v5(self::createOS([
+            self::installedPackages([]),
             ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'php-nope'], 1, $output, Command::OUTPUT_CAPTURE_ALL],
         ]));
         $this->expectException('IPE\Exception\SystemPackager');
@@ -342,10 +357,81 @@ EOT;
     /**
      * @return void
      */
+    public function testKeepInstalledPackages()
+    {
+        $output = <<<'EOT'
+Dependencies resolved.
+
+ Problem: package libcurl-devel-7.76.1-40.el9_8.9.x86_64 from appstream requires libcurl(x86-64) = 7.76.1-40.el9_8.9, but none of the providers can be installed
+  - cannot install the best candidate for the job
+================================================================================
+ Package                 Arch        Version                  Repository   Size
+================================================================================
+Installing:
+ libcurl-devel           x86_64      7.76.1-40.el9_8.8        appstream   849 k
+Skipping packages with conflicts:
+(add '--best --allowerasing' to command line to force their upgrade):
+ libcurl                 x86_64      7.76.1-40.el9_8.9        baseos      284 k
+
+Transaction Summary
+================================================================================
+Install  1 Package
+Skip     1 Package
+
+Operation aborted.
+EOT;
+        $keepInstalled = ['--setopt=best=False', '--setopt=*.excludepkgs=glibc,libcurl-minimal'];
+        $dnf = new DNF\v4(self::createOS([
+            self::installedPackages(['glibc', 'libcurl-minimal']),
+            ['dnf', array_merge(['install', '--assumeno', '--setopt=install_weak_deps=False'], $keepInstalled, ['libcurl-devel']), 1, $output, Command::OUTPUT_CAPTURE_ALL],
+            ['dnf', array_merge(['install', '-y', '--setopt=install_weak_deps=False'], $keepInstalled, ['libcurl-devel-7.76.1-40.el9_8.8']), 0, '', Command::OUTPUT_SHOW],
+        ]));
+        self::assertSame(['libcurl-devel' => '7.76.1-40.el9_8.8'], $dnf->expandPackageList(['libcurl-devel']));
+        $dnf->installPackages(['libcurl-devel-7.76.1-40.el9_8.8']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testExplainRequiredUpgrades()
+    {
+        $upgrade = <<<'EOT'
+Package                      Arch   Version              Repository                            Size
+Upgrading:
+ openldap                    x86_64 0:2.6.16-1.fc44      updates                          671.9 KiB
+   replacing openldap        x86_64 0:2.6.15-1.fc44      32d350776ed24760a8ccf89bc94ae52c 671.3 KiB
+Installing:
+ openldap-devel              x86_64 0:2.6.16-1.fc44      updates                            3.4 MiB
+
+Transaction Summary:
+ Installing:         1 package
+ Upgrading:          1 package
+ Replacing:          1 package
+
+Operation aborted by the user.
+EOT;
+        $dnf = new DNF\v5(self::createOS([
+            self::installedPackages(['openldap']),
+            ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', '--setopt=best=False', '--setopt=*.excludepkgs=openldap', 'openldap-devel'], 1, "Failed to resolve the transaction:\nProblem: conflicting requests\n", Command::OUTPUT_CAPTURE_ALL],
+            ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'openldap-devel'], 1, $upgrade, Command::OUTPUT_CAPTURE_ALL],
+        ]));
+        try {
+            $dnf->expandPackageList(['openldap-devel']);
+            self::fail('The installed openldap package should block the transaction');
+        } catch (Exception\SystemPackager $x) {
+            self::assertStringContainsString("\nThese installed packages should be upgraded: openldap\n", $x->getMessage());
+            self::assertStringContainsString('upgrade them first', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
     public function testExplainMissingPackages()
     {
         $packages = ['re2c', 'pkgconfig(oniguruma)', 'libsodium-devel'];
         $dnf = new DNF\v4(self::createOS([
+            self::installedPackages([]),
             ['dnf', array_merge(['install', '--assumeno', '--setopt=install_weak_deps=False'], $packages), 1, "No match for argument: re2c\nNo match for argument: pkgconfig(oniguruma)\nNo match for argument: libsodium-devel\nError: Unable to find a match: re2c pkgconfig(oniguruma) libsodium-devel\n", Command::OUTPUT_CAPTURE_ALL],
             ['dnf', ['repolist', '--disabled'], 0, "repo id                    repo name\ncrb                        Rocky Linux 9 - CRB\ncrb-debuginfo              Rocky Linux 9 - CRB - Debug\ndevel                      Rocky Linux 9 - Devel WARNING! FOR BUILDROOT ONLY DO NOT LEAVE ENABLED\n"],
             ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--repo=crb', '--whatprovides', 're2c']), 0, ''],
@@ -369,6 +455,7 @@ EOT;
     public function testMissingPackagesWithEPEL()
     {
         $dnf = new DNF\v4(self::createOS([
+            self::installedPackages([]),
             ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'php-nope'], 1, "No match for argument: php-nope\nError: Unable to find a match: php-nope\n", Command::OUTPUT_CAPTURE_ALL],
             ['dnf', ['repolist', '--disabled'], 0, "repo id                    repo name\nol9_codeready_builder      Oracle Linux 9 CodeReady Builder (x86_64) - (Unsupported)\n"],
             ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--repo=ol9_codeready_builder', '--whatprovides', 'php-nope']), 0, ''],
@@ -432,13 +519,22 @@ EOT;
     public function testRestorePackages()
     {
         $dnf4 = new DNF\v4(self::createOS([
-            ['dnf', ['install', '-y', '--setopt=install_weak_deps=False', '--setopt=strict=False', 'gpg-pubkey', 'libedit'], 0, '', Command::OUTPUT_SHOW],
+            // The installed packages, then the ones installed before the first transaction
+            self::installedPackages(['glibc']),
+            self::installedPackages(['glibc', 'gpg-pubkey', 'libedit']),
+            ['dnf', ['install', '-y', '--setopt=install_weak_deps=False', '--setopt=strict=False', '--setopt=best=False', '--setopt=*.excludepkgs=glibc', 'gpg-pubkey', 'libedit'], 0, '', Command::OUTPUT_SHOW],
         ], false));
-        $dnf4->restorePackages(['gpg-pubkey', 'libedit']);
+        $dnf4->restorePackages(['glibc', 'gpg-pubkey', 'libedit']);
         $dnf5 = new DNF\v5(self::createOS([
+            self::installedPackages([]),
+            self::installedPackages(['gpg-pubkey', 'libedit']),
             ['dnf', ['install', '-y', '--setopt=install_weak_deps=False', '--skip-unavailable', 'gpg-pubkey', 'libedit'], 0, '', Command::OUTPUT_SHOW],
         ], false));
         $dnf5->restorePackages(['gpg-pubkey', 'libedit']);
+        $dnf5 = new DNF\v5(self::createOS([
+            self::installedPackages(['libedit']),
+        ], false));
+        $dnf5->restorePackages(['libedit']);
     }
 
     /**

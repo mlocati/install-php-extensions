@@ -181,7 +181,8 @@ final class DockerImages
             $result[] = self::createSystemImage('amazonlinux2023-dnf', $phpVersion, 'amazonlinux:2023', self::getDNFCommands([], "php{$phpVersion}-cli"));
         }
         foreach (['fedora44-dnf' => 'fedora:44', 'fedora45-dnf' => 'fedora:45'] as $os => $baseImage) {
-            $result[] = self::createSystemImage($os, '8.5', $baseImage, self::getDNFCommands([], 'php-cli'));
+            // IPE doesn't upgrade the installed packages, and Fedora keeps only the released and the latest versions of the -devel ones
+            $result[] = self::createSystemImage($os, '8.5', $baseImage, self::getDNFCommands(['dnf upgrade -y'], 'php-cli'));
         }
 
         return $result;

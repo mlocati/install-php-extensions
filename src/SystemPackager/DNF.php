@@ -20,6 +20,13 @@ abstract class DNF extends SystemPackager
     const URL_OPTIONAL_REPOSITORIES = 'https://github.com/mlocati/install-php-extensions#optional-repositories-on-enterprise-linux';
 
     /**
+     * The names of the packages installed before the first transaction (NULL if not yet read).
+     *
+     * @var list<non-empty-string>|null
+     */
+    private $initiallyInstalled;
+
+    /**
      * Get the class that handles the dnf command available on a system.
      *
      * @throws \IPE\Exception\IO
@@ -150,17 +157,17 @@ abstract class DNF extends SystemPackager
      * @param list<non-empty-string> $providers
      *
      * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
      *
      * @return string empty string if dnf can't install any of them
      */
     private function findProviderChosenByDnf($name, array $providers)
     {
-        try {
-            $transaction = $this->doExpandPackageList([$name]);
-        } catch (Exception\SystemPackager $x) {
+        list($ok, $output) = $this->simulateInstall([$name], true);
+        if (!$ok) {
             return '';
         }
-        $chosen = array_values(array_intersect($providers, array_keys($transaction)));
+        $chosen = array_values(array_intersect($providers, array_keys(self::parseTransactionTable($output))));
 
         return count($chosen) === 1 ? $chosen[0] : '';
     }
@@ -277,7 +284,7 @@ abstract class DNF extends SystemPackager
      */
     protected function doInstallPackages(array $packages)
     {
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['install', '-y', '--setopt=install_weak_deps=False'], $packages))->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['install', '-y', '--setopt=install_weak_deps=False'], $this->getKeepInstalledOptions(), $packages))->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf install failed');
         }
@@ -312,13 +319,80 @@ abstract class DNF extends SystemPackager
      */
     protected function doExpandPackageList(array $packages)
     {
-        list($rc, $output) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['install', '--assumeno', '--setopt=install_weak_deps=False'], $packages)));
-        // --assumeno makes dnf fail with "Operation aborted"
-        if ($rc !== 0 && !preg_match('/^Operation aborted\b/m', $output)) {
-            throw new Exception\SystemPackager(implode("\n", array_merge(['dnf failed to list the packages:', rtrim($output)], $this->explainMissingPackages($output))));
+        list($ok, $output) = $this->simulateInstall($packages, true);
+        if (!$ok) {
+            throw new Exception\SystemPackager(implode("\n", array_merge(['dnf failed to list the packages:', rtrim($output)], $this->explainMissingPackages($output), $this->explainRequiredUpgrades($packages))));
         }
 
         return self::parseTransactionTable($output);
+    }
+
+    /**
+     * @param non-empty-list<non-empty-string> $packages
+     * @param bool $keepInstalled
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return array{bool, string} whether dnf could resolve the transaction, and its output
+     */
+    private function simulateInstall(array $packages, $keepInstalled)
+    {
+        list($rc, $output) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['install', '--assumeno', '--setopt=install_weak_deps=False'], $keepInstalled ? $this->getKeepInstalledOptions() : [], $packages)));
+
+        // --assumeno makes dnf fail with "Operation aborted"
+        return [$rc === 0 || preg_match('/^Operation aborted\b/m', $output) === 1, $output];
+    }
+
+    /**
+     * The options that hide from the repositories the packages installed before the first transaction, so that dnf doesn't upgrade them.
+     * With best=False dnf can pick older versions of the new packages (like the libcurl-devel that matches the installed libcurl-minimal).
+     *
+     * @param list<non-empty-string> $except the packages to be left visible (for example, to reinstall them)
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return list<non-empty-string>
+     */
+    private function getKeepInstalledOptions(array $except = [])
+    {
+        if ($this->initiallyInstalled === null) {
+            $this->initiallyInstalled = $this->listInstalledPackages();
+        }
+        $excluded = array_diff($this->initiallyInstalled, $except);
+        if ($excluded === []) {
+            return [];
+        }
+
+        return ['--setopt=best=False', '--setopt=*.excludepkgs=' . implode(',', $excluded)];
+    }
+
+    /**
+     * Explain which installed packages should be upgraded to install the packages: the repositories may not have the versions that match the installed ones.
+     *
+     * @param non-empty-list<non-empty-string> $packages
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return list<non-empty-string>
+     */
+    private function explainRequiredUpgrades(array $packages)
+    {
+        if ($this->getKeepInstalledOptions() === []) {
+            return [];
+        }
+        list($ok, $output) = $this->simulateInstall($packages, false);
+        $upgrades = $ok ? array_keys(self::parseTransactionTable($output, 'Upgrading')) : [];
+        if ($upgrades === []) {
+            return [];
+        }
+
+        return [
+            'These installed packages should be upgraded: ' . implode(' ', $upgrades),
+            "install-php-extensions doesn't upgrade the installed packages: upgrade them first (for example with dnf upgrade)",
+        ];
     }
 
     /**
@@ -389,31 +463,32 @@ abstract class DNF extends SystemPackager
     }
 
     /**
-     * Get the packages that a transaction would install.
-     * Like with APT and APK, the upgraded packages are not included: otherwise they would be removed with the volatile ones (for example, libcurl-devel upgrades libcurl-minimal, which dnf needs).
+     * Get the packages that a transaction would install (or upgrade).
+     * Like with APT and APK, the upgraded packages are not included in the installed ones: otherwise they would be removed with the volatile ones (for example, libcurl-devel upgrades libcurl-minimal, which dnf needs).
      *
      * @param string $output the output of dnf install --assumeno
+     * @param string $action 'Installing' or 'Upgrading'
      *
      * @return array<non-empty-string, non-empty-string>
      */
-    protected static function parseTransactionTable($output)
+    protected static function parseTransactionTable($output, $action = 'Installing')
     {
         $result = [];
-        $inInstallSection = false;
+        $inActionSection = false;
         $pendingName = '';
         $match = null;
         foreach (Regex::split('/\r?\n/', $output) as $line) {
             if (preg_match('/^\S.*:$/D', $line)) {
                 // Like "Installing:", "Installing dependencies:", "Upgrading:", "Removing:", "Enabling module streams:"
-                $inInstallSection = preg_match('/^Installing\b/', $line) === 1;
+                $inActionSection = strpos($line, $action) === 0;
                 $pendingName = '';
                 continue;
             }
             if (!preg_match('/^\s/', $line)) {
                 // Like the empty line or "Transaction Summary" after the table of dnf4
-                $inInstallSection = false;
+                $inActionSection = false;
             }
-            if (!$inInstallSection) {
+            if (!$inActionSection) {
                 continue;
             }
             $fields = Regex::split('/\s+/', trim($line), -1, true);
@@ -496,8 +571,13 @@ abstract class DNF extends SystemPackager
      */
     protected function doRestorePackages(array $packages)
     {
-        // dnf install doesn't upgrade the installed packages, and some packages (like gpg-pubkey) are not in the repositories
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['install', '-y', '--setopt=install_weak_deps=False', $this->getSkipUnavailableOption()], $packages))->withOutput(Command::OUTPUT_SHOW));
+        // dnf install upgrades the installed packages
+        $missing = array_values(array_diff($packages, $this->listInstalledPackages()));
+        if ($missing === []) {
+            return;
+        }
+        // Some packages (like gpg-pubkey) are not in the repositories
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['install', '-y', '--setopt=install_weak_deps=False', $this->getSkipUnavailableOption()], $this->getKeepInstalledOptions($missing), $missing))->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf install failed');
         }
