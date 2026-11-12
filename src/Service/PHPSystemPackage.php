@@ -124,15 +124,33 @@ final class PHPSystemPackage
             return [];
         }
         $result = [];
-        $match = null;
+        $phpVersionPrefix = self::getPHPVersionPrefix($phpPackage->getSource());
         foreach (array_keys($this->packager->expandPackageList([$this->getInstallArgument($package)])) as $name) {
-            // Like php8.5-cli (APT), php85-common (APK) or php85-php-cli (Remi SCL)
-            if (preg_match('/^(?<source>php\d+(?:\.\d+)?(?:-php)?)(?:-|$)/', $name, $match) && $match['source'] !== $phpPackage->getSource()) {
+            $versionPrefix = self::getPHPVersionPrefix($name);
+            if ($versionPrefix !== '' && $versionPrefix !== $phpVersionPrefix) {
                 $result[] = $name;
             }
         }
 
         return $result;
+    }
+
+    /**
+     * Get the PHP version in the name of a package or of a capability.
+     *
+     * @param string $name
+     *
+     * @return string empty string if the name doesn't include the PHP version
+     *
+     * @example 'php8.5' for 'php8.5-cli' (APT)
+     * @example 'php85' for 'php85-common' (APK), and for 'php85-php-cli', 'php85-runtime' and 'php85-php(api)' (Remi SCL)
+     * @example '' for 'php-common'
+     */
+    public static function getPHPVersionPrefix($name)
+    {
+        $match = null;
+
+        return preg_match('/^(?<prefix>php\d+(?:\.\d+)?)(?:[\-(]|$)/', $name, $match) ? $match['prefix'] : '';
     }
 
     /**

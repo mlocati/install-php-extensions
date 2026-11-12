@@ -176,10 +176,41 @@ final class PHPSystemPackageTest extends TestCase
             [
                 new SystemPackager\Package('php85-php-cli', '8.5.12-1.el9.remi', 'php85-php'),
                 new SystemPackager\Package('php85-php-pecl-redis6', '6.3.0-1.el9.remi', 'php85-php-pecl-redis6'),
-                ['php85-php-pecl-redis6', 'php85-php-pecl-igbinary', 'liblzf', 'php84-php-common'],
+                ['php85-php-pecl-redis6', 'php85-php-pecl-igbinary', 'php85-runtime', 'liblzf', 'php84-php-common'],
                 ['php84-php-common'],
             ],
         ];
+    }
+
+    /**
+     * @return list<array{string, string}>
+     */
+    public static function providePHPVersionPrefixCases()
+    {
+        return [
+            ['php8.5-cli', 'php8.5'],
+            ['php85-common', 'php85'],
+            ['php85', 'php85'],
+            ['php85-php-cli', 'php85'],
+            ['php85-runtime', 'php85'],
+            ['php85-php(api)', 'php85'],
+            ['php-common', ''],
+            ['php(api)', ''],
+            ['phpunit', ''],
+        ];
+    }
+
+    /**
+     * @dataProvider providePHPVersionPrefixCases
+     *
+     * @param string $name
+     * @param string $expected
+     *
+     * @return void
+     */
+    public function testPHPVersionPrefix($name, $expected)
+    {
+        self::assertSame($expected, PHPSystemPackage::getPHPVersionPrefix($name));
     }
 
     /**
