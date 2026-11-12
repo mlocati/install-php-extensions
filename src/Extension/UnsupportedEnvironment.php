@@ -7,9 +7,11 @@ use IPE\OS;
 use IPE\PHPInfo;
 
 /**
- * An environment is the identifier of an operating system, optionally followed by its version or by an inclusive range of versions, optionally followed by the PHP version, optionally followed by "-zts" or "-nts" (to match only thread-safe or non-thread-safe PHP).
+ * An environment is the identifier of an operating system or of a family of operating systems, optionally followed by its version or by an inclusive range of versions (only for families whose versions are comparable), optionally followed by the PHP version, optionally followed by "-zts" or "-nts" (to match only thread-safe or non-thread-safe PHP).
  *
- * @example 'alpine', 'alpine3.14', 'debian', 'debian12', 'alpine-php7', 'alpine-php7.2', 'alpine3.9-php7.1', 'ubuntu24.04-php8.3', 'debian12-zts', 'alpine3.17-php8.2-nts', 'alpine3.10..3.16', 'debian10..11-zts'
+ * @example 'alpine', 'alpine3.14', 'debian', 'debian12', 'alpine-php7', 'alpine-php7.2', 'alpine3.9-php7.1', 'ubuntu24.04-php8.3', 'debian12-zts', 'alpine3.17-php8.2-nts', 'alpine3.10..3.16', 'debian10..11-zts', 'el9' (all the Enterprise Linux distributions), 'rhellike-php7' (all the systems that use dnf)
+ *
+ * @see \IPE\OS\Factory::getFamilyClasses()
  */
 class UnsupportedEnvironment
 {
@@ -57,7 +59,7 @@ class UnsupportedEnvironment
     /**
      * @param string $environment
      *
-     * @return array{class-string<\IPE\OS>, positive-int|null, positive-int|null, string, string}|null the OS class, its first and last numeric versions, the PHP version, and the thread safety ('zts', 'nts', or empty for both)
+     * @return array{class-string<\IPE\OS>, positive-int|null, positive-int|null, string, string}|null the OS or family class, its first and last numeric versions, the PHP version, and the thread safety ('zts', 'nts', or empty for both)
      */
     private function parse($environment)
     {
@@ -66,12 +68,20 @@ class UnsupportedEnvironment
             return null;
         }
         $osClass = $this->osFactory->getOSClassByIdentifier($match['os']);
+        $comparableVersions = true;
         if ($osClass === '') {
-            return null;
+            $family = $this->osFactory->getFamilyByIdentifier($match['os']);
+            if ($family === null) {
+                return null;
+            }
+            list($osClass, $comparableVersions) = $family;
         }
         $osVersionFrom = null;
         $osVersionTo = null;
         if (isset($match['osVersion']) && $match['osVersion'] !== '') {
+            if (!$comparableVersions) {
+                return null;
+            }
             $osVersionFrom = $osClass::parseNumericVersion($match['osVersion']);
             if ($osVersionFrom === null) {
                 return null;
