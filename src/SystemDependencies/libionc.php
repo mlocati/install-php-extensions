@@ -2,7 +2,6 @@
 
 namespace IPE\SystemDependencies;
 
-use IPE\Filesystem\Command;
 use IPE\Installer\State;
 use IPE\SystemDependency\CompiledLibrary;
 
@@ -46,7 +45,7 @@ final class libionc extends CompiledLibrary
         $directory = $state->getVolatileDir()->createSubdir();
         $this->runBuildStep('git', ['clone', '-q', '-c', 'advice.detachedHead=false', '--depth', '1', '--recurse-submodules', '--branch', 'v' . self::VERSION, $this->getSourceURL(), 'ion'], $directory);
         $this->build("{$directory}/ion");
-        $this->os->getFilesystem()->run(Command::create('ldconfig')->withOutput(Command::OUTPUT_DISCARD));
+        $this->refreshLinkerCache();
     }
 
     /**
