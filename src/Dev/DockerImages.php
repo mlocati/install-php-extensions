@@ -155,10 +155,12 @@ final class DockerImages
         }
         // The packages that PHP extensions require are often in EPEL and CRB, which are disabled by default
         $enterpriseLinuxSetup = ['dnf install -y epel-release', 'crb enable'];
+        // The default nodejs of EL 8 and 9 doesn't provide the libnode required by v8js
+        $nodejsSetup = 'dnf module enable -y nodejs:22';
         $dnfImages = [
             // PHP version => setup commands (the default module stream if empty) and package of PHP CLI
-            'almalinux8-dnf' => ['almalinux:8', ['8.2' => [['dnf module enable -y php:8.2'], 'php-cli']]],
-            'almalinux9-dnf' => ['almalinux:9', ['8.0' => [[], 'php-cli'], '8.3' => [['dnf module enable -y php:8.3'], 'php-cli']]],
+            'almalinux8-dnf' => ['almalinux:8', ['8.2' => [['dnf module enable -y php:8.2', $nodejsSetup], 'php-cli']]],
+            'almalinux9-dnf' => ['almalinux:9', ['8.0' => [[$nodejsSetup], 'php-cli'], '8.3' => [['dnf module enable -y php:8.3', $nodejsSetup], 'php-cli']]],
             'almalinux10-dnf' => ['almalinux:10', ['8.3' => [[], 'php-cli'], '8.4' => [[], 'php8.4-cli']]],
         ];
         foreach ($dnfImages as $os => $data) {
@@ -171,6 +173,9 @@ final class DockerImages
         // See https://rpms.remirepo.net/wizard/
         foreach (['almalinux9-remi' => 9, 'almalinux10-remi' => 10] as $os => $elVersion) {
             $remiSetup = array_merge($enterpriseLinuxSetup, ["dnf install -y https://rpms.remirepo.net/enterprise/remi-release-{$elVersion}.rpm"]);
+            if ($elVersion <= 9) {
+                $remiSetup[] = $nodejsSetup;
+            }
             foreach (['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'] as $phpVersion) {
                 // Software Collections, like php85-php-cli, installed in /opt/remi/php85
                 $collection = 'php' . str_replace('.', '', $phpVersion);
