@@ -254,7 +254,7 @@ final class BuildTools
         if (!preg_match('/^(?<name>[^\s>=]+)(\s*>=\s*(?<version>\S+))?$/D', $module, $matches)) {
             return false;
         }
-        foreach (['/usr/local/lib/pkgconfig', '/usr/local/share/pkgconfig', '/usr/lib/pkgconfig', '/usr/share/pkgconfig'] as $directory) {
+        foreach (['/usr/local/lib/pkgconfig', '/usr/local/lib64/pkgconfig', '/usr/local/share/pkgconfig', '/usr/lib/pkgconfig', '/usr/lib64/pkgconfig', '/usr/share/pkgconfig'] as $directory) {
             $file = "{$directory}/{$matches['name']}.pc";
             if (!$fs->isFile($file)) {
                 continue;
