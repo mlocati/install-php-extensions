@@ -245,7 +245,13 @@ final class cassandra extends Extension implements
     private function buildNanoDriver($directory, BuildTools $buildTools, $parallelJobs)
     {
         $this->runStep($buildTools->getPhpize(), [], $directory);
-        $this->runStep('./configure', [], $directory, $buildTools->getConfigureEnvironment());
+        $arguments = [];
+        $phpConfig = $buildTools->getPhpConfig();
+        if ($phpConfig !== '') {
+            // php-config may be missing from the PATH (for example, with the PHP packages of Remi)
+            $arguments[] = "--with-php-config={$phpConfig}";
+        }
+        $this->runStep('./configure', $arguments, $directory, $buildTools->getConfigureEnvironment());
         $this->runStep($buildTools->getMake(), ['-j' . $parallelJobs, 'install'], $directory);
     }
 
