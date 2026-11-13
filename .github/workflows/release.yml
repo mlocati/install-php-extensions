@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "The tag to be created (examples: 1.2.3, 1.2.3-alpha, 1.2.3-beta2, 1.2.3-RC1)"
-        required: true
+        description: "The tag to be created (examples: 1.2.3, 1.2.3-alpha, 1.2.3-beta2, 1.2.3-RC1). If empty: the next patch version of the greatest existing tag"
+        required: false
         type: string
 
 permissions:
@@ -17,13 +17,8 @@ concurrency:
 
 jobs:
   release:
-    name: Release ${{ inputs.tag }}
+    name: Release ${{ inputs.tag || 'next patch version' }}
     runs-on: ubuntu-latest
-    env:
-      TAG: ${{ inputs.tag }}
-      EXPECTED_VERSION_OUTPUT: |-
-        install-php-extensions v${{ inputs.tag }}
-        https://github.com/mlocati/install-php-extensions
     steps:
       -
         name: Check the branch
@@ -45,7 +40,10 @@ jobs:
       -
         name: Check the tag
         id: check-tag
-        run: php scripts/check-release-tag.php "$TAG"
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        # Defines the TAG environment variable for the next steps
+        run: php scripts/check-release-tag.php "$INPUT_TAG"
       -
         name: Install Composer dependencies
         run: composer --no-interaction --ansi --no-progress update --no-dev
@@ -56,7 +54,8 @@ jobs:
         name: Check the version of install-php-extensions
         run: |
           actual="$(php -d error_reporting=-1 -d display_errors=stdout -d display_startup_errors=1 install-php-extensions --version)"
-          if [ "$actual" != "$EXPECTED_VERSION_OUTPUT" ]; then
+          expected="$(printf 'install-php-extensions v%s\nhttps://github.com/mlocati/install-php-extensions' "$TAG")"
+          if [ "$actual" != "$expected" ]; then
             echo "::error::Wrong version: $actual"
             exit 1
           fi
@@ -67,7 +66,8 @@ jobs:
         name: Check the version of install-php-extensions-gz
         run: |
           actual="$(php -d error_reporting=-1 -d display_errors=stdout -d display_startup_errors=1 install-php-extensions-gz --version)"
-          if [ "$actual" != "$EXPECTED_VERSION_OUTPUT" ]; then
+          expected="$(printf 'install-php-extensions v%s\nhttps://github.com/mlocati/install-php-extensions' "$TAG")"
+          if [ "$actual" != "$expected" ]; then
             echo "::error::Wrong version: $actual"
             exit 1
           fi
@@ -124,7 +124,7 @@ jobs:
           push: true
           tags: ${{ steps.docker-tags.outputs.tags }}
           labels: |
-            org.opencontainers.image.version=${{ inputs.tag }}
+            org.opencontainers.image.version=${{ env.TAG }}
             org.opencontainers.image.revision=${{ steps.update-readme.outputs.target }}
           # All the platforms of the official Docker PHP images (the image contains only the PHAR file, so it doesn't need emulation)
           platforms: |
