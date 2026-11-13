@@ -80,6 +80,17 @@ final class ssh2 extends Extension implements
             return '0.13';
         }
         if ($phpVersion > 704) {
+            // Newer versions require libssh2 1.11, but these systems provide libssh2 1.8, 1.9 or 1.10
+            if ($this->os instanceof OS\Alpine && $this->os->getNumericVersion() <= 315) {
+                return '1.5.0';
+            }
+            if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::BOOKWORM) {
+                return '1.5.0';
+            }
+            if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::LUNAR) {
+                return '1.5.0';
+            }
+
             return '';
         }
 
