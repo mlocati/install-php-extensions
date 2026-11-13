@@ -79,30 +79,30 @@ final class ssh2 extends Extension implements
         if ($phpVersion <= 506) {
             return '0.13';
         }
-        if ($phpVersion > 704) {
-            // Newer versions require libssh2 1.11, but these systems provide libssh2 1.8, 1.9 or 1.10
-            if ($this->os instanceof OS\Alpine && $this->os->getNumericVersion() <= 315) {
-                return '1.5.0';
-            }
-            if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::BOOKWORM) {
-                return '1.5.0';
-            }
-            if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::LUNAR) {
-                return '1.5.0';
+        if ($phpVersion <= 704) {
+            // Newer versions require libssh2 1.6, but these systems provide libssh2 1.4.3 or 1.5.0
+            if (
+                $this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::JESSIE
+                || $this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::XENIAL
+            ) {
+                return '1.3.1';
             }
 
-            return '';
+            return '1.4.1';
+        }
+        // Newer versions require libssh2 1.11, but these systems provide libssh2 1.8, 1.9 or 1.10
+        if (
+            $this->os instanceof OS\Alpine && $this->os->getNumericVersion() <= 315
+            || $this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::BOOKWORM
+            || $this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::LUNAR
+            || $this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 8
+            || $this->os instanceof OS\AmazonLinux && $this->os->getNumericVersion() <= 2023
+            || $this->os instanceof OS\Fedora && $this->os->getNumericVersion() <= 38
+        ) {
+            return '1.5.0';
         }
 
-        // Newer versions require libssh2 1.6, but these systems provide libssh2 1.4.3 or 1.5.0
-        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::JESSIE) {
-            return '1.3.1';
-        }
-        if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::XENIAL) {
-            return '1.3.1';
-        }
-
-        return '1.4.1';
+        return '';
     }
 
     /**

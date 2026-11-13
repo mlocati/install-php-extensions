@@ -65,6 +65,12 @@ final class libmpdec extends CompiledLibrary
 
             return new Packages();
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['mpdecimal'],
+                ['mpdecimal-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -80,6 +86,9 @@ final class libmpdec extends CompiledLibrary
             return false;
         }
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::JAMMY) {
+            return false;
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
             return false;
         }
 

@@ -92,6 +92,10 @@ final class ArchiveExtractorTest extends TestCase
                     }
                     break;
 
+                case FormatExtractor\WithStreamWrapper::class:
+                    yield [self::requireExtractor(self::createStreamWrapperExtractor($format)), $testFilename];
+                    break;
+
                 case FormatExtractor\WithTarCommand::class:
                     yield [self::requireExtractor(FormatExtractor\WithTarCommand::createIfAvailable($format, self::$fs, new \IPE\Logger())), $testFilename];
                     break;
@@ -128,6 +132,19 @@ final class ArchiveExtractorTest extends TestCase
         }
 
         return $extractor;
+    }
+
+    /**
+     * @param non-empty-string $format
+     *
+     * @return \IPE\Filesystem\ArchiveExtractor\FormatExtractor\WithStreamWrapper|null
+     */
+    private static function createStreamWrapperExtractor($format)
+    {
+        // Phar instead of the tar command, which would extract the compressed archives by itself
+        $tarExtractor = FormatExtractor\WithPharExtension::createIfAvailable(ArchiveFormat::TAR, self::$fs, new \IPE\Logger());
+
+        return $tarExtractor === null ? null : FormatExtractor\WithStreamWrapper::createIfAvailable($format, self::$fs, new \IPE\Logger(), $tarExtractor);
     }
 
     /**
@@ -199,6 +216,68 @@ final class ArchiveExtractorTest extends TestCase
     /**
      * @return void
      */
+    public function testStreamWrapperIsUsedWithoutTarCommand()
+    {
+        if (!self::isExtractorAvailable(FormatExtractor\WithStreamWrapper::class, ArchiveFormat::TAR_GZ)) {
+            self::markTestSkipped('The zlib stream wrapper or the Phar extension are not available');
+        }
+        /** @var \IPE\Filesystem\Local&\Mockery\MockInterface $fs */
+        $fs = M::mock(self::$fs)->makePartial();
+        $fs->shouldReceive('resolveCommand')->andReturn('');
+        $archiveExtractor = new ArchiveExtractor($fs, new \IPE\Logger());
+        $vol = self::$fs->createVolatileDirectory();
+        $extractedDir = $archiveExtractor->extractTo(IPE_ROOT_DIR . '/test/assets/webserver/archive.tar.gz', $vol->getPath(), ArchiveFormat::TAR_GZ);
+        self::checkExtractedArchiveContents($extractedDir);
+    }
+
+    /**
+     * @return list<array{non-empty-string, bool}>
+     */
+    public static function provideDamagedArchiveCases()
+    {
+        return [
+            [ArchiveFormat::TAR_GZ, true],
+            [ArchiveFormat::TAR_GZ, false],
+            [ArchiveFormat::TAR_BZ, true],
+            [ArchiveFormat::TAR_BZ, false],
+        ];
+    }
+
+    /**
+     * @dataProvider provideDamagedArchiveCases
+     *
+     * @param non-empty-string $format
+     * @param bool $truncate truncate the archive (TRUE) or alter a byte in its middle (FALSE)
+     *
+     * @return void
+     */
+    public function testStreamWrapperRejectsDamagedArchives($format, $truncate)
+    {
+        if (!self::isExtractorAvailable(FormatExtractor\WithStreamWrapper::class, $format)) {
+            self::markTestSkipped("The stream wrapper for {$format} or the Phar extension are not available");
+        }
+        if ($format === ArchiveFormat::TAR_BZ && PHP_VERSION_ID < 70400) {
+            self::markTestSkipped('Before PHP 7.4 the bzip2 stream wrapper does not report damaged archives');
+        }
+        $data = self::$fs->readFile(IPE_ROOT_DIR . "/test/assets/webserver/archive.{$format}");
+        $middle = (int) (strlen($data) / 2);
+        if ($truncate) {
+            $data = substr($data, 0, $middle);
+        } else {
+            $data[$middle] = chr(ord($data[$middle]) ^ 0xFF);
+        }
+        $vol = self::$fs->createVolatileDirectory();
+        $archive = $vol->getPath() . "/damaged.{$format}";
+        self::$fs->writeFile($archive, $data);
+        $destination = $vol->getPath() . '/out';
+        self::$fs->createDirectory($destination);
+        $this->expectException(Exception\IO::class);
+        self::requireExtractor(self::createStreamWrapperExtractor($format))->extractTo($archive, $destination);
+    }
+
+    /**
+     * @return void
+     */
     public function testPharExtensionDecompressesZipEntries()
     {
         $extractor = self::getPharZipExtractor();
@@ -230,6 +309,77 @@ final class ArchiveExtractorTest extends TestCase
         } catch (Exception\IO $x) {
             self::assertFalse(self::$fs->isFile($vol->getPath() . '/a/evil'));
         }
+    }
+
+    /**
+     * @return void
+     */
+    public function testPharExtensionRestoresTarModificationTimes()
+    {
+        if (!self::isExtractorAvailable(FormatExtractor\WithPharExtension::class, ArchiveFormat::TAR)) {
+            self::markTestSkipped('The Phar extension is not available');
+        }
+        $extractor = self::requireExtractor(FormatExtractor\WithPharExtension::createIfAvailable(ArchiveFormat::TAR, self::$fs, new \IPE\Logger()));
+        $gnuMagic = "ustar  \0";
+        $longName = 'rootDir/' . str_repeat('d', 60) . '/' . str_repeat('f', 60);
+        $prefix = 'rootDir/' . str_repeat('p', 60);
+        $tar = self::createTarEntry('././@LongLink', "{$longName}\0", 0, 'L', $gnuMagic)
+            . self::createTarEntry(substr($longName, 0, 100), "long\n", 1000000001, '0', $gnuMagic)
+            . self::createTarEntry('prefixed', "prefixed\n", 1000000002, '0', "ustar\x0000", $prefix)
+            . self::createTarEntry('rootDir/PaxHeaders/pax', "25 path=rootDir/pax-file\n22 mtime=1000000003.5\n", 0, 'x', "ustar\x0000")
+            . self::createTarEntry('rootDir/pax-file', "pax\n", 5, '0', "ustar\x0000")
+            . self::createTarEntry('rootDir/plain', "plain\n", 1000000004, '0', "ustar\x0000")
+            . str_repeat("\0", 1024);
+        $vol = self::$fs->createVolatileDirectory();
+        $archive = $vol->getPath() . '/archive.tar';
+        self::$fs->writeFile($archive, $tar);
+        $destination = $vol->getPath() . '/out';
+        self::$fs->createDirectory($destination);
+        $extractedDir = $extractor->extractTo($archive, $destination);
+        $expected = [
+            substr($longName, strlen('rootDir/')) => ["long\n", 1000000001],
+            substr($prefix, strlen('rootDir/')) . '/prefixed' => ["prefixed\n", 1000000002],
+            'pax-file' => ["pax\n", 1000000003],
+            'plain' => ["plain\n", 1000000004],
+        ];
+        clearstatcache();
+        foreach ($expected as $file => list($content, $mtime)) {
+            self::assertSame($content, self::$fs->readFile("{$extractedDir}/{$file}"), "Content of {$file}");
+            self::assertSame($mtime, filemtime("{$extractedDir}/{$file}"), "Modification time of {$file}");
+        }
+    }
+
+    /**
+     * @param string $name
+     * @param string $content
+     * @param int $mtime
+     * @param string $type
+     * @param string $magic the magic and version fields
+     * @param string $prefix
+     *
+     * @return string
+     */
+    private static function createTarEntry($name, $content, $mtime, $type, $magic, $prefix = '')
+    {
+        $header = str_pad($name, 100, "\0")
+            . str_pad('0000644', 8, "\0")
+            . str_repeat(str_pad('0000000', 8, "\0"), 2)
+            . str_pad(sprintf('%011o', strlen($content)), 12, "\0")
+            . str_pad(sprintf('%011o', $mtime), 12, "\0")
+            . '        '
+            . $type
+            . str_repeat("\0", 100)
+            . $magic
+            . str_repeat("\0", 80)
+            . str_pad($prefix, 155, "\0")
+            . str_repeat("\0", 12);
+        $checksum = 0;
+        for ($i = 0; $i < 512; $i++) {
+            $checksum += ord($header[$i]);
+        }
+        $header = substr_replace($header, sprintf('%06o', $checksum) . "\0 ", 148, 8);
+
+        return $header . $content . str_repeat("\0", (512 - strlen($content) % 512) % 512);
     }
 
     /**
@@ -273,6 +423,13 @@ final class ArchiveExtractorTest extends TestCase
         self::assertSame("Content of file in root\n", self::$fs->readFile("{$extractedDir}/FileInRoot"));
         self::assertSame("Content of file#1 in sub\n", self::$fs->readFile("{$extractedDir}/SubDir/FileInSub1"));
         self::assertSame("Content of file#2 in sub\n", self::$fs->readFile("{$extractedDir}/SubDir/FileInSub2"));
+        clearstatcache();
+        // The entries are from 2025-11-09 and 2025-11-10: zip archives store the local time, so allow a day for the time zone
+        foreach (['FileInRoot', 'SubDir/FileInSub1', 'SubDir/FileInSub2'] as $file) {
+            $mtime = filemtime("{$extractedDir}/{$file}");
+            self::assertGreaterThan(gmmktime(0, 0, 0, 11, 8, 2025), $mtime, "Modification time of {$file}");
+            self::assertLessThan(gmmktime(0, 0, 0, 11, 12, 2025), $mtime, "Modification time of {$file}");
+        }
     }
 
     /**
@@ -297,6 +454,7 @@ final class ArchiveExtractorTest extends TestCase
                     FormatExtractor\WithBsdtarCommand::class,
                     FormatExtractor\WithPharExtension::class,
                     FormatExtractor\WithPowershellCommand::class,
+                    FormatExtractor\WithStreamWrapper::class,
                     FormatExtractor\WithTarCommand::class,
                     FormatExtractor\WithUnzipCommand::class,
                     FormatExtractor\WithZipExtension::class,
@@ -333,12 +491,18 @@ final class ArchiveExtractorTest extends TestCase
                 }
 
                 return $format === ArchiveFormat::TAR
-                    || ($format === ArchiveFormat::TAR_BZ && array_intersect(['BZIP2', \Phar::BZ2], \Phar::getSupportedCompression()) !== [])
-                    || ($format === ArchiveFormat::TAR_GZ && array_intersect(['GZ', \Phar::GZ], \Phar::getSupportedCompression()) !== [])
                     || ($format === ArchiveFormat::ZIP && array_intersect(['GZ', \Phar::GZ], \Phar::getSupportedCompression()) !== []);
 
             case FormatExtractor\WithPowershellCommand::class:
                 return $format === ArchiveFormat::ZIP && (self::$fs->resolveCommand('pwsh') !== '' || self::$fs->resolveCommand('powershell') !== '');
+
+            case FormatExtractor\WithStreamWrapper::class:
+                if (!extension_loaded('Phar')) {
+                    return false;
+                }
+
+                return ($format === ArchiveFormat::TAR_GZ && in_array('compress.zlib', stream_get_wrappers(), true))
+                    || ($format === ArchiveFormat::TAR_BZ && in_array('compress.bzip2', stream_get_wrappers(), true));
 
             case FormatExtractor\WithTarCommand::class:
                 if (self::$tarOutput === '' && self::$bsdtarOutput === '') {

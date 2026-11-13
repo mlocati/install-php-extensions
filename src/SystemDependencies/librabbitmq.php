@@ -44,6 +44,12 @@ final class librabbitmq extends SystemDependency
                 ['librabbitmq-dev', 'libssh-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['librabbitmq'],
+                ['librabbitmq-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

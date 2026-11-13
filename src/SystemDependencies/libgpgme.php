@@ -44,6 +44,12 @@ final class libgpgme extends SystemDependency
                 ['^libgpgme[0-9]*-dev$']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['gpgme'],
+                ['gpgme-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -51,6 +51,30 @@ final class LocalTest extends TestCase
     /**
      * @return void
      */
+    public function testResolveCommandIgnoresShellBuiltins()
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            self::markTestSkipped('Only POSIX systems use the command builtin');
+        }
+        $fs = self::$fs;
+        $dir = $fs->getTemporaryDirectory() . '/ipe-resolvecommand-' . uniqid();
+        // A directory named like the builtin in the current directory
+        $fs->createDirectory("{$dir}/cd");
+        $cwd = getcwd();
+        chdir($dir);
+        try {
+            self::assertSame('', $fs->resolveCommand('cd'));
+            self::assertSame('/', substr($fs->resolveCommand('sh'), 0, 1));
+        } finally {
+            chdir((string) $cwd);
+            rmdir("{$dir}/cd");
+            rmdir($dir);
+        }
+    }
+
+    /**
+     * @return void
+     */
     public function testResolveCommandUsesNativeSystemCommands()
     {
         if (DIRECTORY_SEPARATOR !== '\\' || PHP_INT_SIZE !== 4) {
@@ -111,6 +135,8 @@ final class LocalTest extends TestCase
         $postTimestamp = time();
         $timestamp = $fs->getLastModificationTimestamp($tmpPath . '/file');
         self::assertTrue($preTimestamp <= ($timestamp + 10) && ($timestamp - 10) <= $postTimestamp, "{$preTimestamp} <= {$timestamp} <= {$postTimestamp}");
+        $fs->setLastModificationTimestamp($tmpPath . '/file', 1000000000);
+        self::assertSame(1000000000, $fs->getLastModificationTimestamp($tmpPath . '/file'));
         self::assertSame(['file'], $fs->listDirectoryContents($tmpPath));
         self::assertSame('FooBar', $fs->readFile($tmpPath . '/file'));
         $fs->createSymlink($tmpPath . '/file', $tmpPath . '/fileLink');

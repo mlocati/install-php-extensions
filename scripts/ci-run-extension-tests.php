@@ -241,7 +241,7 @@ function runTest(string $description, DockerImage $dockerImage, string $phar, ar
                 continue;
             }
             // LD_BIND_NOW: with lazy binding, missing symbols are detected only when they are used
-            [$rc, $output] = run(['docker', 'exec', '--env', 'LD_BIND_NOW=1', '--env', 'TEST_IPE_OPTIONS=' . json_encode($options, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), CONTAINER_NAME, $php, "/ipe/test/{$handle}.php"]);
+            [$rc, $output] = run(['docker', 'exec', '--env', 'LD_BIND_NOW=1', '--env', 'TEST_IPE_OPTIONS=' . json_encode($options, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), '--env', 'TEST_IPE_REPORT=/ipe/output/report.json', CONTAINER_NAME, $php, "/ipe/test/{$handle}.php"]);
             printIndented($output);
             if ($rc !== 0) {
                 printError('Test failed', "{$handle} in {$description} ({$image})");

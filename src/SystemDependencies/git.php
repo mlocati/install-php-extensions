@@ -44,6 +44,12 @@ final class git extends SystemDependency
                 ['git']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                [],
+                ['git-core']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

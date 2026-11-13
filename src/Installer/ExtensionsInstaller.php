@@ -114,6 +114,7 @@ final class ExtensionsInstaller
      */
     public function install(array $resolvedExtensions, State $state, $enable = true, $deleteSystemPackagerCache = true)
     {
+        $this->addLocalPkgConfigPath($state);
         $this->dependencyRegistry->setOptions($state);
         $systemPackager = $this->os->getSystemPackager();
         $dependencies = $this->dependencyRegistry->resolveDependencies($this->collectDependencyHandles($resolvedExtensions));
@@ -184,6 +185,24 @@ final class ExtensionsInstaller
         }
 
         return new Report($installedDependencies, $compiledLibraries, $extensions, $state->getSkippedExtensions());
+    }
+
+    /**
+     * The pkg-config of RHEL-like systems doesn't look in /usr/local, where we install the libraries we compile.
+     *
+     * @return void
+     */
+    private function addLocalPkgConfigPath(State $state)
+    {
+        if (!$this->os instanceof OS\Posix\RHELLike) {
+            return;
+        }
+        $previous = getenv('PKG_CONFIG_PATH');
+        $directories = '/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/share/pkgconfig';
+        putenv('PKG_CONFIG_PATH=' . (is_string($previous) && $previous !== '' ? "{$previous}:{$directories}" : $directories));
+        $state->registerShutdownCallback(static function () use ($previous) {
+            putenv($previous === false ? 'PKG_CONFIG_PATH' : "PKG_CONFIG_PATH={$previous}");
+        });
     }
 
     /**

@@ -178,7 +178,25 @@ final class BuildToolsTest extends TestCase
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
         $php->shouldReceive('getMajorMinorVersion')->andReturn(801);
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--configure-options'])))->andReturn([0, "--enable-fpm\n"]);
         self::assertSame('', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
+    }
+
+    /**
+     * @return void
+     */
+    public function testLibdirFromPhpConfig()
+    {
+        $php = self::createPHPInfo();
+        $php->shouldReceive('getConfigureCommand')->andReturn('');
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--configure-options'])))->andReturn([0, "--build=x86_64-redhat-linux --libdir=/usr/lib64 --with-libdir=lib64 --enable-fpm\n"]);
+        self::assertSame('lib64', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
     }
 
     /**
@@ -210,6 +228,8 @@ final class BuildToolsTest extends TestCase
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
         $php->shouldReceive('getMajorMinorVersion')->andReturn(700);
         $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(false);
+        $fs->shouldReceive('resolveCommand')->with('php-config')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn($gcc);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('gcc', ['-print-multiarch'])))->andReturn([$rc, $output]);
         self::assertSame($expected, (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());

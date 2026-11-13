@@ -45,6 +45,10 @@ final class curl extends SystemDependency
                 ['curl']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // The base system includes curl (or curl-minimal, which conflicts with curl)
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }

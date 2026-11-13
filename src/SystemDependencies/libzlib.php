@@ -44,6 +44,13 @@ class libzlib extends SystemDependency
                 ['zlib1g-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // The base system includes zlib (or zlib-ng-compat)
+            return new Packages(
+                [],
+                ['zlib-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

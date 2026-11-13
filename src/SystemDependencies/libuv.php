@@ -58,6 +58,12 @@ final class libuv extends SystemDependency
                 ['libuv1-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libuv'],
+                ['libuv-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

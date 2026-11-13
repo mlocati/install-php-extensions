@@ -49,6 +49,12 @@ class unzip extends SystemDependency
                 ['unzip']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                [],
+                ['unzip']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

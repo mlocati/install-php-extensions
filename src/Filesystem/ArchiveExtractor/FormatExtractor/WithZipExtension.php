@@ -59,6 +59,13 @@ final class WithZipExtension extends FormatExtractor
             if (!$zip->extractTo($destinationDirectory)) {
                 throw new Exception\IO("Failed to extract file '{$archive}' to '{$destinationDirectory}': " . ($zip->getStatusString() ?: 'Unknown error'));
             }
+            // ZipArchive::extractTo() sets the current time
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $stat = $zip->statIndex($i);
+                if ($stat !== false && $stat['mtime'] > 0 && substr($stat['name'], -1) !== '/') {
+                    $this->fs->setLastModificationTimestamp($destinationDirectory . DIRECTORY_SEPARATOR . trim(str_replace('/', DIRECTORY_SEPARATOR, $stat['name']), DIRECTORY_SEPARATOR), $stat['mtime']);
+                }
+            }
         } finally {
             $zip->close();
         }
@@ -117,6 +124,10 @@ final class WithZipExtension extends FormatExtractor
                     throw new Exception\IO("Failed to read ZIP entry {$entryName}");
                 }
                 $localFS->writeFile($targetPath, $contents);
+                $stat = $zip->statIndex($i);
+                if ($stat !== false && $stat['mtime'] > 0) {
+                    $localFS->setLastModificationTimestamp($targetPath, $stat['mtime']);
+                }
             }
         } finally {
             $zip->close();

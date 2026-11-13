@@ -56,6 +56,12 @@ final class libgmp extends SystemDependency
                 ['libgmp-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['gmp'],
+                ['gmp-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

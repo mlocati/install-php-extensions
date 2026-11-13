@@ -44,6 +44,12 @@ final class libuuid extends SystemDependency
                 ['uuid-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libuuid'],
+                ['libuuid-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

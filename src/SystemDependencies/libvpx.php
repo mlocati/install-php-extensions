@@ -44,6 +44,12 @@ final class libvpx extends SystemDependency
                 ['libvpx-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libvpx'],
+                ['libvpx-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -44,6 +44,12 @@ final class libffi extends SystemDependency
                 ['libffi-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libffi'],
+                ['libffi-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -41,6 +41,9 @@ final class libgettext extends SystemDependency
         if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
             return new Packages();
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }

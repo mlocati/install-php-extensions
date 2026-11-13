@@ -56,6 +56,12 @@ final class libtidy extends SystemDependency
                 ['libtidy-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libtidy'],
+                ['libtidy-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -42,6 +42,11 @@ final class FakePackager extends SystemPackager
     public $available = [];
 
     /**
+     * @var array<non-empty-string, int> the PHP API versions the packages are built for, by package name
+     */
+    public $apiVersions = [];
+
+    /**
      * @param list<non-empty-string> $installed
      * @param array<non-empty-string, list<non-empty-string>> $expansions
      */
@@ -122,6 +127,16 @@ final class FakePackager extends SystemPackager
         }
 
         return null;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::doIsBuiltForPHPAPI()
+     */
+    protected function doIsBuiltForPHPAPI(SystemPackager\Package $package, $apiVersion)
+    {
+        return isset($this->apiVersions[$package->getName()]) ? $this->apiVersions[$package->getName()] === $apiVersion : null;
     }
 
     /**

@@ -657,6 +657,19 @@ Not available on thread-safe (ZTS) builds of PHP 8.2, 8.3, 8.4, 8.5
 <!-- END OF EXTENSION NOTES -->
 
 
+## Optional repositories on Enterprise Linux
+
+On Enterprise Linux (AlmaLinux, CentOS Stream, Oracle Linux, Red Hat Enterprise Linux, Rocky Linux), many system packages needed by the PHP extensions are only available in the CodeReady Builder repository (CRB, called PowerTools on version 8) or in [EPEL](https://docs.fedoraproject.org/en-US/epel/).
+IPE doesn't enable them: if it fails because some packages are missing, enable them before running IPE.
+
+| System | Commands |
+|---|---|
+| AlmaLinux, CentOS Stream, Rocky Linux | `dnf install -y epel-release && crb enable` |
+| Oracle Linux | `dnf install -y oracle-epel-release-el$(rpm -E %rhel) dnf-plugins-core && dnf config-manager --set-enabled ol$(rpm -E %rhel)_codeready_builder` |
+| Red Hat Universal Base Image (CRB is already enabled) | `dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm` |
+| Red Hat Enterprise Linux | `dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm && subscription-manager repos --enable codeready-builder-for-rhel-$(rpm -E %rhel)-$(arch)-rpms` |
+
+
 ## System dependencies
 
 Some system dependencies can be customized with these command line options:

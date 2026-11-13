@@ -26,7 +26,8 @@ $formats = [
 ];
 if (PHP_VERSION_ID >= 70200) {
     $formats['bmp'] = [true, true];
-    if (PHP_VERSION_ID >= 80100) {
+    // The gd packages of some distributions (like AlmaLinux) are built without AVIF
+    if (PHP_VERSION_ID >= 80100 && getInstalledExtensionOrigin('gd') !== 'system package') {
         $formats['avif'] = [true, true];
     }
 }

@@ -73,6 +73,7 @@ final class PHPSystemPackageTest extends TestCase
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
+        $php->shouldReceive('getAPIVersion')->andReturn(20240924);
         $os = M::mock(OS\Posix::class);
         $packager = new FakePackager($os, [], $expansions);
         $packager->owningPackage = $phpPackage;
@@ -150,6 +151,48 @@ final class PHPSystemPackageTest extends TestCase
     }
 
     /**
+     * @return array<array{int|null, bool}> the PHP API version the package is built for, and whether it's used
+     */
+    public static function provideExtensionPackageForPHPAPI()
+    {
+        return [
+            [null, true],
+            [20240924, true],
+            [20200930, false],
+        ];
+    }
+
+    /**
+     * @dataProvider provideExtensionPackageForPHPAPI
+     *
+     * @param int|null $apiVersion
+     * @param bool $used
+     *
+     * @return void
+     */
+    public function testExtensionPackageForPHPAPI($apiVersion, $used)
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
+        $php->shouldReceive('getAPIVersion')->andReturn(20240924);
+        $os = M::mock(OS\Posix::class);
+        $packager = new FakePackager($os, [], []);
+        $packager->owningPackage = new SystemPackager\Package('php-cli', '8.4.27-1.el9', 'php');
+        $packager->available = ['php-redis' => [new SystemPackager\Package('php-redis', '6.2.0-1.el9', 'php-pecl-redis6')]];
+        if ($apiVersion !== null) {
+            $packager->apiVersions = ['php-redis' => $apiVersion];
+        }
+        $os->shouldReceive('getSystemPackager')->andReturn($packager);
+        $package = (new PHPSystemPackage($php, $os))->findExtensionPackage(new Extensions\redis(M::mock(PHPInfo::class), M::mock(OS::class)));
+        if ($used) {
+            self::assertNotNull($package);
+            self::assertSame('php-redis', $package->getName());
+        } else {
+            self::assertNull($package);
+        }
+    }
+
+    /**
      * @return array<array{\IPE\SystemPackager\Package, \IPE\SystemPackager\Package, list<non-empty-string>, list<non-empty-string>}> the package of PHP, the package of the extension, what installing it adds, and the expected packages of other PHP versions
      */
     public static function providePackagesOfOtherPHPVersions()
@@ -173,7 +216,44 @@ final class PHPSystemPackageTest extends TestCase
                 ['php84-pecl-redis', 'php84-session', 'php85-common'],
                 ['php85-common'],
             ],
+            [
+                new SystemPackager\Package('php85-php-cli', '8.5.12-1.el9.remi', 'php85-php'),
+                new SystemPackager\Package('php85-php-pecl-redis6', '6.3.0-1.el9.remi', 'php85-php-pecl-redis6'),
+                ['php85-php-pecl-redis6', 'php85-php-pecl-igbinary', 'php85-runtime', 'liblzf', 'php84-php-common'],
+                ['php84-php-common'],
+            ],
         ];
+    }
+
+    /**
+     * @return list<array{string, string}>
+     */
+    public static function providePHPVersionPrefixCases()
+    {
+        return [
+            ['php8.5-cli', 'php8.5'],
+            ['php85-common', 'php85'],
+            ['php85', 'php85'],
+            ['php85-php-cli', 'php85'],
+            ['php85-runtime', 'php85'],
+            ['php85-php(api)', 'php85'],
+            ['php-common', ''],
+            ['php(api)', ''],
+            ['phpunit', ''],
+        ];
+    }
+
+    /**
+     * @dataProvider providePHPVersionPrefixCases
+     *
+     * @param string $name
+     * @param string $expected
+     *
+     * @return void
+     */
+    public function testPHPVersionPrefix($name, $expected)
+    {
+        self::assertSame($expected, PHPSystemPackage::getPHPVersionPrefix($name));
     }
 
     /**

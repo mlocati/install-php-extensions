@@ -44,6 +44,12 @@ final class libpng extends SystemDependency
                 ['libpng-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libpng'],
+                ['libpng-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

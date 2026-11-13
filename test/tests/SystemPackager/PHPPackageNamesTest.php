@@ -23,6 +23,10 @@ final class PHPPackageNamesTest extends TestCase
             [new SystemPackager\APK(M::mock(OS::class)), new SystemPackager\Package('php84', '8.4.27-r0', 'php84'), 'php84-dev', 'SimpleXML', ['php84-simplexml', 'php84-pecl-simplexml']],
             [new SystemPackager\APT(M::mock(OS::class)), new SystemPackager\Package('php8.4-cli', '8.4.27-1~deb13u1', 'php8.4'), 'php8.4-dev', 'Zend OPcache', []],
             [new SystemPackager\APK(M::mock(OS::class)), new SystemPackager\Package('php84', '8.4.27-r0', 'php84'), 'php84-dev', 'Zend OPcache', []],
+            [new SystemPackager\DNF\v4(M::mock(OS::class)), new SystemPackager\Package('php-cli', '8.0.30-8.el9_8.1', 'php'), 'php-devel', 'pdo_mysql', ['php-pdo_mysql', 'php-pecl-pdo_mysql']],
+            [new SystemPackager\DNF\v4(M::mock(OS::class)), new SystemPackager\Package('php8.5-cli', '8.5.12-1.amzn2023.0.1', 'php8.5'), 'php8.5-devel', 'redis', ['php8.5-redis', 'php8.5-pecl-redis']],
+            [new SystemPackager\DNF\v5(M::mock(OS::class)), new SystemPackager\Package('php85-php-cli', '8.5.12-1.fc44.remi', 'php85-php'), 'php85-php-devel', 'SimpleXML', ['php85-php-simplexml', 'php85-php-pecl-simplexml']],
+            [new SystemPackager\DNF\v5(M::mock(OS::class)), new SystemPackager\Package('php-cli', '8.5.12-1.fc44', 'php'), 'php-devel', 'Zend OPcache', []],
         ];
     }
 

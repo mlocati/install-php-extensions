@@ -44,6 +44,12 @@ final class libsybdb extends SystemDependency
                 ['freetds-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['freetds-libs'],
+                ['freetds-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

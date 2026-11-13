@@ -58,6 +58,13 @@ final class libwebp extends SystemDependency
                 ['libwebp-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // libwebp includes libwebpdemux and libwebpmux
+            return new Packages(
+                ['libwebp'],
+                ['libwebp-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

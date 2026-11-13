@@ -161,7 +161,7 @@ final class cassandra extends Extension implements
     }
 
     /**
-     * The ScyllaDB driver requires PHP 8.3 and cmake 3.30.
+     * The ScyllaDB driver requires PHP 8.3, cmake 3.30 and a C23 compiler (GCC 13).
      *
      * @return bool
      */
@@ -179,6 +179,12 @@ final class cassandra extends Extension implements
         }
         if ($this->os instanceof OS\Ubuntu) {
             return $this->os->getNumericVersion() >= OS\Ubuntu::RESOLUTE;
+        }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux) {
+            return $this->os->getNumericVersion() >= 10;
+        }
+        if ($this->os instanceof OS\Fedora) {
+            return true;
         }
 
         return false;
@@ -239,7 +245,13 @@ final class cassandra extends Extension implements
     private function buildNanoDriver($directory, BuildTools $buildTools, $parallelJobs)
     {
         $this->runStep($buildTools->getPhpize(), [], $directory);
-        $this->runStep('./configure', [], $directory, $buildTools->getConfigureEnvironment());
+        $arguments = [];
+        $phpConfig = $buildTools->getPhpConfig();
+        if ($phpConfig !== '') {
+            // php-config may be missing from the PATH (for example, with the PHP packages of Remi)
+            $arguments[] = "--with-php-config={$phpConfig}";
+        }
+        $this->runStep('./configure', $arguments, $directory, $buildTools->getConfigureEnvironment());
         $this->runStep($buildTools->getMake(), ['-j' . $parallelJobs, 'install'], $directory);
     }
 

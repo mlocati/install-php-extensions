@@ -10,6 +10,7 @@ final class gd extends Extension implements
     Extension\BundledInPHPSource,
     Extension\DeclaresOptions,
     Extension\RequiresSystemDependencies,
+    Extension\PatchesSourceCode,
     Extension\ProvidesConfigureArguments
 {
     /**
@@ -112,6 +113,23 @@ final class gd extends Extension implements
         }
 
         return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\PatchesSourceCode::patchSourceCode()
+     */
+    public function patchSourceCode(Extension\BuildContext $context)
+    {
+        $phpVersion = $this->php->getMajorMinorVersion();
+        if ($phpVersion < 800 || $phpVersion > 803) {
+            return;
+        }
+        // The php_config.h of a PHP built with an external libgd (like the one of AlmaLinux) defines HAVE_GD_GET_INTERPOLATION, but before PHP 8.4 the bundled libgd doesn't have gdImageGetInterpolationMethod()
+        $file = $context->getSourceDirectory() . '/gd.c';
+        $fs = $this->os->getFilesystem();
+        $fs->writeFile($file, str_replace('#ifdef HAVE_GD_GET_INTERPOLATION', '#if defined(HAVE_GD_GET_INTERPOLATION) && !defined(HAVE_GD_BUNDLED)', $fs->readFile($file)));
     }
 
     /**
