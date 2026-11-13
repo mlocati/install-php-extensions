@@ -44,6 +44,12 @@ class libssh2 extends SystemDependency
                 ['libssh2-1-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libssh2'],
+                ['libssh2-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -44,6 +44,12 @@ final class libsnappy extends SystemDependency
                 ['libsnappy-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['snappy'],
+                ['snappy-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

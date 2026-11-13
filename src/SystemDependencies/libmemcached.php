@@ -44,6 +44,18 @@ final class libmemcached extends SystemDependency
                 ['libmemcached-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 8) {
+            return new Packages(
+                ['libmemcached-libs'],
+                ['libmemcached-devel']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libmemcached-awesome'],
+                ['libmemcached-awesome-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

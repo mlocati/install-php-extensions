@@ -44,6 +44,12 @@ final class libsasl extends SystemDependency
                 ['libsasl2-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['cyrus-sasl-lib'],
+                ['cyrus-sasl-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

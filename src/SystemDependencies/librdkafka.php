@@ -44,6 +44,12 @@ final class librdkafka extends SystemDependency
                 ['librdkafka-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['librdkafka'],
+                ['librdkafka-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

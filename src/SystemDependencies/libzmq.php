@@ -44,6 +44,12 @@ final class libzmq extends SystemDependency
                 []
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['zeromq'],
+                ['zeromq-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

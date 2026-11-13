@@ -44,6 +44,12 @@ class libevent extends SystemDependency
                 ['libevent-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libevent'],
+                ['libevent-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

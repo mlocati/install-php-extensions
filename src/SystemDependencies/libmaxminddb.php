@@ -58,6 +58,12 @@ final class libmaxminddb extends SystemDependency
                 ['libmaxminddb-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libmaxminddb'],
+                ['libmaxminddb-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
