@@ -8,7 +8,7 @@ use IPE\SystemDependency\CompiledLibrary;
 use IPE\SystemPackager\Packages;
 
 /**
- * Debian does not provide the Cassandra C++ driver.
+ * Debian, Ubuntu and the RHEL-like systems don't provide the Cassandra C++ driver.
  */
 final class libcassandra extends CompiledLibrary
 {
@@ -69,6 +69,19 @@ final class libcassandra extends CompiledLibrary
                 ['cmake', 'g++', 'libuv1-dev', 'zlib1g-dev', 'libgmp-dev']
             );
         }
+        if ($this->os instanceof OS\Fedora && $this->os->getNumericVersion() >= 41 && $this->os->getNumericVersion() <= 44) {
+            // openssl-devel doesn't include openssl/engine.h
+            return new Packages(
+                ['libstdc++', 'libuv', 'gmp'],
+                ['cmake', 'gcc-c++', 'libuv-devel', 'zlib-devel', 'gmp-devel', 'openssl-devel-engine']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libstdc++', 'libuv', 'gmp'],
+                ['cmake', 'gcc-c++', 'libuv-devel', 'zlib-devel', 'gmp-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -80,7 +93,7 @@ final class libcassandra extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) && parent::needsCompilation();
+        return ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu || $this->os instanceof OS\Posix\RHELLike) && parent::needsCompilation();
     }
 
     /**
@@ -130,7 +143,7 @@ final class libcassandra extends CompiledLibrary
      */
     protected function build($sourceDirectory)
     {
-        $this->runBuildStep('cmake', [
+        $arguments = [
             '-B', 'build',
             '-S', '.',
             '-DCMAKE_BUILD_TYPE=Release',
@@ -145,8 +158,28 @@ final class libcassandra extends CompiledLibrary
             '-DCASS_USE_TIMERFD=ON',
             '-DCASS_USE_LIBSSH2=OFF',
             '-DCASS_USE_ZLIB=ON',
-        ], $sourceDirectory);
+        ];
+        if ($this->getOpenSSLMajorVersion() >= 4) {
+            // The X509 functions of OpenSSL 4 return const pointers, which the driver assigns to non-const variables.
+            // The driver appends -Werror to CMAKE_CXX_FLAGS: CMAKE_CXX_FLAGS_RELEASE comes after it
+            $arguments[] = '-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG -fpermissive -Wno-error';
+        }
+        $this->runBuildStep('cmake', $arguments, $sourceDirectory);
         $this->runBuildStep('cmake', ['--build', 'build', '--parallel', (string) $this->getParallelJobs()], $sourceDirectory);
         $this->runBuildStep('cmake', ['--build', 'build', '--target', 'install'], $sourceDirectory);
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     *
+     * @return int 0 if the OpenSSL headers are missing
+     */
+    private function getOpenSSLMajorVersion()
+    {
+        $fs = $this->os->getFilesystem();
+        $file = '/usr/include/openssl/opensslv.h';
+        $matches = null;
+
+        return $fs->isFile($file) && preg_match('/^#\s*define\s+OPENSSL_VERSION_MAJOR\s+(?<major>\d+)/m', $fs->readFile($file), $matches) ? (int) $matches['major'] : 0;
     }
 }
