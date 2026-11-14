@@ -58,6 +58,12 @@ final class libcapstone extends SystemDependency
                 ['libcapstone-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['capstone'],
+                ['capstone-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
