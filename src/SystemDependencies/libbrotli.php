@@ -54,6 +54,18 @@ class libbrotli extends SystemDependency
                 ['libbrotli-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 8) {
+            return new Packages(
+                ['brotli'],
+                ['brotli-devel']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libbrotli'],
+                ['brotli-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
