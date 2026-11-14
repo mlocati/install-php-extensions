@@ -112,9 +112,15 @@ abstract class DNF extends SystemPackager
     public function getPHPExtensionPackageCandidates(Package $phpPackage, $extensionName)
     {
         $name = strtolower($extensionName);
+        $source = $phpPackage->getSource();
+        $candidates = ["{$source}-{$name}", "{$source}-pecl-{$name}"];
+        if (preg_match('/^php\d+\.\d+$/D', $source)) {
+            // The versioned PHP packages of EL 10 and Amazon Linux provide some extensions only without the version (for example, php8.4-mysqlnd provides php-mysqli)
+            $candidates[] = "php-{$name}";
+        }
         $result = [];
         // The PECL packages provide the name without "pecl-", even when their name includes the major version (for example, php-pecl-redis6 provides php-redis)
-        foreach (["{$phpPackage->getSource()}-{$name}", "{$phpPackage->getSource()}-pecl-{$name}"] as $candidate) {
+        foreach ($candidates as $candidate) {
             if ($this->validatePackageName($candidate, false)) {
                 $result[] = $candidate;
             }
