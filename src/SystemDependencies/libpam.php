@@ -66,6 +66,24 @@ final class libpam extends SystemDependency
                 ['libpam0g-dev', 'libaudit-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 9) {
+            return new Packages(
+                ['pam'],
+                ['pam-devel']
+            );
+        }
+        if ($this->os instanceof OS\AmazonLinux) {
+            return new Packages(
+                ['pam'],
+                ['pam-devel']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['pam-libs'],
+                ['pam-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

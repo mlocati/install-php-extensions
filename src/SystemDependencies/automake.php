@@ -44,6 +44,12 @@ final class automake extends SystemDependency
                 ['automake']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                [],
+                ['automake']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

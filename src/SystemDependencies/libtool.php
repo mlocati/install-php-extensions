@@ -44,6 +44,12 @@ final class libtool extends SystemDependency
                 ['libtool']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                [],
+                ['libtool']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
