@@ -220,7 +220,22 @@ function generateSystemDependencyOptions(array $definitions): array
  */
 function describeEnvironment(string $environment): string
 {
-    $osNames = ['alpine' => 'Alpine', 'debian' => 'Debian', 'ubuntu' => 'Ubuntu', 'windows' => 'Windows'];
+    $osNames = [
+        'almalinux' => 'AlmaLinux',
+        'alpine' => 'Alpine',
+        'amzn' => 'Amazon Linux',
+        'centos' => 'CentOS',
+        'debian' => 'Debian',
+        'el' => 'Enterprise Linux',
+        'fedora' => 'Fedora',
+        'ol' => 'Oracle Linux',
+        'posix' => 'POSIX systems',
+        'rhel' => 'RHEL',
+        'rhellike' => 'RHEL-like systems',
+        'rocky' => 'Rocky Linux',
+        'ubuntu' => 'Ubuntu',
+        'windows' => 'Windows',
+    ];
     if (!preg_match('/^(?<os>[a-z]+)(?:(?<osVersion>\d+(?:\.\d+)*)(?:\.\.(?<osVersionTo>\d+(?:\.\d+)*))?)?(?:-php(?<php>\d+(?:\.\d+)?))?(?:-(?<threadSafety>nts|zts))?$/D', $environment, $match) || !isset($osNames[$match['os']])) {
         throw new \RuntimeException("Unrecognized environment: {$environment}");
     }
