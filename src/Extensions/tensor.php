@@ -110,8 +110,15 @@ final class tensor extends Extension implements
      */
     public function getConfigureEnvironment(Extension\BuildContext $context)
     {
-        // On Debian Stretch, /usr/include/cblas.h comes from libblas-dev and doesn't declare the OpenBLAS functions
-        return $this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::STRETCH ? ['CPPFLAGS' => '-I/usr/include/openblas'] : [];
+        // On Debian Stretch and RHEL-like systems, /usr/include/cblas.h is missing or comes from another BLAS, and doesn't declare the OpenBLAS functions
+        if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::STRETCH) {
+            return ['CPPFLAGS' => '-I/usr/include/openblas'];
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return ['CPPFLAGS' => '-I/usr/include/openblas'];
+        }
+
+        return [];
     }
 
     /**
