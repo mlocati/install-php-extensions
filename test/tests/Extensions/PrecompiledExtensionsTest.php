@@ -554,6 +554,9 @@ final class PrecompiledExtensionsTest extends TestCase
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
         $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
         $fs->shouldReceive('resolveCommand')->with('pkg-config')->andReturn('/usr/bin/pkg-config');
+        $fs->shouldReceive('resolveCommand')->with('cmake')->andReturn('/usr/bin/cmake');
+        $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('/usr/bin/gcc');
+        $fs->shouldReceive('resolveCommand')->with('g++')->andReturn('/usr/bin/g++');
         $fs->shouldReceive('run')->andReturnUsing(static function (Command $command) use (&$commands) {
             switch ($command->getCommand()) {
                 case '/usr/local/bin/php-config':
@@ -584,6 +587,7 @@ final class PrecompiledExtensionsTest extends TestCase
             $expectedEnvironment['SED'] = 'sed';
             $expectedEnvironment['PKG_CONFIG'] = '/usr/bin/pkg-config';
         }
+        $expectedEnvironment += ['CMAKE' => '/usr/bin/cmake', 'GCC' => '/usr/bin/gcc', 'GXX' => '/usr/bin/g++'];
         if ($needsPlatform) {
             $expectedEnvironment['PLATFORM'] = 'linux';
         }
