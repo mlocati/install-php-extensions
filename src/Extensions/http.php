@@ -151,6 +151,12 @@ final class http extends Extension implements
                 ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]
                 : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libgcrypt::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn2::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE];
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // libcurl uses OpenSSL, so GnuTLS and libgcrypt are not needed
+            return $legacy
+                ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]
+                : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn2::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE];
+        }
 
         throw new Exception\UnsupportedOS('The system libraries required by ' . self::getHandle() . " are not known for {$this->os->getDisplayName()}");
     }
