@@ -239,6 +239,8 @@ final class Compiler
      *
      * @param \IPE\Extension|null $known
      *
+     * @throws \IPE\Exception\IO
+     *
      * @return array<non-empty-string, string>
      */
     private function buildMakeEnvironment($known, Extension\BuildContext $context)

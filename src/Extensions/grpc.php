@@ -128,6 +128,10 @@ final class grpc extends Extension implements
                 return '1.70.0';
             }
         }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 8) {
+            // Newer versions require GCC 10
+            return '1.84.0';
+        }
 
         return '';
     }
@@ -158,6 +162,10 @@ final class grpc extends Extension implements
         if (!self::isVersionAtLeast($context->getVersion(), '1.52.0')) {
             // The bundled abseil uses uint8_t and std::numeric_limits without including their headers, and GCC 13+ doesn't include them implicitly anymore
             $cxxFlags .= ' -include cstdint -include limits';
+        }
+        if (self::isVersionAtLeast($context->getVersion(), '1.85.0') && $this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() >= 10 && OS\Architecture::ofPHP($this->php, $this->os) === OS\Architecture::X64) {
+            // EL 10 targets x86-64-v3, so __BMI2__ is defined and the bundled abseil includes <bmi2intrin.h>, which can't be included directly
+            $cxxFlags .= ' -include x86gprintrin.h';
         }
 
         return ['EXTRA_CFLAGS' => $cFlags, 'EXTRA_CXXFLAGS' => $cxxFlags];

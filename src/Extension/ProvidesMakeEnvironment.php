@@ -9,6 +9,8 @@ namespace IPE\Extension;
 interface ProvidesMakeEnvironment
 {
     /**
+     * @throws \IPE\Exception\IO
+     *
      * @return array<non-empty-string, string> the values are appended to the ones set by IPE and by the user, so they should be lists of flags
      */
     public function getMakeEnvironment(BuildContext $context);
