@@ -78,20 +78,20 @@ final class dba extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        // Besides being useful, these handlers are required when the php_config.h of the PHP packages enables them (like on RHEL-like systems)
+        // Besides being useful, these handlers are required when the php_config.h of the PHP packages enables them (like on Alpine and RHEL-like systems)
         $result = [SystemDependencies\libdb::HANDLE];
         if ($this->php->getMajorMinorVersion() >= 702) {
             $result[] = SystemDependencies\liblmdb::HANDLE;
         }
-        // Alpine doesn't provide Tokyo Cabinet and QDBM
+        // Alpine doesn't provide Tokyo Cabinet
         if (!$this->os instanceof OS\Alpine) {
             $result[] = SystemDependencies\libtokyocabinet::HANDLE;
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        // QDBM and GDBM can't be used together
+        if ($this->usesQDBM()) {
             $result[] = SystemDependencies\libqdbm::HANDLE;
-        } elseif ($this->os instanceof OS\Posix\RHELLike && $this->os->getSystemPackager()->findAvailablePackage('qdbm-devel') !== null) {
-            // Among the RHEL-like systems, QDBM is provided by Fedora and by the repositories of Remi
-            $result[] = SystemDependencies\libqdbm::HANDLE;
+        } else {
+            $result[] = SystemDependencies\libgdbm::HANDLE;
         }
 
         return $result;
@@ -113,11 +113,36 @@ final class dba extends Extension implements
         if ($fs->isFile('/usr/include/tcadb.h')) {
             $result[] = '--with-tcadb';
         }
-        if ($fs->isFile('/usr/include/qdbm/depot.h')) {
+        if ($this->php->getMajorMinorVersion() >= 704 && $fs->isFile('/usr/include/qdbm/depot.h')) {
             $result[] = '--with-qdbm';
+        } elseif ($fs->isFile('/usr/include/gdbm.h')) {
+            $result[] = '--with-gdbm';
         }
 
         return $result;
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return bool
+     */
+    private function usesQDBM()
+    {
+        // Before PHP 7.4, configure doesn't look for the headers in /usr/include/qdbm, where the operating systems put them
+        if ($this->php->getMajorMinorVersion() < 704) {
+            return false;
+        }
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+            return true;
+        }
+        // Among the RHEL-like systems, QDBM is provided by Fedora and by Remi (qdbm-devel only by its remi repository)
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return $this->os->getSystemPackager()->findAvailablePackage('qdbm') !== null;
+        }
+
+        return false;
     }
 
     /**

@@ -172,7 +172,11 @@ final class DockerImages
         }
         // See https://rpms.remirepo.net/wizard/
         foreach (['almalinux9-remi' => 9, 'almalinux10-remi' => 10] as $os => $elVersion) {
-            $remiSetup = array_merge($enterpriseLinuxSetup, ["dnf install -y https://rpms.remirepo.net/enterprise/remi-release-{$elVersion}.rpm"]);
+            $remiSetup = array_merge($enterpriseLinuxSetup, [
+                "dnf install -y https://rpms.remirepo.net/enterprise/remi-release-{$elVersion}.rpm",
+                // Users enable the remi repository for the libraries that only it provides (like qdbm-devel for dba): don't let it replace the other packages
+                "dnf config-manager --save --setopt=remi.enabled=1 --setopt='remi.includepkgs=qdbm*'",
+            ]);
             if ($elVersion <= 9) {
                 $remiSetup[] = $nodejsSetup;
             }

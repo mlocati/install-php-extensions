@@ -444,7 +444,8 @@ abstract class DNF extends SystemPackager
         $missing = array_values(array_unique($matches['name']));
         $result = [];
         foreach ($this->listRepositories(false) as $repository) {
-            if (!preg_match('/^(?:crb|powertools)$|codeready/i', $repository) || preg_match('/debug|source/i', $repository)) {
+            // The remi repository of Remi provides some libraries required by its PHP packages (like qdbm-devel)
+            if (!preg_match('/^(?:crb|powertools|remi)$|codeready/i', $repository) || preg_match('/debug|source/i', $repository)) {
                 continue;
             }
             $found = [];

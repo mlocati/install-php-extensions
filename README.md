@@ -669,6 +669,8 @@ IPE doesn't enable them: if it fails because some packages are missing, enable t
 | Red Hat Universal Base Image (CRB is already enabled) | `dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm` |
 | Red Hat Enterprise Linux | `dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm && subscription-manager repos --enable codeready-builder-for-rhel-$(rpm -E %rhel)-$(arch)-rpms` |
 
+With the PHP packages of [Remi](https://rpms.remirepo.net/), some extensions (like dba) also need libraries that are only available in the `remi` repository, which is disabled by default: enable it with `dnf config-manager --set-enabled remi`.
+
 
 ## System dependencies
 

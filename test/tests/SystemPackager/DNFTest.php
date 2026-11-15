@@ -487,6 +487,25 @@ EOT;
     /**
      * @return void
      */
+    public function testExplainMissingPackagesOfRemi()
+    {
+        $dnf = new DNF\v4(self::createOS([
+            self::installedPackages([]),
+            ['dnf', ['install', '--assumeno', '--setopt=install_weak_deps=False', 'qdbm-devel'], 1, "No match for argument: qdbm-devel\nError: Unable to find a match: qdbm-devel\n", Command::OUTPUT_CAPTURE_ALL],
+            ['dnf', ['repolist', '--disabled'], 0, "repo id                    repo name\nremi                       Remi's RPM repository for Enterprise Linux 9 - x86_64\nremi-debuginfo             Remi's RPM repository for Enterprise Linux 9 - x86_64 - debuginfo\nremi-test                  Remi's test RPM repository for Enterprise Linux 9 - x86_64\n"],
+            ['dnf', self::repoquery(self::QUERYFORMAT_V4, ['--repo=remi', '--whatprovides', 'qdbm-devel']), 0, "qdbm-devel|0|1.8.78|39.el9.remi|x86_64|qdbm-1.8.78-39.el9.remi.src.rpm\n"],
+        ], true, M::mock(OS\AlmaLinux::class)));
+        try {
+            $dnf->expandPackageList(['qdbm-devel']);
+            self::fail('The package should be missing');
+        } catch (Exception\SystemPackager $x) {
+            self::assertStringContainsString("\nThe disabled repository remi provides: qdbm-devel\n", $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
     public function testMissingPackagesWithEPEL()
     {
         $dnf = new DNF\v4(self::createOS([

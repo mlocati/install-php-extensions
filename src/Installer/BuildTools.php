@@ -170,8 +170,8 @@ final class BuildTools
                 return $matches['libdir'];
             }
         }
-        // Debian stores the libraries in a multiarch directory: the configure scripts of PHP up to 8.0 often don't look there (for example, the one of pdo_dblib), and both the Docker images of PHP 5.5 and the system PHP packages don't specify it
-        if ($this->php->getMajorMinorVersion() > 800 || $this->fs->resolveCommand('gcc') === '') {
+        // Debian stores the libraries in a multiarch directory: some configure scripts don't look there (for example, the ones of pdo_dblib before PHP 8.1, and of dba), and both the Docker images of PHP 5.5 and the system PHP packages don't specify it
+        if ($this->fs->resolveCommand('gcc') === '') {
             return '';
         }
         list($rc, $output) = $this->fs->run(Command::create('gcc', ['-print-multiarch']));
