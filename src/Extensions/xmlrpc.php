@@ -10,6 +10,7 @@ final class xmlrpc extends Extension implements
     Extension\BundledInPHPSource,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\DependsOnExtensions,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -110,5 +111,26 @@ final class xmlrpc extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libxml2::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // It uses the php_XML_* functions of the xml extension, that may be shared (for example on RHEL-like systems)
+        return [xml::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }
