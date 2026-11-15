@@ -34,13 +34,15 @@ final class zephir_parser extends Extension implements
     }
 
     /**
+     * Before 1.4.0 the module name was "Zephir Parser".
+     *
      * {@inheritdoc}
      *
      * @see \IPE\Extension::getInstalledNames()
      */
     public static function getInstalledNames()
     {
-        return ['Zephir Parser'];
+        return ['zephir_parser', 'Zephir Parser'];
     }
 
     /**
