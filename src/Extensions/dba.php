@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class dba extends Extension implements
@@ -77,7 +78,23 @@ final class dba extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        return [SystemDependencies\libdb::HANDLE];
+        // Besides being useful, these handlers are required when the php_config.h of the PHP packages enables them (like on RHEL-like systems)
+        $result = [SystemDependencies\libdb::HANDLE];
+        if ($this->php->getMajorMinorVersion() >= 702) {
+            $result[] = SystemDependencies\liblmdb::HANDLE;
+        }
+        // Alpine doesn't provide Tokyo Cabinet and QDBM
+        if (!$this->os instanceof OS\Alpine) {
+            $result[] = SystemDependencies\libtokyocabinet::HANDLE;
+        }
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+            $result[] = SystemDependencies\libqdbm::HANDLE;
+        } elseif ($this->os instanceof OS\Posix\RHELLike && $this->os->getSystemPackager()->findAvailablePackage('qdbm-devel') !== null) {
+            // Among the RHEL-like systems, QDBM is provided by Fedora and by the repositories of Remi
+            $result[] = SystemDependencies\libqdbm::HANDLE;
+        }
+
+        return $result;
     }
 
     /**
@@ -87,7 +104,20 @@ final class dba extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        return ['--with-db4'];
+        $result = ['--with-db4'];
+        // Not every system provides every library (see getRequiredSystemDependencies())
+        $fs = $this->os->getFilesystem();
+        if ($this->php->getMajorMinorVersion() >= 702 && $fs->isFile('/usr/include/lmdb.h')) {
+            $result[] = '--with-lmdb';
+        }
+        if ($fs->isFile('/usr/include/tcadb.h')) {
+            $result[] = '--with-tcadb';
+        }
+        if ($fs->isFile('/usr/include/qdbm/depot.h')) {
+            $result[] = '--with-qdbm';
+        }
+
+        return $result;
     }
 
     /**

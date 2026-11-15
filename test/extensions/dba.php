@@ -4,12 +4,11 @@ require_once __DIR__ . '/_bootstrap.php';
 
 echo 'Checking dba... ';
 
-if (!in_array('db4', dba_handlers(false), true)) {
-    throw new TestFailedException("DBA does not support the db4 handler.\nSupported handlers:\n- " . implode("\n- ", dba_handlers(false)));
-}
+// The dba packages of some systems (like AlmaLinux 9) don't support db4
+$handler = in_array('db4', dba_handlers(false), true) ? 'db4' : 'flatfile';
 $file = tempnam(sys_get_temp_dir(), 'ipe');
 try {
-    $db = dba_open($file, 'n', 'db4');
+    $db = dba_open($file, 'n', $handler);
     if ($db === false) {
         throw new TestFailedException('dba_open() failed');
     }

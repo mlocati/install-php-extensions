@@ -210,6 +210,7 @@ final class ExtensionsInstaller
      *
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\UnsupportedOS
+     * @throws \IPE\Exception\SystemPackager
      *
      * @return list<non-empty-string>
      */
