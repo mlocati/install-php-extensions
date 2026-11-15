@@ -44,6 +44,12 @@ class libsqlite extends SystemDependency
                 ['libsqlite3-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['sqlite-libs'],
+                ['sqlite-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -67,6 +67,12 @@ final class libaspell extends SystemDependency
                 ['libpspell-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                array_merge(['aspell'], $dictionaries),
+                ['aspell-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

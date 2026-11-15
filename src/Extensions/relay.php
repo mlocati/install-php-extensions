@@ -51,13 +51,15 @@ final class relay extends Extension\PrecompiledExtension implements
     {
         $noBuild = 'the vendor doesn\'t publish ZTS builds for this system';
         $noHiredis = 'the ZTS build requires libhiredis 1.1.0, which is not available';
+        $noCK = 'the ZTS build requires the ck library, which is not available';
 
         return [
             'alpine3.10..3.16-zts' => $noBuild,
-            'alpine3.17-zts' => 'the ZTS build requires the ck library, which is not available',
+            'alpine3.17-zts' => $noCK,
             'alpine3.22..3.24-zts' => $noHiredis,
             'debian10..11-zts' => $noBuild,
             'debian12-zts' => $noHiredis,
+            'amzn2023-zts' => $noCK,
         ];
     }
 

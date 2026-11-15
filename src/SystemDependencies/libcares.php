@@ -44,6 +44,12 @@ class libcares extends SystemDependency
                 ['libc-ares-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['c-ares'],
+                ['c-ares-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

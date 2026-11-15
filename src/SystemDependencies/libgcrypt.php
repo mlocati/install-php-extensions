@@ -44,6 +44,12 @@ class libgcrypt extends SystemDependency
                 ['libgcrypt20-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libgcrypt'],
+                ['libgcrypt-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

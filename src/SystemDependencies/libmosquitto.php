@@ -54,6 +54,15 @@ final class libmosquitto extends SystemDependency
                 ['libmosquitto-dev']
             );
         }
+        if ($this->os instanceof OS\AmazonLinux) {
+            throw $this->createNotProvidedException();
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['mosquitto'],
+                ['mosquitto-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

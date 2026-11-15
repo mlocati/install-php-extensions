@@ -44,6 +44,12 @@ class libidn extends SystemDependency
                 ['^libidn1[0-9+]-dev$']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libidn'],
+                ['libidn-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

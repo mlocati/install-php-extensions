@@ -44,6 +44,12 @@ final class gawk extends SystemDependency
                 ['gawk']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                [],
+                ['gawk']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

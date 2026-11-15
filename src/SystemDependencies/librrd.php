@@ -44,6 +44,12 @@ final class librrd extends SystemDependency
                 ['librrd-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['rrdtool'],
+                ['rrdtool-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

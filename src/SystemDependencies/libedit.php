@@ -44,6 +44,12 @@ final class libedit extends SystemDependency
                 ['libedit-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libedit'],
+                ['libedit-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

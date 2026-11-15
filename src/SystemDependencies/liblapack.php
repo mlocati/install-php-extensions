@@ -102,6 +102,18 @@ final class liblapack extends SystemDependency
                 $volatile
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 8) {
+            return new Packages(
+                ['lapack', 'openblas', 'libgfortran'],
+                ['lapack-devel', 'openblas-devel', 'gcc-gfortran']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['lapack', 'openblas-serial', 'libgfortran'],
+                ['lapack-devel', 'openblas-devel', 'gcc-gfortran']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

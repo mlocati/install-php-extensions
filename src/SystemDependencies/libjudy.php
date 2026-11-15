@@ -44,6 +44,15 @@ final class libjudy extends SystemDependency
                 ['libjudy-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 8) {
+            throw $this->createNotProvidedException();
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['Judy'],
+                ['Judy-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

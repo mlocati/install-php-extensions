@@ -52,6 +52,12 @@ class libck extends SystemDependency
 
             return new Packages(['^libck0(t64)?$']);
         }
+        if ($this->os instanceof OS\AmazonLinux) {
+            throw $this->createNotProvidedException();
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(['ck']);
+        }
 
         throw $this->createUnknownPackagesException();
     }

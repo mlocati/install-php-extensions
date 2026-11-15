@@ -44,6 +44,12 @@ final class libgeos extends SystemDependency
                 ['libgeos-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['geos'],
+                ['geos-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

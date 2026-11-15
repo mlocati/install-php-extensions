@@ -71,6 +71,15 @@ final class libfbclient extends CompiledLibrary
                 ['firebird-dev', 'libib-util']
             );
         }
+        if ($this->os instanceof OS\AmazonLinux) {
+            throw $this->createNotProvidedException();
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libfbclient2'],
+                ['firebird-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -44,6 +44,12 @@ final class libdb extends SystemDependency
                 ['^libdb5\.3-dev$']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libdb'],
+                ['libdb-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

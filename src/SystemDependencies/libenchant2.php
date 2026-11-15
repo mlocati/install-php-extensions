@@ -26,12 +26,15 @@ final class libenchant2 extends SystemDependency
     }
 
     /**
-     * Does the operating system provide enchant 2 (and no more enchant 1)?
+     * Does the operating system provide enchant 2 (and, except on RHEL-like systems, no more enchant 1)?
      *
      * @return bool
      */
     public static function isProvidedByOS(OS $os)
     {
+        if ($os instanceof OS\Posix\RHELLike) {
+            return true;
+        }
         if ($os instanceof OS\Alpine) {
             return $os->getNumericVersion() >= 312;
         }
@@ -59,6 +62,12 @@ final class libenchant2 extends SystemDependency
             return new Packages(
                 ['enchant2'],
                 ['enchant2-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['enchant2'],
+                ['enchant2-devel']
             );
         }
 

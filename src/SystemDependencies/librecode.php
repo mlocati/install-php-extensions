@@ -57,6 +57,12 @@ final class librecode extends SystemDependency
                 ['librecode-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['recode'],
+                ['recode-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

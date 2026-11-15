@@ -44,6 +44,15 @@ final class liblua extends SystemDependency
                 ['liblua5.1-0-dev']
             );
         }
+        if ($this->os instanceof OS\AmazonLinux) {
+            throw $this->createNotProvidedException();
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['compat-lua-libs'],
+                ['compat-lua-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

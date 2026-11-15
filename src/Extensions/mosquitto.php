@@ -9,6 +9,7 @@ use IPE\SystemDependencies;
 final class mosquitto extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\DeclaresUnsupportedEnvironments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -35,6 +36,18 @@ final class mosquitto extends Extension implements
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            'amzn2023' => "this system doesn't provide the Mosquitto library",
+        ];
     }
 
     /**

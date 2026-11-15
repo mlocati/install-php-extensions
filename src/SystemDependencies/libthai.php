@@ -50,6 +50,12 @@ final class libthai extends CompiledLibrary
                 ['libthai-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libthai'],
+                ['libthai-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -44,6 +44,12 @@ final class libsnmp extends SystemDependency
                 ['libsnmp-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['net-snmp-libs'],
+                ['net-snmp-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

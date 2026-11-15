@@ -44,6 +44,18 @@ final class libmcrypt extends SystemDependency
                 ['libmcrypt-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() >= 10) {
+            throw $this->createNotProvidedException();
+        }
+        if ($this->os instanceof OS\AmazonLinux) {
+            throw $this->createNotProvidedException();
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libmcrypt'],
+                ['libmcrypt-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

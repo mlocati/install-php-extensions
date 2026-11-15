@@ -74,6 +74,12 @@ final class libenchant extends CompiledLibrary
                 ['libglib2.0-dev', 'libaspell-dev', 'libhunspell-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['enchant'],
+                ['enchant-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -85,7 +91,8 @@ final class libenchant extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return libenchant2::isProvidedByOS($this->os) && parent::needsCompilation();
+        // RHEL-like systems provide both enchant 1 and enchant 2
+        return !$this->os instanceof OS\Posix\RHELLike && libenchant2::isProvidedByOS($this->os) && parent::needsCompilation();
     }
 
     /**

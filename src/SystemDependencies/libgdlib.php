@@ -44,6 +44,12 @@ final class libgdlib extends SystemDependency
                 ['libgd-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['gd'],
+                ['gd-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

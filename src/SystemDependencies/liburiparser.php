@@ -44,6 +44,15 @@ final class liburiparser extends SystemDependency
                 ['liburiparser-dev']
             );
         }
+        if ($this->os instanceof OS\AmazonLinux) {
+            throw $this->createNotProvidedException();
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['uriparser'],
+                ['uriparser-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

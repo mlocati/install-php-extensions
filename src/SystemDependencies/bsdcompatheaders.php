@@ -44,6 +44,9 @@ final class bsdcompatheaders extends SystemDependency
                 []
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }

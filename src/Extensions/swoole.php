@@ -383,6 +383,10 @@ final class swoole extends Extension implements
         if (!self::isVersionAtLeast($version, '6.2.0')) {
             return false;
         }
+        // Amazon Linux doesn't provide Firebird
+        if ($this->os instanceof OS\AmazonLinux) {
+            return false;
+        }
 
         // swoole requires Firebird 3+, but on Alpine with PHP < 8.4 we use Firebird 2.5 (see libfbclient)
         return !$this->os instanceof OS\Alpine || $this->php->getMajorMinorVersion() >= 804;

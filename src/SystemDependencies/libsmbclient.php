@@ -44,6 +44,12 @@ final class libsmbclient extends SystemDependency
                 ['libsmbclient-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libsmbclient'],
+                ['libsmbclient-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

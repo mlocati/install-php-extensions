@@ -54,6 +54,12 @@ final class libsofthsm extends SystemDependency
                 []
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['softhsm'],
+                []
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

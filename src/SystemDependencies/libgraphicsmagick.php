@@ -44,6 +44,12 @@ final class libgraphicsmagick extends SystemDependency
                 ['libgraphicsmagick1-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['GraphicsMagick'],
+                ['GraphicsMagick-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
