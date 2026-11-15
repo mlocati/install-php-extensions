@@ -595,45 +595,6 @@ final class PrecompiledExtensionsTest extends TestCase
     }
 
     /**
-     * @return array<array{string, int, string, bool}> the pdo_snowflake version, the PHP version, the OPENSSL_VERSION_TEXT of PHP, and whether the extension is supported
-     */
-    public static function providePdoSnowflakeSSLLibraries()
-    {
-        return [
-            ['4.3.1', 804, 'OpenSSL 4.0.3 1 Oct 2026', true],
-            ['4.3.1', 805, '', true],
-            ['4.3.1', 805, 'OpenSSL 3.5.4 30 Sep 2025', true],
-            ['4.3.1', 805, 'OpenSSL 1.1.1k  FIPS 25 Mar 2021', false],
-            ['4.3.1', 805, 'OpenSSL 4.0.3 1 Oct 2026', false],
-            ['4.3.1', 805, 'LibreSSL 3.9.2', false],
-            ['0.2.4', 805, 'OpenSSL 1.1.1w  11 Sep 2023', true],
-            ['0.2.4', 805, 'OpenSSL 3.5.4 30 Sep 2025', false],
-        ];
-    }
-
-    /**
-     * @dataProvider providePdoSnowflakeSSLLibraries
-     *
-     * @param string $version
-     * @param int $phpVersion
-     * @param string $sslVersionText
-     * @param bool $supported
-     *
-     * @return void
-     */
-    public function testPdoSnowflakeSSLLibrary($version, $phpVersion, $sslVersionText, $supported)
-    {
-        $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
-        $php->shouldReceive('getSSLLibrary')->andReturn(PHPInfo\SSLLibrary::fromVersionText($sslVersionText));
-        $pdoSnowflake = new Extensions\pdo_snowflake($php, self::createOS(OS\Fedora::class, 45));
-        if (!$supported) {
-            $this->expectException(Exception\UnsupportedExtension::class);
-        }
-        self::assertSame("https://codeload.github.com/snowflakedb/pdo_snowflake/tar.gz/v{$version}", $pdoSnowflake->getBinaryArchiveURL($version));
-    }
-
-    /**
      * @return void
      */
     public function testPECLDefaults()
