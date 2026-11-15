@@ -67,6 +67,10 @@ final class libaspell extends SystemDependency
                 ['libpspell-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() >= 10) {
+            // Enterprise Linux 10 doesn't provide the English dictionary
+            $dictionaries = array_values(array_diff($dictionaries, ['aspell-en']));
+        }
         if ($this->os instanceof OS\Posix\RHELLike) {
             return new Packages(
                 array_merge(['aspell'], $dictionaries),
