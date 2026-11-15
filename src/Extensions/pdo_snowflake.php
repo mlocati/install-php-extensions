@@ -7,6 +7,7 @@ use IPE\Extension;
 use IPE\Filesystem\Command;
 use IPE\Installer\BuildTools;
 use IPE\Option;
+use IPE\PHPInfo\SSLLibrary;
 use IPE\SystemDependencies;
 
 /**
@@ -123,6 +124,15 @@ final class pdo_snowflake extends Extension implements
     {
         if (!preg_match('/^\d+(\.\d+)*$/D', $versionRequirements)) {
             throw new Exception\UnsupportedExtension("The extension pdo_snowflake can only be installed by specifying an exact version number (you asked for '{$versionRequirements}')");
+        }
+        // Since PHP 8.5 extensions aren't loaded with RTLD_DEEPBIND, so the bundled OpenSSL uses the symbols of the SSL library loaded by PHP
+        $library = $this->php->getMajorMinorVersion() >= 805 ? $this->php->getSSLLibrary() : null;
+        if ($library !== null) {
+            $bundledMajorVersion = self::isVersionAtLeast($versionRequirements, '2.0.0') ? 3 : 1;
+            if ($library->getType() !== SSLLibrary::TYPE_OPENSSL || $library->getMajorVersion() !== $bundledMajorVersion) {
+                $libraryName = $library->getType() === SSLLibrary::TYPE_OPENSSL ? 'OpenSSL' : 'LibreSSL';
+                throw new Exception\UnsupportedExtension("The extension pdo_snowflake {$versionRequirements} includes OpenSSL {$bundledMajorVersion}, which is not compatible with the {$libraryName} {$library->getVersion()} used by PHP");
+            }
         }
 
         return "https://codeload.github.com/snowflakedb/pdo_snowflake/tar.gz/v{$versionRequirements}";
