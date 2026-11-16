@@ -63,7 +63,10 @@ final class blackfire extends Extension\PrecompiledExtension implements
         $reason = 'the probe for PHP 5 requires glibc 2.33 or older';
 
         return [
+            'amzn2023-php5' => $reason,
             'debian12..15-php5' => $reason,
+            'el9..10-php5' => $reason,
+            'fedora-php5' => $reason,
             'ubuntu22.04..26.10-php5' => $reason,
         ];
     }
@@ -99,7 +102,7 @@ final class blackfire extends Extension\PrecompiledExtension implements
         $this->checkExactVersion($versionRequirements);
         if ($this->os instanceof OS\Alpine) {
             $distro = 'alpine';
-        } elseif ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        } elseif ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu || $this->os instanceof OS\Posix\RHELLike) {
             $distro = 'linux';
         } else {
             throw new Exception\UnsupportedOS("The Blackfire probe can't be installed on {$this->os->getDisplayName()}");

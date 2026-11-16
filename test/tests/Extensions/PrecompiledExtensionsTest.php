@@ -111,6 +111,10 @@ final class PrecompiledExtensionsTest extends TestCase
             '#^https://packages\.blackfire\.io/binaries/blackfire-php/1\.2\.3/blackfire-php-linux_\w+-php-74-zts\.tar\.gz$#',
             (new Extensions\blackfire(self::createPHP(704, true), self::createOS(OS\Debian::class, 12), $downloader))->getBinaryArchiveURL('1.2.3')
         );
+        self::assertMatchesRegularExpression(
+            '#^https://blackfire\.io/api/v1/releases/probe/php/linux/\w+/84$#',
+            (new Extensions\blackfire(self::createPHP(), self::createOS(OS\AlmaLinux::class, 9), $downloader))->getBinaryArchiveURL('')
+        );
         $php = self::createPHP();
         $os = self::createOS(OS\Debian::class, 12, self::createFilesystem(['/src/blackfire-20240924.sha1', '/src/blackfire-20240924.so']));
         self::assertSame('/src/blackfire-20240924.so', (new Extensions\blackfire($php, $os, $downloader))->findBinaryModule('/src', ''));
