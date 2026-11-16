@@ -44,6 +44,13 @@ final class libgeoip extends SystemDependency
                 ['libgeoip-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // Enterprise Linux 9+ doesn't provide GeoIP, but the remi-safe repository of Remi does
+            return new Packages(
+                ['GeoIP'],
+                ['GeoIP-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
