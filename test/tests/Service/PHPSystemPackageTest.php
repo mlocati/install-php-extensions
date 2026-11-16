@@ -325,6 +325,24 @@ final class PHPSystemPackageTest extends TestCase
     /**
      * @return void
      */
+    public function testExtensionNotFromLibraryWithSameName()
+    {
+        $phpPackage = new SystemPackager\Package('php-cli', '8.5.0-1.fc44', 'php');
+        $subject = self::createWithAvailable($phpPackage, [
+            // A PHP library
+            'php-oauth' => [new SystemPackager\Package('php-oauth', '1.0-0.36.svn1271.fc44', 'php-oauth')],
+            'php-pecl-oauth' => [new SystemPackager\Package('php-pecl-oauth', '2.0.10-2.fc44', 'php-pecl-oauth')],
+        ]);
+        $os = M::mock(OS\Posix::class);
+        $os->shouldReceive('getSystemPackager')->andReturn(new SystemPackager\DNF\v5(M::mock(OS::class)));
+        $package = $subject->findExtensionPackage(new Extensions\oauth(M::mock(PHPInfo::class), $os));
+        self::assertNotNull($package);
+        self::assertSame('php-pecl-oauth', $package->getName());
+    }
+
+    /**
+     * @return void
+     */
     public function testExtensionPackageWithoutPHPPackage()
     {
         $php = M::mock(PHPInfo::class);
