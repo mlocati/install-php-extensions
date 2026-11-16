@@ -58,6 +58,12 @@ final class tideways extends Extension\PrecompiledExtension implements
             'debian13..15-php5' => $reason,
             'debian13..15-php7.0' => $reason,
             'debian13..15-php7.1' => $reason,
+            'el10-php5' => $reason,
+            'el10-php7.0' => $reason,
+            'el10-php7.1' => $reason,
+            'fedora-php5' => $reason,
+            'fedora-php7.0' => $reason,
+            'fedora-php7.1' => $reason,
             'ubuntu23.10..26.10-php5' => $reason,
             'ubuntu23.10..26.10-php7.0' => $reason,
             'ubuntu23.10..26.10-php7.1' => $reason,
@@ -106,7 +112,7 @@ final class tideways extends Extension\PrecompiledExtension implements
         }
         if ($this->os instanceof OS\Alpine) {
             $platform = 'linux-alpine';
-        } elseif ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        } elseif ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu || $this->os instanceof OS\Posix\RHELLike) {
             $platform = 'linux';
         } else {
             throw new Exception\UnsupportedOS("Tideways can't be installed on {$this->os->getDisplayName()}");
