@@ -130,7 +130,8 @@ final class ddtrace extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        return [SystemDependencies\libstdcxx::HANDLE];
+        // The installer uses find and tar
+        return [SystemDependencies\findutils::HANDLE, SystemDependencies\libstdcxx::HANDLE, SystemDependencies\tar::HANDLE];
     }
 
     /**
@@ -170,7 +171,8 @@ final class ddtrace extends Extension implements
         $url = $base . ($version === '' ? 'latest/download' : "download/{$version}") . '/datadog-setup.php';
         $setup = "{$context->getSourceDirectory()}/datadog-setup.php";
         $this->downloader->saveAs($url, $setup);
-        $arguments = ['--php-bin=php'];
+        // The PHP of the Software Collections of Remi is not in the PATH
+        $arguments = ['--php-bin=' . $this->php->getPHPBin()];
         if ($options->hasCustomValue(self::OPTION_APPSEC)) {
             $arguments[] = '--enable-appsec';
         }

@@ -517,13 +517,13 @@ final class PrecompiledExtensionsTest extends TestCase
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('saveAs')->once()->with($expectedURL, '/src/datadog-setup.php');
         $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
+        $php->shouldReceive('getPHPBin')->andReturn('/opt/remi/php85/root/usr/bin/php');
         $registry = M::mock(Registry::class);
         $registry->shouldReceive('getExtensionClasses')->andReturn([]);
         $ddtrace = new Extensions\ddtrace($php, self::createOS(OS\Debian::class, 12, $fs), $downloader, new PHPScript($php, $registry));
         $ddtrace->runBinaryInstaller(self::createBuildContext($version, new Values([], [Extensions\ddtrace::OPTION_PROFILING => true]), '/src'));
         self::assertCount(1, $commands);
-        self::assertSame(['/src/datadog-setup.php', '--php-bin=php', '--enable-profiling'], $commands[0]->getArguments());
+        self::assertSame(['/src/datadog-setup.php', '--php-bin=/opt/remi/php85/root/usr/bin/php', '--enable-profiling'], $commands[0]->getArguments());
     }
 
     /**
