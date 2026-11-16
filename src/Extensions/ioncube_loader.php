@@ -58,7 +58,7 @@ final class ioncube_loader extends Extension\PrecompiledExtension implements
      */
     public static function getPriority()
     {
-        // It refuses to work if another Zend extension is loaded before it (Debian and Ubuntu use 10-opcache.ini, Alpine uses 00_opcache.ini)
+        // It refuses to work if another Zend extension is loaded before it (Debian, Ubuntu and the RHEL-like systems use 10-opcache.ini, Alpine uses 00_opcache.ini)
         return 0;
     }
 
@@ -122,7 +122,7 @@ final class ioncube_loader extends Extension\PrecompiledExtension implements
             // The builds for musl are available since version 14.4.0
             return self::isVersionAtLeast($version, '14.4.0') ? 'lin-musl' : 'lin';
         }
-        if ($os instanceof OS\Debian || $os instanceof OS\Ubuntu) {
+        if ($os instanceof OS\Debian || $os instanceof OS\Ubuntu || $os instanceof OS\Posix\RHELLike) {
             return 'lin';
         }
 

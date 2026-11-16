@@ -91,6 +91,9 @@ final class IoncubeLoaderTest extends TestCase
         self::assertStringEndsWith('/ioncube_loaders_lin-musl_x86-64.tar.gz', self::createExtension($php, $alpine)->getBinaryArchiveURL(''));
         self::assertStringEndsWith('/ioncube_loaders_lin_x86-64_14.0.0.tar.gz', self::createExtension($php, $alpine)->getBinaryArchiveURL('14.0.0'));
         self::assertStringEndsWith('/ioncube_loaders_lin-musl_x86-64_14.4.0.tar.gz', self::createExtension($php, $alpine)->getBinaryArchiveURL('14.4.0'));
+        $almaLinux = M::mock(OS\AlmaLinux::class);
+        $almaLinux->shouldReceive('getMachineArchitecture')->andReturn(OS\Architecture::X64);
+        self::assertStringEndsWith('/ioncube_loaders_lin_x86-64.tar.gz', self::createExtension($php, $almaLinux)->getBinaryArchiveURL(''));
     }
 
     /**
