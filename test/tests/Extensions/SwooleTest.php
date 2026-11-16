@@ -222,6 +222,9 @@ final class SwooleTest extends TestCase
         self::assertNotContains('--with-swoole-firebird', self::createExtension(803, OS\Alpine::class, 322)->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertContains('--with-swoole-firebird', self::createExtension(804, OS\Alpine::class, 322)->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertContains(SystemDependencies\libfbclient::HANDLE, self::createExtension(804, OS\Alpine::class, 322)->getRequiredSystemDependencies('6.2.0', new Values()));
+        self::assertNotContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(700, OS\Debian::class, OS\Debian::BUSTER)->getRequiredSystemDependencies('4.0.4', new Values()));
+        self::assertNotContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(704, OS\Debian::class, OS\Debian::STRETCH)->getRequiredSystemDependencies('4.8.13', new Values()));
+        self::assertContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(704, OS\Debian::class, OS\Debian::BUSTER)->getRequiredSystemDependencies('4.8.13', new Values()));
     }
 
     /**

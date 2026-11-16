@@ -213,7 +213,8 @@ final class swoole extends Extension implements
         if (self::isVersionAtLeast($version, '4.7.0')) {
             $result[] = SystemDependencies\libcares::HANDLE;
         }
-        if (self::isVersionAtLeast($version, '5.0.1')) {
+        // Since 4.1.0 the configure script uses brotli when it finds it (for example, libcurl-devel depends on brotli-devel on EL 10), and since 5.0.1 we enable it explicitly
+        if (self::isVersionAtLeast($version, '5.0.1') || (self::isVersionAtLeast($version, '4.1.0') && SystemDependencies\libbrotli::isProvidedByOS($this->os))) {
             $result[] = SystemDependencies\libbrotli::HANDLE;
         }
         if ($this->usesSQLite($version)) {
