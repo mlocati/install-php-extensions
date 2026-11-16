@@ -139,6 +139,11 @@ final class imap extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // libc-client is in lib64, the libdir of PHP that the compiler passes
+            return ['--with-kerberos', '--with-imap-ssl'];
+        }
+
         // libc-client is not in the multiarch directory of Debian
         return ['--with-kerberos', '--with-imap-ssl', '--with-libdir=lib'];
     }
