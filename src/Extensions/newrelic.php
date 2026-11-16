@@ -155,7 +155,7 @@ final class newrelic extends Extension implements
         }
         if ($this->os instanceof OS\Alpine) {
             $platform = 'linux-musl';
-        } elseif ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        } elseif ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu || $this->os instanceof OS\Posix\RHELLike) {
             $platform = 'linux';
         } else {
             throw new Exception\UnsupportedOS("New Relic can't be installed on {$this->os->getDisplayName()}");

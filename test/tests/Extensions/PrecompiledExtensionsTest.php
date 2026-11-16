@@ -451,6 +451,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $downloader->shouldReceive('getContent')->with('https://download.newrelic.com/php_agent/archive/12.1.0.1/')->andReturn($page);
         self::assertSame('https://download.newrelic.com/php_agent/release/newrelic-php5-12.1.0.1-linux.tar.gz', (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12), $downloader, new \IPE\Logger()))->getBinaryArchiveURL(''));
         self::assertSame('https://download.newrelic.com/php_agent/archive/12.1.0.1/newrelic-php5-12.1.0.1-linux-musl.tar.gz', (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Alpine::class, 323), $downloader, new \IPE\Logger()))->getBinaryArchiveURL('12.1.0.1'));
+        self::assertSame('https://download.newrelic.com/php_agent/release/newrelic-php5-12.1.0.1-linux.tar.gz', (new Extensions\newrelic(self::createPHP(), self::createOS(OS\AlmaLinux::class, 9), $downloader, new \IPE\Logger()))->getBinaryArchiveURL(''));
     }
 
     /**
