@@ -44,6 +44,20 @@ final class libpython extends SystemDependency
                 ['python3-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 8) {
+                // The default Python of Enterprise Linux 8 is 3.6, which is too old
+                return new Packages(
+                    ['python3.12-libs'],
+                    ['python3.12-devel']
+                );
+            }
+
+            return new Packages(
+                ['python3-libs'],
+                ['python3-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

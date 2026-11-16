@@ -4,12 +4,14 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class phpy extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresUnsupportedEnvironments,
-    Extension\RequiresSystemDependencies
+    Extension\RequiresSystemDependencies,
+    Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -88,5 +90,20 @@ final class phpy extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libpython::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 8) {
+            // libpython installs Python 3.12, which doesn't provide python3-config
+            return ['--with-python-config=python3.12-config'];
+        }
+
+        return [];
     }
 }
