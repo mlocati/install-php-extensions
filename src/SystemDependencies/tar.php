@@ -32,11 +32,11 @@ final class tar extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        // BusyBox provides it on Alpine, and it's an essential package on Debian and Ubuntu
-        if ($this->os instanceof OS\Alpine || $this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Alpine) {
+            // BusyBox provides it
             return new Packages();
         }
-        if ($this->os instanceof OS\Posix\RHELLike) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu || $this->os instanceof OS\Posix\RHELLike) {
             return new Packages(
                 [],
                 ['tar']

@@ -32,11 +32,11 @@ final class findutils extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        // BusyBox provides find on Alpine, and findutils is an essential package on Debian and Ubuntu
-        if ($this->os instanceof OS\Alpine || $this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Alpine) {
+            // BusyBox provides find
             return new Packages();
         }
-        if ($this->os instanceof OS\Posix\RHELLike) {
+        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu || $this->os instanceof OS\Posix\RHELLike) {
             return new Packages(
                 [],
                 ['findutils']

@@ -130,8 +130,14 @@ final class ddtrace extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        // The installer uses find and tar
-        return [SystemDependencies\findutils::HANDLE, SystemDependencies\libstdcxx::HANDLE, SystemDependencies\tar::HANDLE];
+        // The installer uses find, gzip and tar, and it requires libcurl
+        return [
+            SystemDependencies\findutils::HANDLE,
+            SystemDependencies\gzip::HANDLE,
+            SystemDependencies\libcurl::HANDLE,
+            SystemDependencies\libstdcxx::HANDLE,
+            SystemDependencies\tar::HANDLE,
+        ];
     }
 
     /**
