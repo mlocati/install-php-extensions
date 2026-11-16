@@ -6,6 +6,7 @@ use IPE\Extensions;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\SystemDependencies\libbrotli;
 use IPE\SystemDependencies\libcurl;
 use IPE\SystemDependencies\libevent;
 use IPE\SystemDependencies\libgcrypt;
@@ -88,7 +89,7 @@ final class HttpTest extends TestCase
             (new Extensions\http(self::createPHP(506), $alpine))->getRequiredSystemDependencies('', new Values())
         );
         self::assertSame(
-            [libcurl::HANDLE, libevent::HANDLE, libicu::HANDLE, libidn::HANDLE, libidnkit::HANDLE, libzlib::HANDLE],
+            [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libicu::HANDLE, libidn::HANDLE, libidnkit::HANDLE, libzlib::HANDLE],
             (new Extensions\http(self::createPHP(804), $alpine))->getRequiredSystemDependencies('', new Values())
         );
         $debian = self::createOS(OS\Debian::class, OS\Debian::TRIXIE);
@@ -97,8 +98,17 @@ final class HttpTest extends TestCase
             (new Extensions\http(self::createPHP(506), $debian))->getRequiredSystemDependencies('', new Values())
         );
         self::assertSame(
-            [libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
+            [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
             (new Extensions\http(self::createPHP(804), $debian))->getRequiredSystemDependencies('', new Values())
+        );
+        $almalinux = self::createOS(OS\AlmaLinux::class, 10);
+        self::assertSame(
+            [libcurl::HANDLE, libevent::HANDLE, libidn::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
+            (new Extensions\http(self::createPHP(506), $almalinux))->getRequiredSystemDependencies('', new Values())
+        );
+        self::assertSame(
+            [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
+            (new Extensions\http(self::createPHP(804), $almalinux))->getRequiredSystemDependencies('', new Values())
         );
     }
 }
