@@ -656,7 +656,7 @@ abstract class DNF extends SystemPackager
             return true;
         }
 
-        // Names followed by a version with an epoch, like make-1:4.3-8.el9
-        return $mayIncludeVersion && preg_match('/^[A-Za-z0-9_+][A-Za-z0-9_+.\-]*-\d+:[A-Za-z0-9_+.~^]+-[A-Za-z0-9_+.~^]+$/D', $name) === 1;
+        // Names followed by a version, like make-1:4.3-8.el9 or gdk-pixbuf2-2.44.6^really2.44.4-3.fc44
+        return $mayIncludeVersion && preg_match('/^[A-Za-z0-9_+][A-Za-z0-9_+.\-]*-(?:\d+:)?[A-Za-z0-9_+.~^]+-[A-Za-z0-9_+.~^]+$/D', $name) === 1;
     }
 }

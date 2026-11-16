@@ -619,6 +619,8 @@ EOT;
             ['php-cli-8.0.30-8.el9_8.1', false, true],
             ['make-1:4.3-8.el9', true, true],
             ['make-1:4.3-8.el9', false, false],
+            ['gdk-pixbuf2-2.44.6^really2.44.4-3.fc44', true, true],
+            ['gdk-pixbuf2-2.44.6^really2.44.4-3.fc44', false, false],
             ['-php', true, false],
             ['php cli', true, false],
         ];
