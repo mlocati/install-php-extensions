@@ -8,7 +8,7 @@ use IPE\SystemDependency\CompiledLibrary;
 use IPE\SystemPackager\Packages;
 
 /**
- * Alpine does not provide libgearman.
+ * Alpine, Amazon Linux, Fedora and Enterprise Linux 10+ don't provide libgearman.
  */
 final class libgearman extends CompiledLibrary
 {
@@ -57,6 +57,22 @@ final class libgearman extends CompiledLibrary
                 ['libgearman-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            if ($this->isInEPEL()) {
+                return new Packages(
+                    ['libgearman'],
+                    ['libgearman-devel']
+                );
+            }
+            if ($this->isInstalled()) {
+                return new Packages(['libstdc++', 'libuuid']);
+            }
+
+            return new Packages(
+                ['libstdc++', 'libuuid'],
+                ['boost-devel', 'gperf', 'libevent-devel', 'libuuid-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -68,7 +84,16 @@ final class libgearman extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return $this->os instanceof OS\Alpine && parent::needsCompilation();
+        return ($this->os instanceof OS\Alpine || ($this->os instanceof OS\Posix\RHELLike && !$this->isInEPEL())) && parent::needsCompilation();
+    }
+
+    /**
+     * @return bool
+     */
+    private function isInEPEL()
+    {
+        // Fedora retired gearmand, and EPEL 10 doesn't include it
+        return $this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 9;
     }
 
     /**
