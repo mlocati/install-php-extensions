@@ -153,14 +153,15 @@ final class DockerImages
                 $result[] = self::createSystemImage($os, $phpVersion, $baseImage, self::getAPTCommands($surySetup, $phpVersion));
             }
         }
-        // The packages that PHP extensions require are often in EPEL and CRB, which are disabled by default
-        $enterpriseLinuxSetup = ['dnf install -y epel-release dnf-plugins-core', 'crb enable'];
+        // The packages that PHP extensions require are often in EPEL and CRB, which are disabled by default.
+        // IPE doesn't upgrade the installed packages, and the base images may be older than the repositories.
+        $enterpriseLinuxSetup = ['dnf -q install -y epel-release dnf-plugins-core', 'crb enable', 'dnf -q upgrade -y'];
         // The default nodejs of EL 8 and 9 doesn't provide the libnode required by v8js
-        $nodejsSetup = 'dnf module enable -y nodejs:22';
+        $nodejsSetup = 'dnf -q module enable -y nodejs:22';
         $dnfImages = [
             // PHP version => setup commands (the default module stream if empty) and package of PHP CLI
-            'almalinux8-dnf' => ['almalinux:8', ['8.2' => [['dnf module enable -y php:8.2', $nodejsSetup], 'php-cli']]],
-            'almalinux9-dnf' => ['almalinux:9', ['8.0' => [[$nodejsSetup], 'php-cli'], '8.3' => [['dnf module enable -y php:8.3', $nodejsSetup], 'php-cli']]],
+            'almalinux8-dnf' => ['almalinux:8', ['8.2' => [['dnf -q module enable -y php:8.2', $nodejsSetup], 'php-cli']]],
+            'almalinux9-dnf' => ['almalinux:9', ['8.0' => [[$nodejsSetup], 'php-cli'], '8.3' => [['dnf -q module enable -y php:8.3', $nodejsSetup], 'php-cli']]],
             'almalinux10-dnf' => ['almalinux:10', ['8.3' => [[], 'php-cli'], '8.4' => [[], 'php8.4-cli']]],
         ];
         foreach ($dnfImages as $os => $data) {
@@ -173,9 +174,9 @@ final class DockerImages
         // See https://rpms.remirepo.net/wizard/
         foreach (['almalinux9-remi' => 9, 'almalinux10-remi' => 10] as $os => $elVersion) {
             $remiSetup = array_merge($enterpriseLinuxSetup, [
-                "dnf install -y https://rpms.remirepo.net/enterprise/remi-release-{$elVersion}.rpm",
+                "dnf -q install -y https://rpms.remirepo.net/enterprise/remi-release-{$elVersion}.rpm",
                 // Users enable the remi repository for the libraries that only it provides (like qdbm-devel for dba): don't let it replace the other packages
-                "dnf config-manager --save --setopt=remi.enabled=1 --setopt='remi.includepkgs=qdbm*'",
+                "dnf -q config-manager --save --setopt=remi.enabled=1 --setopt='remi.includepkgs=qdbm*'",
             ]);
             if ($elVersion <= 9) {
                 $remiSetup[] = $nodejsSetup;
@@ -191,7 +192,7 @@ final class DockerImages
         }
         foreach (['fedora44-dnf' => 'fedora:44', 'fedora45-dnf' => 'fedora:45'] as $os => $baseImage) {
             // IPE doesn't upgrade the installed packages, and Fedora keeps only the released and the latest versions of the -devel ones
-            $result[] = self::createSystemImage($os, '8.5', $baseImage, self::getDNFCommands(['dnf upgrade -y'], 'php-cli'));
+            $result[] = self::createSystemImage($os, '8.5', $baseImage, self::getDNFCommands(['dnf -q upgrade -y'], 'php-cli'));
         }
 
         return $result;
@@ -241,9 +242,9 @@ final class DockerImages
         return array_merge(
             $setup,
             [
-                "dnf install -y --setopt=install_weak_deps=False {$package}",
+                "dnf -q install -y --setopt=install_weak_deps=False {$package}",
                 // Like most Dockerfiles: IPE must refresh the package lists
-                'dnf clean all',
+                'dnf -q clean all',
             ]
         );
     }
