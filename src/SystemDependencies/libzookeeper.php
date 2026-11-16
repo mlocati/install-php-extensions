@@ -64,7 +64,7 @@ final class libzookeeper extends CompiledLibrary
 
             return new Packages(
                 [],
-                ['automake', 'libtool', 'maven']
+                ['automake', 'hostname', 'libtool', 'maven']
             );
         }
 
@@ -130,7 +130,8 @@ final class libzookeeper extends CompiledLibrary
      */
     protected function build($sourceDirectory)
     {
-        $this->runBuildStep('mvn', ['-pl', 'zookeeper-jute', 'compile'], $sourceDirectory);
+        // With JDK 9+ this profile uses --release 8, which requires the ct.sym file that the headless JDKs of the RHEL-like systems don't include
+        $this->runBuildStep('mvn', ['-pl', 'zookeeper-jute', '-P', '!jdk-release-flag', 'compile'], $sourceDirectory);
         $clientDirectory = "{$sourceDirectory}/zookeeper-client/zookeeper-client-c";
         $this->runBuildStep('autoreconf', ['-if'], $clientDirectory);
         $this->runBuildStep('./configure', ['--without-cppunit'], $clientDirectory);
