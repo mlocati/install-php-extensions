@@ -60,6 +60,8 @@ final class relay extends Extension\PrecompiledExtension implements
             'debian10..11-zts' => $noBuild,
             'debian12-zts' => $noHiredis,
             'amzn2023-zts' => $noCK,
+            'el8-zts' => $noBuild,
+            'el9-zts' => $noHiredis,
         ];
     }
 
@@ -104,13 +106,16 @@ final class relay extends Extension\PrecompiledExtension implements
     {
         // The module is published with its debug symbols
         $result = [SystemDependencies\binutils::HANDLE];
-        // The builds for Alpine link to these libraries
+        // The builds for Alpine and for the RHEL-like systems link to these libraries
         if ($this->os instanceof OS\Alpine) {
             $result[] = SystemDependencies\liblz4::HANDLE;
             $result[] = SystemDependencies\libzstd::HANDLE;
             if ($this->os->getNumericVersion() >= 317) {
                 $result[] = SystemDependencies\libopenssl::HANDLE;
             }
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            $result[] = SystemDependencies\libopenssl::HANDLE;
         }
         // The ZTS builds link to these libraries
         if ($this->php->isThreadSafe()) {
@@ -135,6 +140,13 @@ final class relay extends Extension\PrecompiledExtension implements
             $build = 'debian' . ($this->os->getNumericVersion() >= OS\Debian::BOOKWORM ? '+libssl3' : '');
         } elseif ($this->os instanceof OS\Ubuntu) {
             $build = 'debian' . ($this->os->getNumericVersion() >= OS\Ubuntu::JAMMY ? '+libssl3' : '');
+        } elseif ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux) {
+            $build = $this->os->getNumericVersion() <= 8 ? 'centos8' : "el{$this->os->getNumericVersion()}";
+        } elseif ($this->os instanceof OS\AmazonLinux) {
+            $build = 'el9';
+        } elseif ($this->os instanceof OS\Fedora) {
+            // The vendor doesn't publish builds for Fedora
+            $build = 'el10';
         } else {
             throw new Exception\UnsupportedOS("Relay can't be installed on {$this->os->getDisplayName()}");
         }

@@ -293,6 +293,15 @@ final class PrecompiledExtensionsTest extends TestCase
         self::assertMatchesRegularExpression('#/v2\.0/relay-v2\.0-php8\.4-debian-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::BULLSEYE), $downloader))->getBinaryArchiveURL('2.0'));
         self::assertMatchesRegularExpression('#-alpine3\.9-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Alpine::class, 316), $downloader))->getBinaryArchiveURL('2.0'));
         self::assertMatchesRegularExpression('#-alpine3\.17-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Alpine::class, 317), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-centos8-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\AlmaLinux::class, 8), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-el9-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\RockyLinux::class, 9), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-el10-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\AlmaLinux::class, 10), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-el9-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\AmazonLinux::class, 2023), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-el10-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Fedora::class, 44), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertSame(
+            [SystemDependencies\binutils::HANDLE, SystemDependencies\libopenssl::HANDLE],
+            (new Extensions\relay(self::createPHP(), self::createOS(OS\AlmaLinux::class, 9), $downloader))->getRequiredSystemDependencies('', new Values())
+        );
         $fs = self::createFilesystem(['/src/relay-pkg.so', '/src/relay-zts.so']);
         $os = self::createOS(OS\Debian::class, 12, $fs);
         self::assertSame('/src/relay-pkg.so', (new Extensions\relay(self::createPHP(), $os, $downloader))->findBinaryModule('/src', ''));
@@ -345,6 +354,11 @@ final class PrecompiledExtensionsTest extends TestCase
             [OS\Alpine::class, 321, false],
             [OS\Alpine::class, 322, true],
             [OS\Alpine::class, 324, true],
+            [OS\AlmaLinux::class, 8, true],
+            [OS\AlmaLinux::class, 9, true],
+            [OS\AlmaLinux::class, 10, false],
+            [OS\AmazonLinux::class, 2023, true],
+            [OS\Fedora::class, 44, false],
         ];
     }
 
