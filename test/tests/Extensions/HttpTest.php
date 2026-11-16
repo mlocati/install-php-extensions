@@ -101,6 +101,10 @@ final class HttpTest extends TestCase
             [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
             (new Extensions\http(self::createPHP(804), $debian))->getRequiredSystemDependencies('', new Values())
         );
+        self::assertSame(
+            [libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
+            (new Extensions\http(self::createPHP(703), self::createOS(OS\Debian::class, OS\Debian::STRETCH)))->getRequiredSystemDependencies('', new Values())
+        );
         $almalinux = self::createOS(OS\AlmaLinux::class, 10);
         self::assertSame(
             [libcurl::HANDLE, libevent::HANDLE, libidn::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
