@@ -8,7 +8,7 @@ use IPE\SystemDependency\CompiledLibrary;
 use IPE\SystemPackager\Packages;
 
 /**
- * Alpine does not provide the C client of ZooKeeper, and compiling it requires Maven.
+ * Alpine and the RHEL-like systems don't provide the C client of ZooKeeper, and compiling it requires Maven.
  */
 final class libzookeeper extends CompiledLibrary
 {
@@ -57,6 +57,16 @@ final class libzookeeper extends CompiledLibrary
                 ['libzookeeper-mt-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            if ($this->isInstalled()) {
+                return new Packages();
+            }
+
+            return new Packages(
+                [],
+                ['automake', 'libtool', 'maven']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -68,7 +78,7 @@ final class libzookeeper extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return $this->os instanceof OS\Alpine && parent::needsCompilation();
+        return ($this->os instanceof OS\Alpine || $this->os instanceof OS\Posix\RHELLike) && parent::needsCompilation();
     }
 
     /**
