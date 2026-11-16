@@ -44,6 +44,13 @@ final class libvips extends SystemDependency
                 ['libvips-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // Enterprise Linux provides them only in the remi-safe repository of Remi
+            return new Packages(
+                ['vips'],
+                ['vips-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

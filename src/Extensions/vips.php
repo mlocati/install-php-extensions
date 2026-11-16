@@ -46,7 +46,9 @@ final class vips extends Extension implements
     {
         return [
             'alpine3.9' => 'the extension can\'t be compiled with the compiler or the libraries of this system',
+            'amzn' => "this system doesn't provide the vips library",
             'debian8' => 'the extension can\'t be compiled with the compiler or the libraries of this system',
+            'el' => "this system doesn't provide the vips library",
         ];
     }
 
