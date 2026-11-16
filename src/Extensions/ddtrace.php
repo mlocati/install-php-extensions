@@ -130,8 +130,9 @@ final class ddtrace extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        // The installer uses find, gzip and tar, and it requires libcurl
+        // The installer uses find, gzip and tar, it requires libcurl, and it downloads with curl if PHP has neither curl nor openssl
         return [
+            SystemDependencies\curl::HANDLE,
             SystemDependencies\findutils::HANDLE,
             SystemDependencies\gzip::HANDLE,
             SystemDependencies\libcurl::HANDLE,
