@@ -664,7 +664,7 @@ IPE doesn't enable them: if it fails because some packages are missing, enable t
 
 | System | Commands |
 |---|---|
-| AlmaLinux, CentOS Stream, Rocky Linux | `dnf install -y epel-release && crb enable` |
+| AlmaLinux, CentOS Stream, Rocky Linux | `dnf install -y epel-release dnf-plugins-core && crb enable` |
 | Oracle Linux | `dnf install -y oracle-epel-release-el$(rpm -E %rhel) dnf-plugins-core && dnf config-manager --set-enabled ol$(rpm -E %rhel)_codeready_builder` |
 | Red Hat Universal Base Image (CRB is already enabled) | `dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm` |
 | Red Hat Enterprise Linux | `dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm && subscription-manager repos --enable codeready-builder-for-rhel-$(rpm -E %rhel)-$(arch)-rpms` |

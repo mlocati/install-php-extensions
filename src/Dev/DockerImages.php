@@ -154,7 +154,7 @@ final class DockerImages
             }
         }
         // The packages that PHP extensions require are often in EPEL and CRB, which are disabled by default
-        $enterpriseLinuxSetup = ['dnf install -y epel-release', 'crb enable'];
+        $enterpriseLinuxSetup = ['dnf install -y epel-release dnf-plugins-core', 'crb enable'];
         // The default nodejs of EL 8 and 9 doesn't provide the libnode required by v8js
         $nodejsSetup = 'dnf module enable -y nodejs:22';
         $dnfImages = [
