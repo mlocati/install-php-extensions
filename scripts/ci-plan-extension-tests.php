@@ -62,6 +62,13 @@ const QUICK_TEST_PHP_VERSION = '8.5';
 const MAX_JOBS_PER_MATRIX = 256;
 
 /**
+ * The names that can be used in the Test-Distro lines for a whole family of distros.
+ */
+const DISTRO_FAMILIES = [
+    'rhellike' => ['almalinux*', 'amazonlinux*', 'fedora*'],
+];
+
+/**
  * When the Docker images of an operating system install every extension more than these times, its job is split by PHP version (GitHub Actions stops the jobs after 6 hours).
  */
 const MAX_INSTALLATIONS_PER_EXTENSION = 8;
@@ -153,7 +160,7 @@ function splitList(string $list): array
 }
 
 /**
- * @param non-empty-string $pattern an operating system, or a pattern with "*" wildcards
+ * @param non-empty-string $pattern an operating system, a pattern with "*" wildcards, or a key of DISTRO_FAMILIES
  *
  * @throws InvalidRequestException
  *
@@ -161,6 +168,10 @@ function splitList(string $list): array
  */
 function resolveOperatingSystems(string $pattern): array
 {
+    $family = DISTRO_FAMILIES[strtolower($pattern)] ?? null;
+    if ($family !== null) {
+        return array_merge(...array_map(resolveOperatingSystems(...), $family));
+    }
     $regex = '/^' . str_replace('\*', '.*', preg_quote($pattern, '/')) . '$/Di';
     $result = array_values(array_filter(DockerImages::getOperatingSystems(), static fn (string $os): bool => preg_match($regex, $os) === 1));
     if ($result === []) {

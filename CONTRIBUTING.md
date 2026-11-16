@@ -46,6 +46,8 @@ Test: xdebug
 Test-Distro: alpine3.24 trixie *-sury
 ```
 
+You can also use `rhellike` for all the RHEL-like distros (AlmaLinux, Amazon Linux and Fedora).
+
 The commits are inspected starting from the most recent one: if an extension (or a group of extensions joined with `+`) is listed in more than one commit, only the most recent commit is considered (including its `Test-PHP:` and `Test-Distro:` lines); this applies also to the extensions tested automatically because their files have been changed.
 If you write `-STOP-` in a `Test:` line, the older commits won't be inspected, and the extensions whose files have been changed won't be tested automatically:
 
