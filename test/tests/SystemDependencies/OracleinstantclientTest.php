@@ -16,6 +16,7 @@ use IPE\OS;
 use IPE\PHPInfo;
 use IPE\SystemDependencies\oracleinstantclient;
 use IPE\SystemDependencies\unzip;
+use IPE\SystemPackager\Package;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -175,6 +176,7 @@ final class OracleinstantclientTest extends TestCase
         self::assertSame(['libaio', 'libc6-compat', 'libnsl'], $this->createDependency(self::createOS(OS\Alpine::class))->getSystemPackages($state)->getPersistent());
         self::assertSame(['libaio1t64'], $this->createDependency(self::createOS(OS\Debian::class, OS\Debian::TRIXIE))->getSystemPackages($state)->getPersistent());
         self::assertSame(['^libaio[0-9]*$'], $this->createDependency(self::createOS(OS\Debian::class, OS\Debian::TRIXIE - 1))->getSystemPackages($state)->getPersistent());
+        self::assertSame(['libaio'], $this->createDependency(self::createOS(OS\AlmaLinux::class, 9))->getSystemPackages($state)->getPersistent());
         self::assertSame([unzip::HANDLE], $this->createDependency(self::createOS(OS\Debian::class))->getRequiredDependencies());
         $this->expectException(Exception\UnsupportedOS::class);
         $this->createDependency(M::mock(OS\Posix::class)->shouldIgnoreMissing())->getSystemPackages($state);
@@ -304,6 +306,18 @@ final class OracleinstantclientTest extends TestCase
         self::assertSame(['--with-pdo-oci=instantclient,' . self::LIBRARY_PATH . ',12.1'], (new pdo_oci(self::createPHP(64, 506), $os))->getConfigureArguments(self::createBuildContext('', $options)));
         self::assertSame(['--with-pdo-oci=instantclient,' . self::LIBRARY_PATH], (new pdo_oci(self::createPHP(64, 700), $os))->getConfigureArguments(self::createBuildContext('', $options)));
         self::assertSame(['--with-oci8=instantclient,' . self::LIBRARY_PATH], (new oci8(self::createPHP(64, 506), $os))->getConfigureArguments(self::createBuildContext('', $options)));
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageNames()
+    {
+        $php = self::createPHP();
+        $phpPackage = new Package('php84-php-cli', '8.4.27-1.el9.remi', 'php84-php');
+        self::assertSame([], (new oci8($php, self::createOS(OS\AlmaLinux::class, 9)))->getSystemPackageNames($phpPackage));
+        self::assertSame([], (new pdo_oci($php, self::createOS(OS\Fedora::class, 44)))->getSystemPackageNames($phpPackage));
+        self::assertNull((new oci8($php, self::createOS(OS\Debian::class)))->getSystemPackageNames($phpPackage));
     }
 
     /**

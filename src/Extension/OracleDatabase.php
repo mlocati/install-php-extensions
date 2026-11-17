@@ -8,6 +8,7 @@ use IPE\Option;
 use IPE\Option\ConfigureOption;
 use IPE\OS;
 use IPE\SystemDependencies\oracleinstantclient;
+use IPE\SystemPackager\Package;
 
 /**
  * What oci8 and pdo_oci have in common.
@@ -19,8 +20,24 @@ abstract class OracleDatabase extends Extension implements
     DeclaresOptions,
     DeclaresPriority,
     ProvidesConfigureArguments,
+    ProvidesSystemPackageNames,
     RequiresSystemDependencies
 {
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(Package $phpPackage)
+    {
+        // The system packages require the RPM packages of the Oracle Instant Client, which we don't install
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return [];
+        }
+
+        return null;
+    }
+
     /**
      * {@inheritdoc}
      *
