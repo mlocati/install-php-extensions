@@ -93,7 +93,7 @@ final class libcassandra extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu || $this->os instanceof OS\Posix\RHELLike) && parent::needsCompilation();
+        return ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) && parent::needsCompilation();
     }
 
     /**

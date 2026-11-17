@@ -38,7 +38,7 @@ final class librrd extends SystemDependency
                 ['rrdtool-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^librrd[0-9]*(t64)?$'],
                 ['librrd-dev']

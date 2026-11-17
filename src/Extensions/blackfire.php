@@ -102,7 +102,7 @@ final class blackfire extends Extension\PrecompiledExtension implements
         $this->checkExactVersion($versionRequirements);
         if ($this->os instanceof OS\Alpine) {
             $distro = 'alpine';
-        } elseif ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu || $this->os instanceof OS\Posix\RHELLike) {
+        } elseif ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
             $distro = 'linux';
         } else {
             throw new Exception\UnsupportedOS("The Blackfire probe can't be installed on {$this->os->getDisplayName()}");

@@ -35,7 +35,7 @@ final class libqdbm extends SystemDependency
         if ($this->os instanceof OS\Alpine) {
             throw $this->createNotProvidedException();
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libqdbm14(t64)?$'],
                 ['libqdbm-dev']

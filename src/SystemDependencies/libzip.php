@@ -38,7 +38,7 @@ final class libzip extends SystemDependency
                 ['libzip-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libzip[0-9]$'],
                 ['libzip-dev']

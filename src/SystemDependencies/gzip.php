@@ -36,7 +36,7 @@ final class gzip extends SystemDependency
             // BusyBox provides it
             return new Packages();
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu || $this->os instanceof OS\Posix\RHELLike) {
+        if ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
             return new Packages(
                 [],
                 ['gzip']

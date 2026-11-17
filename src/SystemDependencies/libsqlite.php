@@ -38,7 +38,7 @@ class libsqlite extends SystemDependency
                 ['sqlite-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['libsqlite3-0'],
                 ['libsqlite3-dev']

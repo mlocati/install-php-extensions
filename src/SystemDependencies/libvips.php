@@ -38,7 +38,7 @@ final class libvips extends SystemDependency
                 ['vips-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libvips[0-9]*(t64)?$'],
                 ['libvips-dev']

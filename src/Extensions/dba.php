@@ -134,7 +134,7 @@ final class dba extends Extension implements
         if ($this->php->getMajorMinorVersion() < 704) {
             return false;
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return true;
         }
         // Among the RHEL-like systems, QDBM is provided by Fedora and by Remi (qdbm-devel only by its remi repository)

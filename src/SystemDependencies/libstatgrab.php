@@ -47,7 +47,7 @@ final class libstatgrab extends CompiledLibrary
                 ['libstatgrab-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libstatgrab[0-9]*(t64)?$'],
                 ['libstatgrab-dev']

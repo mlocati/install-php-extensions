@@ -38,7 +38,7 @@ final class libxml2 extends SystemDependency
                 ['libxml2-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 ['libxml2-dev']

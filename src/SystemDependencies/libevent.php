@@ -38,7 +38,7 @@ class libevent extends SystemDependency
                 ['libevent-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libevent[0-9.-]*$'],
                 ['libevent-dev']

@@ -38,7 +38,7 @@ final class dtrace extends SystemDependency
         if ($this->os instanceof OS\Alpine) {
             throw $this->createNotProvidedException();
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 ['systemtap-sdt-dev']

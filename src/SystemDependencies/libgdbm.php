@@ -38,7 +38,7 @@ final class libgdbm extends SystemDependency
                 ['gdbm-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libgdbm[0-9]+(t64)?$'],
                 ['libgdbm-dev']

@@ -38,7 +38,7 @@ final class libuuid extends SystemDependency
                 ['util-linux-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 ['uuid-dev']

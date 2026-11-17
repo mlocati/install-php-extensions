@@ -126,7 +126,7 @@ final class swoole extends Extension implements
         $phpVersion = $this->php->getMajorMinorVersion();
         if ($phpVersion <= 506) {
             // 2.0.11 causes a segmentation fault when libpcre-dev is installed (see https://github.com/mlocati/docker-php-extension-installer/issues/1282)
-            return $this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu ? '2.0.10' : '2.0.11';
+            return $this->os instanceof OS\Posix\DebianLike ? '2.0.10' : '2.0.11';
         }
         if ($phpVersion <= 700) {
             return '4.3.6';
