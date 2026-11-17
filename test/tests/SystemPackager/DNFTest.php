@@ -34,7 +34,7 @@ final class DNFTest extends TestCase
     {
         $fs = M::mock(Filesystem::class);
         if ($refresh) {
-            $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('dnf', ['makecache'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+            $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('dnf', ['--quiet', 'makecache'])->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
         }
         foreach ($runs as $run) {
             $command = Command::create($run[0], $run[1]);
@@ -418,8 +418,8 @@ EOT;
         $dnf = new DNF\v4(self::createOS([
             self::installedPackages(['glibc', 'libcurl-minimal']),
             ['dnf', array_merge(['install', '--assumeno', '--setopt=install_weak_deps=False'], $keepInstalled, ['libcurl-devel']), 1, $output, Command::OUTPUT_CAPTURE_ALL],
-            ['dnf', array_merge(['install', '-y', '--setopt=install_weak_deps=False'], $keepInstalled, ['libcurl-devel-7.76.1-40.el9_8.8']), 0, '', Command::OUTPUT_SHOW],
-            ['dnf', ['mark', 'install', 'libcurl-devel-7.76.1-40.el9_8.8'], 0, '', Command::OUTPUT_SHOW],
+            ['dnf', array_merge(['--quiet', 'install', '-y', '--setopt=install_weak_deps=False'], $keepInstalled, ['libcurl-devel-7.76.1-40.el9_8.8']), 0, '', Command::OUTPUT_SHOW],
+            ['dnf', ['--quiet', 'mark', 'install', 'libcurl-devel-7.76.1-40.el9_8.8'], 0, '', Command::OUTPUT_SHOW],
         ]));
         self::assertSame(['libcurl-devel' => '7.76.1-40.el9_8.8'], $dnf->expandPackageList(['libcurl-devel']));
         $dnf->installPackages(['libcurl-devel-7.76.1-40.el9_8.8']);
@@ -558,11 +558,11 @@ EOT;
     public function testMarkAsManuallyInstalled()
     {
         $dnf4 = new DNF\v4(self::createOS([
-            ['dnf', ['mark', 'install', 'php-common'], 0, '', Command::OUTPUT_SHOW],
+            ['dnf', ['--quiet', 'mark', 'install', 'php-common'], 0, '', Command::OUTPUT_SHOW],
         ], false));
         $dnf4->markAsManuallyInstalled(['php-common']);
         $dnf5 = new DNF\v5(self::createOS([
-            ['dnf', ['mark', 'user', '-y', 'php-common'], 0, '', Command::OUTPUT_SHOW],
+            ['dnf', ['--quiet', 'mark', 'user', '-y', 'php-common'], 0, '', Command::OUTPUT_SHOW],
         ], false));
         $dnf5->markAsManuallyInstalled(['php-common']);
     }
@@ -573,11 +573,11 @@ EOT;
     public function testRemovePackages()
     {
         $dnf4 = new DNF\v4(self::createOS([
-            ['dnf', ['remove', '-y', '--setopt=protected_packages=', 'cyrus-sasl', 'systemd'], 0, '', Command::OUTPUT_SHOW],
+            ['dnf', ['--quiet', 'remove', '-y', '--setopt=protected_packages=', 'cyrus-sasl', 'systemd'], 0, '', Command::OUTPUT_SHOW],
         ], false));
         $dnf4->removePackages(['cyrus-sasl', 'systemd']);
         $dnf5 = new DNF\v5(self::createOS([
-            ['dnf', ['remove', '-y', '--setopt=protected_packages=', 'openldap-devel'], 1, '', Command::OUTPUT_SHOW],
+            ['dnf', ['--quiet', 'remove', '-y', '--setopt=protected_packages=', 'openldap-devel'], 1, '', Command::OUTPUT_SHOW],
         ], false));
         $this->expectException(Exception\SystemPackager::class);
         $dnf5->removePackages(['openldap-devel']);
@@ -592,13 +592,13 @@ EOT;
             // The installed packages, then the ones installed before the first transaction
             self::installedPackages(['glibc']),
             self::installedPackages(['glibc', 'gpg-pubkey', 'libedit']),
-            ['dnf', ['install', '-y', '--setopt=install_weak_deps=False', '--setopt=strict=False', '--setopt=best=False', '--setopt=*.excludepkgs=glibc', 'gpg-pubkey', 'libedit'], 0, '', Command::OUTPUT_SHOW],
+            ['dnf', ['--quiet', 'install', '-y', '--setopt=install_weak_deps=False', '--setopt=strict=False', '--setopt=best=False', '--setopt=*.excludepkgs=glibc', 'gpg-pubkey', 'libedit'], 0, '', Command::OUTPUT_SHOW],
         ], false));
         $dnf4->restorePackages(['glibc', 'gpg-pubkey', 'libedit']);
         $dnf5 = new DNF\v5(self::createOS([
             self::installedPackages([]),
             self::installedPackages(['gpg-pubkey', 'libedit']),
-            ['dnf', ['install', '-y', '--setopt=install_weak_deps=False', '--skip-unavailable', 'gpg-pubkey', 'libedit'], 0, '', Command::OUTPUT_SHOW],
+            ['dnf', ['--quiet', 'install', '-y', '--setopt=install_weak_deps=False', '--skip-unavailable', 'gpg-pubkey', 'libedit'], 0, '', Command::OUTPUT_SHOW],
         ], false));
         $dnf5->restorePackages(['gpg-pubkey', 'libedit']);
         $dnf5 = new DNF\v5(self::createOS([

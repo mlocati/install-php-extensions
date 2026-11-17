@@ -300,7 +300,7 @@ abstract class DNF extends SystemPackager
      */
     public function refresh()
     {
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(['makecache'])->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(['--quiet', 'makecache'])->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf makecache failed');
         }
@@ -313,7 +313,7 @@ abstract class DNF extends SystemPackager
      */
     protected function doInstallPackages(array $packages)
     {
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['install', '-y', '--setopt=install_weak_deps=False'], $this->getKeepInstalledOptions(), $packages))->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['--quiet', 'install', '-y', '--setopt=install_weak_deps=False'], $this->getKeepInstalledOptions(), $packages))->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf install failed');
         }
@@ -337,7 +337,7 @@ abstract class DNF extends SystemPackager
 
             return;
         }
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(['upgrade', '-y', '--setopt=install_weak_deps=False'])->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(['--quiet', 'upgrade', '-y', '--setopt=install_weak_deps=False'])->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf upgrade failed');
         }
@@ -591,7 +591,7 @@ abstract class DNF extends SystemPackager
     {
         // dnf also removes the dependencies that are no longer needed.
         // The packages were installed by us, but some of them may be protected (for example, cyrus-sasl requires systemd on Amazon Linux 2023)
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['remove', '-y', '--setopt=protected_packages='], $packages))->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['--quiet', 'remove', '-y', '--setopt=protected_packages='], $packages))->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf remove failed');
         }
@@ -610,7 +610,7 @@ abstract class DNF extends SystemPackager
             return;
         }
         // Some packages (like gpg-pubkey) are not in the repositories
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['install', '-y', '--setopt=install_weak_deps=False', $this->getSkipUnavailableOption()], $this->getKeepInstalledOptions($missing), $missing))->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['--quiet', 'install', '-y', '--setopt=install_weak_deps=False', $this->getSkipUnavailableOption()], $this->getKeepInstalledOptions($missing), $missing))->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf install failed');
         }
@@ -630,7 +630,7 @@ abstract class DNF extends SystemPackager
      */
     protected function doDeleteCache()
     {
-        $this->os->getFilesystem()->run($this->createDnfCommand(['clean', 'all'])->withOutput(Command::OUTPUT_SHOW));
+        $this->os->getFilesystem()->run($this->createDnfCommand(['--quiet', 'clean', 'all'])->withOutput(Command::OUTPUT_SHOW));
     }
 
     /**

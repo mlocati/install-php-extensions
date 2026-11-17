@@ -39,7 +39,7 @@ final class v4 extends DNF
      */
     protected function doMarkAsManuallyInstalled(array $packages)
     {
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['mark', 'install'], $packages))->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['--quiet', 'mark', 'install'], $packages))->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf mark install failed');
         }

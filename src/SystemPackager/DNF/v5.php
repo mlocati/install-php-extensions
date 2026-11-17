@@ -39,7 +39,7 @@ final class v5 extends DNF
     protected function doMarkAsManuallyInstalled(array $packages)
     {
         // Unlike dnf4, it asks for confirmation
-        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['mark', 'user', '-y'], $packages))->withOutput(Command::OUTPUT_SHOW));
+        list($rc) = $this->os->getFilesystem()->run($this->createDnfCommand(array_merge(['--quiet', 'mark', 'user', '-y'], $packages))->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\SystemPackager('dnf mark user failed');
         }
