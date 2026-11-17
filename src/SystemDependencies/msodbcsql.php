@@ -137,7 +137,8 @@ final class msodbcsql extends SystemDependency
         }
         if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux) {
             return new Packages(
-                ['krb5-libs', 'libstdc++', 'unixODBC'],
+                // The driver requires openssl: without it, removing the build packages removes the driver too
+                ['krb5-libs', 'libstdc++', 'openssl', 'unixODBC'],
                 ['unixODBC-devel']
             );
         }

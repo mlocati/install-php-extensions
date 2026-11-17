@@ -114,7 +114,7 @@ final class MsodbcsqlTest extends TestCase
         self::assertSame(['unixodbc', 'libgssapi-krb5-2', 'apt-transport-https'], $old->getPersistent());
         self::assertSame(['unixodbc-dev'], $old->getVolatile());
         $almaLinux = $this->createDependency(OS\AlmaLinux::class, 9, 804)->getSystemPackages(M::mock(State::class));
-        self::assertSame(['krb5-libs', 'libstdc++', 'unixODBC'], $almaLinux->getPersistent());
+        self::assertSame(['krb5-libs', 'libstdc++', 'openssl', 'unixODBC'], $almaLinux->getPersistent());
         self::assertSame(['unixODBC-devel'], $almaLinux->getVolatile());
     }
 
