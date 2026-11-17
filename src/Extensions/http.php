@@ -92,8 +92,7 @@ final class http extends Extension implements
      */
     public function getConflictingExtensions($version, $options = null)
     {
-        // PHP crashes at shutdown in raphf if parallel started a thread
-        return [parallel::HANDLE];
+        return [parallel::HANDLE => 'PHP crashes at shutdown in raphf if parallel started a thread'];
     }
 
     /**

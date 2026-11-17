@@ -28,14 +28,14 @@ final class ConflictsTest extends TestCase
         $php = M::mock(PHPInfo::class);
         $alpine = M::mock(OS\Alpine::class);
         $debian = M::mock(OS\Debian::class);
-        self::assertSame(['sybase_ct'], (new mssql($php, $debian))->getConflictingExtensions('5.6.40'));
-        self::assertSame(['mssql'], (new sybase_ct($php, $alpine))->getConflictingExtensions('5.6.40'));
-        self::assertSame(['imap'], (new recode($php, $alpine))->getConflictingExtensions('7.3.33'));
-        self::assertSame(['recode'], (new imap($php, $alpine))->getConflictingExtensions('7.3.33'));
-        self::assertSame([], (new recode($php, $debian))->getConflictingExtensions('7.3.33'));
-        self::assertSame([], (new imap($php, $debian))->getConflictingExtensions('7.3.33'));
-        self::assertSame(['parallel'], (new http($php, $debian))->getConflictingExtensions('4.3.1'));
-        self::assertSame(['http'], (new parallel($php, $debian))->getConflictingExtensions('1.2.15'));
+        self::assertSame(['sybase_ct'], array_keys((new mssql($php, $debian))->getConflictingExtensions('5.6.40')));
+        self::assertSame(['mssql'], array_keys((new sybase_ct($php, $alpine))->getConflictingExtensions('5.6.40')));
+        self::assertSame(['imap'], array_keys((new recode($php, $alpine))->getConflictingExtensions('7.3.33')));
+        self::assertSame(['recode'], array_keys((new imap($php, $alpine))->getConflictingExtensions('7.3.33')));
+        self::assertSame([], array_keys((new recode($php, $debian))->getConflictingExtensions('7.3.33')));
+        self::assertSame([], array_keys((new imap($php, $debian))->getConflictingExtensions('7.3.33')));
+        self::assertSame(['parallel'], array_keys((new http($php, $debian))->getConflictingExtensions('4.3.1')));
+        self::assertSame(['http'], array_keys((new parallel($php, $debian))->getConflictingExtensions('1.2.15')));
     }
 
     /**
@@ -50,11 +50,11 @@ final class ConflictsTest extends TestCase
         $php71->shouldReceive('getMajorMinorVersion')->andReturn(701);
         $downloader = M::mock(Downloader::class);
         $phpScript = new PHPScript($php70, M::mock(Registry::class));
-        self::assertSame(['xdebug'], (new ddtrace($php70, $debian, $downloader, $phpScript))->getConflictingExtensions('1.14.0'));
-        self::assertSame([], (new ddtrace($php71, $debian, $downloader, $phpScript))->getConflictingExtensions('1.14.0'));
-        self::assertSame(['ddtrace'], (new xdebug($php70, $debian))->getConflictingExtensions('2.6.1'));
-        self::assertSame(['ddtrace'], (new xdebug($php71, $debian))->getConflictingExtensions('2.9.4'));
-        self::assertSame([], (new xdebug($php71, $debian))->getConflictingExtensions('2.9.5'));
-        self::assertSame([], (new xdebug($php71, $debian))->getConflictingExtensions(''));
+        self::assertSame(['xdebug'], array_keys((new ddtrace($php70, $debian, $downloader, $phpScript))->getConflictingExtensions('1.14.0')));
+        self::assertSame([], array_keys((new ddtrace($php71, $debian, $downloader, $phpScript))->getConflictingExtensions('1.14.0')));
+        self::assertSame(['ddtrace'], array_keys((new xdebug($php70, $debian))->getConflictingExtensions('2.6.1')));
+        self::assertSame(['ddtrace'], array_keys((new xdebug($php71, $debian))->getConflictingExtensions('2.9.4')));
+        self::assertSame([], array_keys((new xdebug($php71, $debian))->getConflictingExtensions('2.9.5')));
+        self::assertSame([], array_keys((new xdebug($php71, $debian))->getConflictingExtensions('')));
     }
 }

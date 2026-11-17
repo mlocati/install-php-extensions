@@ -253,7 +253,8 @@ abstract class Resolver
     private function withoutConflicts(array $resolved, State $state)
     {
         foreach ($resolved as $index => $extension) {
-            foreach ($this->getConflictingExtensions($extension) as $name => $constraint) {
+            foreach ($this->getConflictingExtensions($extension) as $name => $conflict) {
+                list($constraint, $description) = $conflict;
                 $other = self::findResolved($name, $resolved);
                 if ($other === $index) {
                     continue;
@@ -269,6 +270,9 @@ abstract class Resolver
                 } else {
                     continue;
                 }
+                if ($description !== '') {
+                    $message .= " ({$description})";
+                }
                 if (!$this->handleUnsupported($message, $extension->getName(), $state, Extension\Skipped::REASON_CONFLICT)) {
                     unset($resolved[$index]);
 
@@ -281,19 +285,25 @@ abstract class Resolver
     }
 
     /**
-     * @return array<string, string> the keys are the extension names, the values are composer version constraints
+     * @return array<string, array{string, string}> the keys are the extension names, the values are the composer version constraints and the descriptions of the conflicts
      */
     private function getConflictingExtensions(Resolved $resolved)
     {
+        $result = [];
         $known = $resolved->getKnownExtension();
         if ($known instanceof Extension\DeclaresConflicts) {
             $builtByUs = !in_array($resolved->getOrigin(), [Resolved::ORIGIN_DISABLED, Resolved::ORIGIN_SYSTEM_PACKAGE], true);
-
-            return array_fill_keys($known->getConflictingExtensions($resolved->getVersion(), $builtByUs ? $resolved->getOptionValues() : null), '*');
+            foreach ($known->getConflictingExtensions($resolved->getVersion(), $builtByUs ? $resolved->getOptionValues() : null) as $name => $description) {
+                $result[$name] = ['*', $description];
+            }
+        } else {
+            $manifest = $resolved->getManifest();
+            foreach ($manifest === null ? [] : $manifest->getConflictingExtensions() as $name => $constraint) {
+                $result[$name] = [$constraint, ''];
+            }
         }
-        $manifest = $resolved->getManifest();
 
-        return $manifest === null ? [] : $manifest->getConflictingExtensions();
+        return $result;
     }
 
     /**

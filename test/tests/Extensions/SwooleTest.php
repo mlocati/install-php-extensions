@@ -216,15 +216,17 @@ final class SwooleTest extends TestCase
         $without = new Values([], [swoole::OPTION_WITHOUT_SSH2 => true]);
         self::assertNotContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.1.7', $with)));
         self::assertNotContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.1.7', $with));
-        self::assertSame(['openswoole'], $extension->getConflictingExtensions('6.1.7', $with));
+        self::assertSame(['openswoole'], array_keys($extension->getConflictingExtensions('6.1.7', $with)));
         self::assertContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.2.0', $with)));
         self::assertContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.2.0', $with));
-        self::assertSame(['openswoole', 'ssh2'], $extension->getConflictingExtensions('6.2.0', $with));
+        $conflicts = $extension->getConflictingExtensions('6.2.0', $with);
+        self::assertSame(['openswoole', 'ssh2'], array_keys($conflicts));
+        self::assertStringContainsString("'without-ssh2'", $conflicts['ssh2']);
         self::assertNotContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.2.0', $without)));
         self::assertNotContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.2.0', $without));
-        self::assertSame(['openswoole'], $extension->getConflictingExtensions('6.2.0', $without));
+        self::assertSame(['openswoole'], array_keys($extension->getConflictingExtensions('6.2.0', $without)));
         // System packages may be built without the SSH2 client (like the ones of Remi)
-        self::assertSame(['openswoole'], $extension->getConflictingExtensions('6.2.0'));
+        self::assertSame(['openswoole'], array_keys($extension->getConflictingExtensions('6.2.0')));
     }
 
     /**

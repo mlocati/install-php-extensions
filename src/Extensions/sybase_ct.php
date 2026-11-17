@@ -57,8 +57,7 @@ final class sybase_ct extends Extension implements
      */
     public function getConflictingExtensions($version, $options = null)
     {
-        // Both of them define the mssql_* functions
-        return [mssql::HANDLE];
+        return [mssql::HANDLE => 'both of them define the mssql_* functions'];
     }
 
     /**

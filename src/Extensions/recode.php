@@ -71,8 +71,7 @@ final class recode extends Extension implements
     public function getConflictingExtensions($version, $options = null)
     {
         if ($this->os instanceof OS\Alpine) {
-            // On Alpine the second one to be loaded fails.
-            return [imap::HANDLE];
+            return [imap::HANDLE => 'on Alpine the second one to be loaded fails'];
         }
 
         return [];

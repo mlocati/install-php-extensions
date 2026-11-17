@@ -75,8 +75,7 @@ final class imap extends Extension implements
     public function getConflictingExtensions($version, $options = null)
     {
         if ($this->os instanceof OS\Alpine) {
-            // On Alpine the second one to be loaded fails.
-            return [recode::HANDLE];
+            return [recode::HANDLE => 'on Alpine the second one to be loaded fails'];
         }
 
         return [];

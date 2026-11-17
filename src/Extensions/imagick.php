@@ -106,6 +106,6 @@ final class imagick extends Extension implements
      */
     public function getConflictingExtensions($version, $options = null)
     {
-        return [gmagick::HANDLE];
+        return [gmagick::HANDLE => 'imagick refuses to be loaded together with gmagick'];
     }
 }

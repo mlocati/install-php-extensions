@@ -108,9 +108,9 @@ final class swoole extends Extension implements
      */
     public function getConflictingExtensions($version, $options = null)
     {
-        $result = [openswoole::HANDLE];
+        $result = [openswoole::HANDLE => 'openswoole is a fork of swoole, and they define the same symbols'];
         if ($options !== null && $this->usesSSH2($version, $options)) {
-            $result[] = ssh2::HANDLE;
+            $result[ssh2::HANDLE] = "swoole is built with its own SSH2 client: use the option '" . self::OPTION_WITHOUT_SSH2 . "' of swoole to build it without";
         }
 
         return $result;

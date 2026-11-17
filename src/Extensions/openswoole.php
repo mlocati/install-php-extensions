@@ -169,7 +169,7 @@ final class openswoole extends Extension implements
      */
     public function getConflictingExtensions($version, $options = null)
     {
-        return [swoole::HANDLE];
+        return [swoole::HANDLE => 'openswoole is a fork of swoole, and they define the same symbols'];
     }
 
     /**
