@@ -137,7 +137,11 @@ final class redis extends Extension implements
     {
         $version = $context->getVersion();
         $installed = $this->php->getInstalledExtensions();
-        $result = ['--enable-redis-lzf'];
+        $result = [];
+        // liblzf is a git submodule: the PECL archives include it, the GitHub archives (used by Packagist) don't
+        if ($this->os->getFilesystem()->isFile($context->getSourceDirectory() . '/liblzf/lzf.h')) {
+            $result[] = '--enable-redis-lzf';
+        }
         if (in_array(igbinary::HANDLE, $installed, true)) {
             $result[] = '--enable-redis-igbinary';
         }
