@@ -178,6 +178,9 @@ final class ExtensionsInstaller
         } finally {
             $dependencyInstaller->cleanup($installedDependencies, $deleteSystemPackagerCache);
         }
+        if ($enable) {
+            $this->enabler->checkStillLoaded();
+        }
 
         $extensions = [];
         foreach ($installedExtensions as $installedExtension) {
