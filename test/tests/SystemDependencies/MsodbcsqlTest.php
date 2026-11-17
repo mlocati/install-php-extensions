@@ -113,6 +113,74 @@ final class MsodbcsqlTest extends TestCase
         $old = $this->createDependency(OS\Debian::class, OS\Debian::STRETCH, 700)->getSystemPackages(M::mock(State::class));
         self::assertSame(['unixodbc', 'libgssapi-krb5-2', 'apt-transport-https'], $old->getPersistent());
         self::assertSame(['unixodbc-dev'], $old->getVolatile());
+        $almaLinux = $this->createDependency(OS\AlmaLinux::class, 9, 804)->getSystemPackages(M::mock(State::class));
+        self::assertSame(['krb5-libs', 'libstdc++', 'unixODBC'], $almaLinux->getPersistent());
+        self::assertSame(['unixODBC-devel'], $almaLinux->getVolatile());
+    }
+
+    /**
+     * @return void
+     */
+    public function testUnsupportedOnFedora()
+    {
+        $this->expectException(Exception\UnsupportedOS::class);
+        $this->createDependency(OS\Fedora::class, 44, 804)->getSystemPackages(M::mock(State::class));
+    }
+
+    /**
+     * @return list<array{class-string<\IPE\OS\Posix>, int, int, string, string}>
+     */
+    public static function provideEnterpriseLinuxCases()
+    {
+        return [
+            [OS\AlmaLinux::class, 8, 804, 'microsoft.asc', 'msodbcsql18'],
+            [OS\RockyLinux::class, 9, 703, 'microsoft.asc', 'msodbcsql17'],
+            [OS\AlmaLinux::class, 10, 805, 'microsoft-2025.asc', 'msodbcsql18'],
+        ];
+    }
+
+    /**
+     * @dataProvider provideEnterpriseLinuxCases
+     *
+     * @param class-string<\IPE\OS\Posix> $osClass
+     * @param int $osVersion
+     * @param int $phpVersion
+     * @param string $expectedKey
+     * @param string $expectedPackage
+     *
+     * @return void
+     */
+    public function testInstallOnEnterpriseLinux($osClass, $osVersion, $phpVersion, $expectedKey, $expectedPackage)
+    {
+        $this->createDependency($osClass, $osVersion, $phpVersion)->install(self::createState());
+        self::assertSame(["https://packages.microsoft.com/keys/{$expectedKey}"], $this->downloads);
+        self::assertSame([msodbcsql::DNF_REPOSITORY_FILE], array_keys($this->writtenFiles));
+        self::assertStringContainsString("\nbaseurl=https://packages.microsoft.com/rhel/{$osVersion}/prod/\n", $this->writtenFiles[msodbcsql::DNF_REPOSITORY_FILE]);
+        self::assertCount(1, $this->commands);
+        self::assertSame('dnf', $this->commands[0]->getCommand());
+        self::assertSame(['--quiet', 'install', '-y', '--setopt=install_weak_deps=False', $expectedPackage], $this->commands[0]->getArguments());
+        self::assertSame(['ACCEPT_EULA' => 'Y'], $this->commands[0]->getEnvironment());
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageNamesOnRHELLike()
+    {
+        $php = M::mock(PHPInfo::class);
+        $phpPackage = new SystemPackager\Package('php84-php-cli', '8.4.27-1.el9.remi', 'php84-php');
+        foreach ([false, true] as $repositoryConfigured) {
+            $fs = M::mock(Filesystem::class);
+            $fs->shouldReceive('isFile')->with(msodbcsql::DNF_REPOSITORY_FILE)->andReturn($repositoryConfigured);
+            $os = M::mock(OS\AlmaLinux::class);
+            $os->shouldReceive('getFilesystem')->andReturn($fs);
+            foreach ([new sqlsrv($php, $os), new pdo_sqlsrv($php, $os)] as $extension) {
+                self::assertSame($repositoryConfigured ? null : [], $extension->getSystemPackageNames($phpPackage));
+            }
+        }
+        foreach ([new sqlsrv($php, M::mock(OS\Debian::class)), new pdo_sqlsrv($php, M::mock(OS\Debian::class))] as $extension) {
+            self::assertNull($extension->getSystemPackageNames($phpPackage));
+        }
     }
 
     /**

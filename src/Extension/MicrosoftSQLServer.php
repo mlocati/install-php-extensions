@@ -6,6 +6,7 @@ use IPE\Extension;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\SystemDependencies\msodbcsql;
+use IPE\SystemPackager\Package;
 
 /**
  * What sqlsrv and pdo_sqlsrv have in common: they are released together.
@@ -14,6 +15,7 @@ abstract class MicrosoftSQLServer extends Extension implements
     AvailableOnPECL,
     DeclaresDefaultVersion,
     DeclaresUnsupportedEnvironments,
+    ProvidesSystemPackageNames,
     RequiresSystemDependencies
 {
     /**
@@ -23,9 +25,28 @@ abstract class MicrosoftSQLServer extends Extension implements
      */
     public static function getUnsupportedEnvironments()
     {
+        $noDriver = "Microsoft doesn't publish the ODBC Driver for this system";
+
         return [
             'alpine3.7..3.8' => 'the Microsoft ODBC Driver requires unixODBC 2.3.6 or later',
+            'amzn' => $noDriver,
+            'fedora' => $noDriver,
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(Package $phpPackage)
+    {
+        // The system packages require the driver, which we install only after them
+        if ($this->os instanceof OS\Posix\RHELLike && !$this->os->getFilesystem()->isFile(msodbcsql::DNF_REPOSITORY_FILE)) {
+            return [];
+        }
+
+        return null;
     }
 
     /**
