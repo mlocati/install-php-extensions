@@ -62,6 +62,7 @@ final class relay extends Extension\PrecompiledExtension implements
             'amzn2023-zts' => $noCK,
             'el8-zts' => $noBuild,
             'el9-zts' => $noHiredis,
+            'fedora45..46' => 'the vendor builds require OpenSSL 3, but this system uses OpenSSL 4',
         ];
     }
 
