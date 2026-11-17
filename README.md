@@ -200,9 +200,9 @@ Below the handles there are the Composer package names that can be used to speci
 | http<br><sub>m6w6/ext-http</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | igbinary<br><sub>igbinary/igbinary</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | imagick<br><sub>imagick/imagick</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| imap<br><sub>php/imap</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| imap[&#x24D8;](#imap)<br><sub>php/imap</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | inotify<br><sub>arnaud-lb/inotify</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| interbase<br><sub>php/interbase</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
+| interbase[&#x24D8;](#interbase)<br><sub>php/interbase</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
 | intl<br><sub>php/intl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ion |  | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |
 | ioncube_loader |  | &check; | &check; | &check; | &check; | &check; |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -212,20 +212,20 @@ Below the handles there are the Composer package names that can be used to speci
 | jsonpath<br><sub>supermetrics/jsonpath</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
 | judy[&#x24D8;](#judy)<br><sub>orieg/judy</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | ldap<br><sub>php/ldap</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| luasandbox |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| luasandbox[&#x24D8;](#luasandbox) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | lz4[&#x24D8;](#lz4) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |
 | lzf<br><sub>pecl/lzf</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | mailparse<br><sub>pecl/mailparse</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | maxminddb | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | mbstring<br><sub>php/mbstring</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| mcrypt<br><sub>pecl/mcrypt<br>php/mcrypt</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| mcrypt[&#x24D8;](#mcrypt)<br><sub>pecl/mcrypt<br>php/mcrypt</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | md4c | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | memcache |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | memcached<br><sub>php-memcached/php-memcached</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | memprof[&#x24D8;](#memprof)<br><sub>arnaud-lb/memprof</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | mongo |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
 | mongodb<br><sub>mongodb/mongodb-extension</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| mosquitto |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| mosquitto[&#x24D8;](#mosquitto) |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | msgpack<br><sub>msgpack/msgpack-php</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | mssql<br><sub>php/mssql</sub> |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
 | mysql<br><sub>php/mysql</sub> |  |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; |
@@ -248,7 +248,7 @@ Below the handles there are the Composer package names that can be used to speci
 | pcov<br><sub>pecl/pcov</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | pdo<br><sub>php/pdo</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_dblib<br><sub>php/pdo_dblib</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pdo_firebird<br><sub>php/pdo_firebird</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pdo_firebird[&#x24D8;](#pdo_firebird)<br><sub>php/pdo_firebird</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_mysql<br><sub>php/pdo_mysql</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_oci[&#x24D8;](#pdo_oci)<br><sub>pecl/pdo_oci<br>php/pdo_oci</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_odbc<br><sub>php/pdo_odbc</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -267,20 +267,20 @@ Below the handles there are the Composer package names that can be used to speci
 | psr | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pthreads[&#x24D8;](#pthreads) |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; | &check; |
 | raphf<br><sub>m6w6/ext-raphf</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| rdkafka<br><sub>rdkafka/rdkafka</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| rdkafka[&#x24D8;](#rdkafka)<br><sub>rdkafka/rdkafka</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | recode[&#x24D8;](#recode)<br><sub>php/recode</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
 | redis |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | relay[&#x24D8;](#relay) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
 | rrd |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | saxon[&#x24D8;](#saxon) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| seasclick[&#x24D8;](#seasclick) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| seasclick |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | seaslog |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | session<br><sub>php/session</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | shmop<br><sub>php/shmop</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | simdjson[&#x24D8;](#simdjson) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | smbclient |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | snappy | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| snmp<br><sub>php/snmp</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| snmp[&#x24D8;](#snmp)<br><sub>php/snmp</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | snuffleupagus[&#x24D8;](#snuffleupagus) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | soap<br><sub>php/soap</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | sockets<br><sub>php/sockets</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -318,12 +318,13 @@ Below the handles there are the Composer package names that can be used to speci
 | xdiff<br><sub>pecl/xdiff</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xhprof | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xlswriter<br><sub>viest/xlswriter</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
+| xml<br><sub>php/xml</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xmldiff<br><sub>pecl/xml-xmldiff</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xmlrpc<br><sub>php/xmlrpc</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xpass[&#x24D8;](#xpass)<br><sub>remi/xpass</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | xsl<br><sub>php/xsl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | yac<br><sub>laruence/yac</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| yajl_stream |  | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |  |
+| yajl_stream[&#x24D8;](#yajl_stream) |  | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | yaml<br><sub>pecl/yaml</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | yar |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zephir_parser | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
@@ -332,7 +333,7 @@ Below the handles there are the Composer package names that can be used to speci
 | zookeeper[&#x24D8;](#zookeeper) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zstd<br><sub>kjdev/zstd</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 
-*Number of supported extensions: 171*
+*Number of supported extensions: 172*
 
 <!-- Generated by scripts/update-readme.php: do not edit -->
 <!-- END OF SUPPORTED PHP EXTENSIONS TABLE -->
@@ -408,13 +409,19 @@ Some extensions have limitations, or specific command line options:
 
 ### amqp
 
-Not available on Ubuntu 14.04 (the version of the librabbitmq library of this system is too old)
+Not available on:
+
+- Ubuntu 14.04 (the version of the librabbitmq library of this system is too old)
+- Amazon Linux 2023 (this system does not provide the librabbitmq library)
 
 ### blackfire
 
 Not available on:
 
+- Amazon Linux 2023 with PHP 5 (the probe for PHP 5 requires glibc 2.33 or older)
 - Debian 12 to 15 with PHP 5 (the probe for PHP 5 requires glibc 2.33 or older)
+- Enterprise Linux 9 to 10 with PHP 5 (the probe for PHP 5 requires glibc 2.33 or older)
+- Fedora with PHP 5 (the probe for PHP 5 requires glibc 2.33 or older)
 - Ubuntu 22.04 to 26.10 with PHP 5 (the probe for PHP 5 requires glibc 2.33 or older)
 
 ### cassandra
@@ -439,6 +446,8 @@ Not available on:
 - Debian 10 to 11 (the extension is not compatible with the version of the ICU library of this system)
 - Debian 13 (the extension is not compatible with the version of the ICU library of this system)
 - Alpine 3.22 to 3.24 (the extension is not compatible with the version of the ICU library of this system)
+- Enterprise Linux 8 to 9 (the extension is not compatible with the version of the ICU library of this system)
+- Amazon Linux 2023 (the extension is not compatible with the version of the ICU library of this system)
 
 ### gd
 
@@ -455,9 +464,28 @@ Not available on:
 - Alpine 3.0 to 3.8 (this system doesn't provide the GEOS library)
 - Alpine 3.9 to 3.10 (the extension can't be compiled with the compiler or the libraries of this system)
 
+### imap
+
+Not available on:
+
+- Amazon Linux (this system doesn't provide the c-client library)
+- Enterprise Linux 9 to 10 (this system doesn't provide the c-client library)
+- Fedora (this system doesn't provide the c-client library)
+
+### interbase
+
+Not available on Amazon Linux 2023 (this system doesn't provide the Firebird client library)
+
 ### judy
 
-Not available on Alpine 3.13 to 3.15 (the extension can't be compiled with the compiler or the libraries of this system)
+Not available on:
+
+- Alpine 3.13 to 3.15 (the extension can't be compiled with the compiler or the libraries of this system)
+- Enterprise Linux 8 (this system doesn't provide the Judy library)
+
+### luasandbox
+
+Not available on Amazon Linux 2023 (this system doesn't provide Lua 5.1)
 
 ### lz4
 
@@ -467,6 +495,13 @@ Not available on:
 - Debian 8 (the version of the LZ4 library of this system is too old)
 - Ubuntu 14.04 (the version of the LZ4 library of this system is too old)
 
+### mcrypt
+
+Not available on:
+
+- Enterprise Linux 10 (this system doesn't provide the mcrypt library)
+- Amazon Linux 2023 (this system doesn't provide the mcrypt library)
+
 ### memprof
 
 Not available on:
@@ -474,6 +509,11 @@ Not available on:
 - thread-safe (ZTS) builds of PHP
 - Alpine 3.0 to 3.8 (this system doesn't provide the Judy library)
 - Alpine 3.9 to 3.15 (the extension can't be compiled with the compiler or the libraries of this system)
+- Enterprise Linux 8 (this system doesn't provide the Judy library)
+
+### mosquitto
+
+Not available on Amazon Linux 2023 (this system doesn't provide the Mosquitto library)
 
 ### newrelic
 
@@ -506,6 +546,10 @@ Not available on non-thread-safe (NTS) builds of PHP
 
 Not available on Debian 8 (the extension can't be compiled with the compiler or the libraries of this system)
 
+### pdo_firebird
+
+Not available on Amazon Linux 2023 (this system doesn't provide the Firebird client library)
+
 ### pdo_oci
 
 Command line options:
@@ -521,10 +565,16 @@ Not available on:
 - Alpine (the vendor only supports glibc)
 - Debian 8 (the extension requires OpenSSL 1.1)
 - Ubuntu 14.04 to 16.04 (the extension requires OpenSSL 1.1)
+- Enterprise Linux 8 with PHP 8.5 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 1.1 of this system)
+- Fedora 45 with PHP 8.5 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system)
 
 ### pdo_sqlsrv
 
-Not available on Alpine 3.7 to 3.8 (the Microsoft ODBC Driver requires unixODBC 2.3.6 or later)
+Not available on:
+
+- Alpine 3.7 to 3.8 (the Microsoft ODBC Driver requires unixODBC 2.3.6 or later)
+- Amazon Linux (Microsoft doesn't publish the ODBC Driver for this system)
+- Fedora (Microsoft doesn't publish the ODBC Driver for this system)
 
 ### phpy
 
@@ -536,6 +586,10 @@ Not available on:
 ### pthreads
 
 Not available on non-thread-safe (NTS) builds of PHP
+
+### rdkafka
+
+Not available on Amazon Linux 2023 (this system does not provide the librdkafka library)
 
 ### recode
 
@@ -550,6 +604,10 @@ Not available on:
 - Alpine 3.22 to 3.24 with PHP ZTS (the ZTS build requires libhiredis 1.1.0, which is not available)
 - Debian 10 to 11 with PHP ZTS (the vendor doesn't publish ZTS builds for this system)
 - Debian 12 with PHP ZTS (the ZTS build requires libhiredis 1.1.0, which is not available)
+- Amazon Linux 2023 with PHP ZTS (the ZTS build requires the ck library, which is not available)
+- Enterprise Linux 8 with PHP ZTS (the vendor doesn't publish ZTS builds for this system)
+- Enterprise Linux 9 with PHP ZTS (the ZTS build requires libhiredis 1.1.0, which is not available)
+- Fedora 45 to 46 (the vendor builds require OpenSSL 3, but this system uses OpenSSL 4)
 
 ### saxon
 
@@ -561,13 +619,18 @@ Command line options:
 |---|---|---|
 | `--saxon:edition[=]value` | The edition to be installed: EE (Enterprise), PE (Professional) or HE (Home) | `EE` |
 
-### seasclick
-
-Not available on Alpine 3.23 to 3.24 (the extension can't be compiled with the compiler or the libraries of this system)
-
 ### simdjson
 
 Not available on Debian 8 to 9 (the extension can't be compiled with the compiler or the libraries of this system)
+
+### snmp
+
+Not available on:
+
+- Enterprise Linux 9 to 10 with PHP 5 (the extension requires DES before PHP 8.0, but the SNMP library of this system doesn't support it)
+- Enterprise Linux 9 to 10 with PHP 7 (the extension requires DES before PHP 8.0, but the SNMP library of this system doesn't support it)
+- Fedora with PHP 5 (the extension requires DES before PHP 8.0, but the SNMP library of this system doesn't support it)
+- Fedora with PHP 7 (the extension requires DES before PHP 8.0, but the SNMP library of this system doesn't support it)
 
 ### snuffleupagus
 
@@ -601,7 +664,11 @@ Not available on:
 
 ### sqlsrv
 
-Not available on Alpine 3.7 to 3.8 (the Microsoft ODBC Driver requires unixODBC 2.3.6 or later)
+Not available on:
+
+- Alpine 3.7 to 3.8 (the Microsoft ODBC Driver requires unixODBC 2.3.6 or later)
+- Amazon Linux (Microsoft doesn't publish the ODBC Driver for this system)
+- Fedora (Microsoft doesn't publish the ODBC Driver for this system)
 
 ### statgrab
 
@@ -609,11 +676,18 @@ Not available on Alpine 3.12 to 3.16 (the extension can't be compiled with the c
 
 ### swoole
 
+Not available on:
+
+- POSIX systems with 32-bit PHP 8.3 (swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+)
+- POSIX systems with 32-bit PHP 8.4 (swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+)
+- POSIX systems with 32-bit PHP 8.5 (swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+)
+
 Command line options:
 
 | Option | Description | Default |
 |---|---|---|
 | `--swoole:without-iouring` | Don't enable the io_uring support |  |
+| `--swoole:without-ssh2` | Don't enable the SSH2 client, which conflicts with the ssh2 extension |  |
 
 ### tideways
 
@@ -622,6 +696,12 @@ Not available on:
 - Debian 13 to 15 with PHP 5 (the module for PHP 7.1 and older requires glibc 2.37 or older)
 - Debian 13 to 15 with PHP 7.0 (the module for PHP 7.1 and older requires glibc 2.37 or older)
 - Debian 13 to 15 with PHP 7.1 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Enterprise Linux 10 with PHP 5 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Enterprise Linux 10 with PHP 7.0 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Enterprise Linux 10 with PHP 7.1 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Fedora with PHP 5 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Fedora with PHP 7.0 (the module for PHP 7.1 and older requires glibc 2.37 or older)
+- Fedora with PHP 7.1 (the module for PHP 7.1 and older requires glibc 2.37 or older)
 - Ubuntu 23.10 to 26.10 with PHP 5 (the module for PHP 7.1 and older requires glibc 2.37 or older)
 - Ubuntu 23.10 to 26.10 with PHP 7.0 (the module for PHP 7.1 and older requires glibc 2.37 or older)
 - Ubuntu 23.10 to 26.10 with PHP 7.1 (the module for PHP 7.1 and older requires glibc 2.37 or older)
@@ -639,7 +719,9 @@ Not available on:
 Not available on:
 
 - Alpine 3.9 (the extension can't be compiled with the compiler or the libraries of this system)
+- Amazon Linux (this system doesn't provide the vips library)
 - Debian 8 (the extension can't be compiled with the compiler or the libraries of this system)
+- Enterprise Linux (this system doesn't provide the vips library)
 
 ### wikidiff2
 
@@ -647,7 +729,14 @@ Not available on Debian 8 to 9 (the extension can't be compiled with the compile
 
 ### xpass
 
-Not available on Debian 10 (the extension can't be compiled with the compiler or the libraries of this system)
+Not available on:
+
+- Debian 10 (the extension can't be compiled with the compiler or the libraries of this system)
+- Enterprise Linux 8 (the extension requires libxcrypt 4.4 or later)
+
+### yajl_stream
+
+Not available on Enterprise Linux 10 (this system doesn't provide the YAJL library)
 
 ### zookeeper
 
