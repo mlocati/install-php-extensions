@@ -61,10 +61,20 @@ final class libaspell extends SystemDependency
                 ['aspell-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 array_merge(['libaspell15'], $dictionaries),
                 ['libpspell-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() >= 10) {
+            // Enterprise Linux 10 doesn't provide the English dictionary
+            $dictionaries = array_values(array_diff($dictionaries, ['aspell-en']));
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                array_merge(['aspell'], $dictionaries),
+                ['aspell-devel']
             );
         }
 

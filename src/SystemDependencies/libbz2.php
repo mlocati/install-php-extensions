@@ -38,10 +38,16 @@ final class libbz2 extends SystemDependency
                 ['bzip2-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 ['libbz2-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['bzip2-libs'],
+                ['bzip2-devel']
             );
         }
 

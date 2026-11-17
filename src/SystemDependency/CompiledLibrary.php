@@ -8,6 +8,7 @@ use IPE\Filesystem\Command;
 use IPE\Filesystem\Downloader;
 use IPE\Installer\BuildOptions;
 use IPE\Installer\BuildTools;
+use IPE\Installer\Compiler;
 use IPE\Installer\State;
 use IPE\Option\Values;
 use IPE\OS;
@@ -19,6 +20,12 @@ use IPE\SystemDependency;
  */
 abstract class CompiledLibrary extends SystemDependency
 {
+    /**
+     * @private
+     * @var string
+     */
+    const RHELLIKE_LINKER_CONFIG = '/etc/ld.so.conf.d/usr-local.conf';
+
     /**
      * @var \IPE\Logger
      */
@@ -82,8 +89,25 @@ abstract class CompiledLibrary extends SystemDependency
         $this->logger->info('Compiling ' . static::getHandle());
         $this->build($this->fetchSource($state));
         $this->sourceURL = $this->getSourceURL();
+        $this->refreshLinkerCache();
+    }
+
+    /**
+     * Let the system linker find the libraries installed in /usr/local.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    protected function refreshLinkerCache()
+    {
+        $fs = $this->os->getFilesystem();
+        // The linker of RHEL-like systems doesn't look in /usr/local
+        if ($this->os instanceof OS\Posix\RHELLike && !$fs->exists(self::RHELLIKE_LINKER_CONFIG)) {
+            $fs->writeFile(self::RHELLIKE_LINKER_CONFIG, "/usr/local/lib\n/usr/local/lib64\n");
+        }
         // The library may be in a directory where the system linker doesn't look until its cache is refreshed: it's not an error if we can't do it
-        $this->os->getFilesystem()->run(Command::create('ldconfig')->withOutput(Command::OUTPUT_DISCARD));
+        $fs->run(Command::create('ldconfig')->withOutput(Command::OUTPUT_DISCARD));
     }
 
     /**
@@ -174,6 +198,16 @@ abstract class CompiledLibrary extends SystemDependency
         if ($rc !== 0) {
             throw new Exception\IO('Failed to compile ' . static::getHandle() . ": {$executable} failed with exit code {$rc}");
         }
+    }
+
+    /**
+     * The C flags for the libraries, with the same warnings we silence for the extensions (GCC 14 turns some of them into errors).
+     *
+     * @return non-empty-string
+     */
+    protected function getCFlags()
+    {
+        return '-O2 ' . Compiler::WARNING_FLAGS . ' ' . Compiler::C_WARNING_FLAGS;
     }
 
     /**

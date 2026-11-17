@@ -64,10 +64,16 @@ class libicu extends SystemDependency
                 ['icu-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libicu[0-9]+$'],
                 ['libicu-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libicu'],
+                ['libicu-devel']
             );
         }
 

@@ -38,10 +38,17 @@ class libzlib extends SystemDependency
                 ['zlib-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 ['zlib1g-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // The base system includes zlib (or zlib-ng-compat)
+            return new Packages(
+                [],
+                ['zlib-devel']
             );
         }
 

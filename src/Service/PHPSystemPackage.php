@@ -9,7 +9,7 @@ use IPE\SystemPackager;
 use IPE\SystemPackager\Package;
 
 /**
- * Detects the system package (APT, APK) that installed PHP.
+ * Detects the system package (APT, APK, DNF) that installed PHP.
  */
 final class PHPSystemPackage
 {
@@ -57,6 +57,7 @@ final class PHPSystemPackage
      *
      * @example 'php8.4-dev=8.4.27-1~deb13u1' (Debian, Ubuntu)
      * @example 'php84-dev=8.4.27-r0' (Alpine)
+     * @example 'php-devel-8.3.36-1.module_el9.8.0+330+fdc30075' (RHEL-like systems)
      */
     public function getDevelopmentPackage()
     {
@@ -99,6 +100,9 @@ final class PHPSystemPackage
                     ? $package
                     : $this->packager->findAvailablePackage($package->getName(), $phpPackage->getVersion());
             }
+            if ($this->packager->isBuiltForPHPAPI($package, $this->php->getAPIVersion()) === false) {
+                continue;
+            }
 
             return $package;
         }
@@ -123,15 +127,33 @@ final class PHPSystemPackage
             return [];
         }
         $result = [];
-        $match = null;
+        $phpVersionPrefix = self::getPHPVersionPrefix($phpPackage->getSource());
         foreach (array_keys($this->packager->expandPackageList([$this->getInstallArgument($package)])) as $name) {
-            // Like php8.5-cli (APT) or php85-common (APK)
-            if (preg_match('/^(?<source>php\d+(?:\.\d+)?)(?:-|$)/', $name, $match) && $match['source'] !== $phpPackage->getSource()) {
+            $versionPrefix = self::getPHPVersionPrefix($name);
+            if ($versionPrefix !== '' && $versionPrefix !== $phpVersionPrefix) {
                 $result[] = $name;
             }
         }
 
         return $result;
+    }
+
+    /**
+     * Get the PHP version in the name of a package or of a capability.
+     *
+     * @param string $name
+     *
+     * @return string empty string if the name doesn't include the PHP version
+     *
+     * @example 'php8.5' for 'php8.5-cli' (APT)
+     * @example 'php85' for 'php85-common' (APK), and for 'php85-php-cli', 'php85-runtime' and 'php85-php(api)' (Remi SCL)
+     * @example '' for 'php-common'
+     */
+    public static function getPHPVersionPrefix($name)
+    {
+        $match = null;
+
+        return preg_match('/^(?<prefix>php\d+(?:\.\d+)?)(?:[\-(]|$)/', $name, $match) ? $match['prefix'] : '';
     }
 
     /**

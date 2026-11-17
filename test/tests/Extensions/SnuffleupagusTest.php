@@ -95,9 +95,26 @@ EOT;
     }
 
     /**
+     * @return void
+     */
+    public function testPHP8ParameterNames()
+    {
+        $command = 'sp.disable_function.function("proc_open").param("command")';
+        $rules = $this->prepare(new Values(), '0.9.0', 800);
+        self::assertStringContainsString('sp.disable_function.function("mail").param("additional_params")', $rules);
+        self::assertStringContainsString($command, $rules);
+        $rules = $this->prepare(new Values(), '0.9.0', 704);
+        self::assertStringContainsString('sp.disable_function.function("mail").param("additional_parameters")', $rules);
+        self::assertStringContainsString($command, $rules);
+    }
+
+    /**
+     * @param string $version
+     * @param int $phpVersion
+     *
      * @return string the rules written by the extension
      */
-    private function prepare(Values $options)
+    private function prepare(Values $options, $version = '0.14.0', $phpVersion = 805)
     {
         $written = null;
         $fs = M::mock(Filesystem::class);
@@ -111,7 +128,8 @@ EOT;
         $os->shouldReceive('getFilesystem')->andReturn($fs);
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getIniScanDir')->andReturn('/ini');
-        self::assertSame('/src/src', (new snuffleupagus($php, $os))->prepareVendorSource(self::createBuildContext('0.14.0', $options, '/src')));
+        $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
+        self::assertSame('/src/src', (new snuffleupagus($php, $os))->prepareVendorSource(self::createBuildContext($version, $options, '/src')));
         self::assertIsString($written);
 
         return $written;

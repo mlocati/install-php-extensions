@@ -111,6 +111,10 @@ final class PrecompiledExtensionsTest extends TestCase
             '#^https://packages\.blackfire\.io/binaries/blackfire-php/1\.2\.3/blackfire-php-linux_\w+-php-74-zts\.tar\.gz$#',
             (new Extensions\blackfire(self::createPHP(704, true), self::createOS(OS\Debian::class, 12), $downloader))->getBinaryArchiveURL('1.2.3')
         );
+        self::assertMatchesRegularExpression(
+            '#^https://blackfire\.io/api/v1/releases/probe/php/linux/\w+/84$#',
+            (new Extensions\blackfire(self::createPHP(), self::createOS(OS\AlmaLinux::class, 9), $downloader))->getBinaryArchiveURL('')
+        );
         $php = self::createPHP();
         $os = self::createOS(OS\Debian::class, 12, self::createFilesystem(['/src/blackfire-20240924.sha1', '/src/blackfire-20240924.so']));
         self::assertSame('/src/blackfire-20240924.so', (new Extensions\blackfire($php, $os, $downloader))->findBinaryModule('/src', ''));
@@ -269,6 +273,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $downloader->shouldReceive('getContent')->with('https://app.tideways.io/api/current-versions')->andReturn(JSON::encode(['php' => ['links' => $links]]));
         self::assertStringEndsWith('?linux-', substr((new Extensions\tideways(self::createPHP(), self::createOS(OS\Debian::class, 12), $downloader))->getBinaryArchiveURL(''), 0, strlen($link) + 7));
         self::assertStringContainsString('?linux-alpine-', (new Extensions\tideways(self::createPHP(), self::createOS(OS\Alpine::class, 323), $downloader))->getBinaryArchiveURL(''));
+        self::assertStringEndsWith('?linux-', substr((new Extensions\tideways(self::createPHP(), self::createOS(OS\AlmaLinux::class, 9), $downloader))->getBinaryArchiveURL(''), 0, strlen($link) + 7));
         self::assertSame('/src/dist/tideways-php-8.4.so', (new Extensions\tideways(self::createPHP(), self::createOS(OS\Debian::class, 12, self::createFilesystem(['/src/dist/tideways-php-8.4.so'])), $downloader))->findBinaryModule('/src', ''));
         self::assertSame('/src/tideways-php-alpine-8.4-zts.so', (new Extensions\tideways(self::createPHP(804, true), self::createOS(OS\Alpine::class, 323, self::createFilesystem(['/src/tideways-php-alpine-8.4-zts.so'])), $downloader))->findBinaryModule('/src', ''));
         $invalid = M::mock(Downloader::class);
@@ -288,6 +293,15 @@ final class PrecompiledExtensionsTest extends TestCase
         self::assertMatchesRegularExpression('#/v2\.0/relay-v2\.0-php8\.4-debian-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::BULLSEYE), $downloader))->getBinaryArchiveURL('2.0'));
         self::assertMatchesRegularExpression('#-alpine3\.9-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Alpine::class, 316), $downloader))->getBinaryArchiveURL('2.0'));
         self::assertMatchesRegularExpression('#-alpine3\.17-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Alpine::class, 317), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-centos8-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\AlmaLinux::class, 8), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-el9-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\RockyLinux::class, 9), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-el10-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\AlmaLinux::class, 10), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-el9-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\AmazonLinux::class, 2023), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertMatchesRegularExpression('#-php8\.4-el10-[\w-]+\.tar\.gz$#', (new Extensions\relay(self::createPHP(), self::createOS(OS\Fedora::class, 44), $downloader))->getBinaryArchiveURL('2.0'));
+        self::assertSame(
+            [SystemDependencies\binutils::HANDLE, SystemDependencies\libopenssl::HANDLE],
+            (new Extensions\relay(self::createPHP(), self::createOS(OS\AlmaLinux::class, 9), $downloader))->getRequiredSystemDependencies('', new Values())
+        );
         $fs = self::createFilesystem(['/src/relay-pkg.so', '/src/relay-zts.so']);
         $os = self::createOS(OS\Debian::class, 12, $fs);
         self::assertSame('/src/relay-pkg.so', (new Extensions\relay(self::createPHP(), $os, $downloader))->findBinaryModule('/src', ''));
@@ -340,6 +354,11 @@ final class PrecompiledExtensionsTest extends TestCase
             [OS\Alpine::class, 321, false],
             [OS\Alpine::class, 322, true],
             [OS\Alpine::class, 324, true],
+            [OS\AlmaLinux::class, 8, true],
+            [OS\AlmaLinux::class, 9, true],
+            [OS\AlmaLinux::class, 10, false],
+            [OS\AmazonLinux::class, 2023, true],
+            [OS\Fedora::class, 44, false],
         ];
     }
 
@@ -447,6 +466,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $downloader->shouldReceive('getContent')->with('https://download.newrelic.com/php_agent/archive/12.1.0.1/')->andReturn($page);
         self::assertSame('https://download.newrelic.com/php_agent/release/newrelic-php5-12.1.0.1-linux.tar.gz', (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12), $downloader, new \IPE\Logger()))->getBinaryArchiveURL(''));
         self::assertSame('https://download.newrelic.com/php_agent/archive/12.1.0.1/newrelic-php5-12.1.0.1-linux-musl.tar.gz', (new Extensions\newrelic(self::createPHP(), self::createOS(OS\Alpine::class, 323), $downloader, new \IPE\Logger()))->getBinaryArchiveURL('12.1.0.1'));
+        self::assertSame('https://download.newrelic.com/php_agent/release/newrelic-php5-12.1.0.1-linux.tar.gz', (new Extensions\newrelic(self::createPHP(), self::createOS(OS\AlmaLinux::class, 9), $downloader, new \IPE\Logger()))->getBinaryArchiveURL(''));
     }
 
     /**
@@ -517,13 +537,13 @@ final class PrecompiledExtensionsTest extends TestCase
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('saveAs')->once()->with($expectedURL, '/src/datadog-setup.php');
         $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
+        $php->shouldReceive('getPHPBin')->andReturn('/opt/remi/php85/root/usr/bin/php');
         $registry = M::mock(Registry::class);
         $registry->shouldReceive('getExtensionClasses')->andReturn([]);
         $ddtrace = new Extensions\ddtrace($php, self::createOS(OS\Debian::class, 12, $fs), $downloader, new PHPScript($php, $registry));
         $ddtrace->runBinaryInstaller(self::createBuildContext($version, new Values([], [Extensions\ddtrace::OPTION_PROFILING => true]), '/src'));
         self::assertCount(1, $commands);
-        self::assertSame(['/src/datadog-setup.php', '--php-bin=php', '--enable-profiling'], $commands[0]->getArguments());
+        self::assertSame(['/src/datadog-setup.php', '--php-bin=/opt/remi/php85/root/usr/bin/php', '--enable-profiling'], $commands[0]->getArguments());
     }
 
     /**
@@ -554,6 +574,9 @@ final class PrecompiledExtensionsTest extends TestCase
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
         $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
         $fs->shouldReceive('resolveCommand')->with('pkg-config')->andReturn('/usr/bin/pkg-config');
+        $fs->shouldReceive('resolveCommand')->with('cmake')->andReturn('/usr/bin/cmake');
+        $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('/usr/bin/gcc');
+        $fs->shouldReceive('resolveCommand')->with('g++')->andReturn('/usr/bin/g++');
         $fs->shouldReceive('run')->andReturnUsing(static function (Command $command) use (&$commands) {
             switch ($command->getCommand()) {
                 case '/usr/local/bin/php-config':
@@ -584,6 +607,7 @@ final class PrecompiledExtensionsTest extends TestCase
             $expectedEnvironment['SED'] = 'sed';
             $expectedEnvironment['PKG_CONFIG'] = '/usr/bin/pkg-config';
         }
+        $expectedEnvironment += ['CMAKE' => '/usr/bin/cmake', 'GCC' => '/usr/bin/gcc', 'GXX' => '/usr/bin/g++'];
         if ($needsPlatform) {
             $expectedEnvironment['PLATFORM'] = 'linux';
         }

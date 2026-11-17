@@ -131,6 +131,9 @@ final class oracleinstantclient extends SystemDependency
 
             return new Packages(['libaio1t64']);
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(['libaio']);
+        }
 
         throw new Exception\UnsupportedOS("The Oracle Instant Client can't be installed on {$this->os->getDisplayName()}");
     }

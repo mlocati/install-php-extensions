@@ -99,13 +99,14 @@ class Local implements Filesystem
                 }
             }
         } else {
-            list($rc, $output) = $this->run(Command::create('which', [$name]));
+            list($rc, $output) = $this->run(Command::create('command', ['-v', $name]));
         }
 
         if ($rc === 0) {
             foreach (Regex::split('/[\r\n]+/', $output, -1, true) as $resolved) {
                 $resolved = $this->getNativeSystemPath($resolved);
-                if ($this->exists($resolved)) {
+                // command -v prints just the name of the shell builtins
+                if (($this->isWindows() || $resolved[0] === '/') && $this->exists($resolved)) {
                     return $resolved;
                 }
             }
@@ -213,6 +214,27 @@ class Local implements Filesystem
         }
 
         return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Filesystem::setLastModificationTimestamp()
+     */
+    public function setLastModificationTimestamp($path, $timestamp)
+    {
+        list($result, $errorDetails) = self::wrap(static function () use ($path, $timestamp) {
+            $result = touch($path, $timestamp);
+            if ($result === true) {
+                // Before PHP 8.3, touch() doesn't clear the stat cache
+                clearstatcache(true, $path);
+            }
+
+            return $result;
+        }, 'touch');
+        if ($result !== true) {
+            throw new Exception\IO(self::buildErrorMessage("Failed to set the last modification timestamp of '{$path}'", $errorDetails));
+        }
     }
 
     /**

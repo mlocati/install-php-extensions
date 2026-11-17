@@ -64,6 +64,12 @@ final class libodbc extends SystemDependency
                 ['unixodbc-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['unixODBC'],
+                ['unixODBC-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

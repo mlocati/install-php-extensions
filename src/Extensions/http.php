@@ -90,10 +90,9 @@ final class http extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
-        // PHP crashes at shutdown in raphf if parallel started a thread
-        return [parallel::HANDLE];
+        return [parallel::HANDLE => 'PHP crashes at shutdown in raphf if parallel started a thread'];
     }
 
     /**
@@ -138,18 +137,29 @@ final class http extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        // The versions of the extension for PHP 5 don't use ICU and idnkit
+        // The versions of the extension for PHP 5 don't use brotli, ICU and idnkit
         $legacy = $this->php->getMajorMinorVersion() <= 506;
+        $result = [];
+        // The configure script of the other versions always uses brotli when it finds it (for example, libcurl-devel depends on brotli-devel on EL 10)
+        if (!$legacy && SystemDependencies\libbrotli::isProvidedByOS($this->os)) {
+            $result[] = SystemDependencies\libbrotli::HANDLE;
+        }
         if ($this->os instanceof OS\Alpine) {
             // curl-dev provides the SSL headers
-            return $legacy
+            return array_merge($result, $legacy
                 ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libzlib::HANDLE]
-                : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libzlib::HANDLE];
+                : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libzlib::HANDLE]);
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
-            return $legacy
+        if ($this->os instanceof OS\Posix\DebianLike) {
+            return array_merge($result, $legacy
                 ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]
-                : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libgcrypt::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn2::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE];
+                : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libgcrypt::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn2::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]);
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // libcurl uses OpenSSL, so GnuTLS and libgcrypt are not needed
+            return array_merge($result, $legacy
+                ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]
+                : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn2::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]);
         }
 
         throw new Exception\UnsupportedOS('The system libraries required by ' . self::getHandle() . " are not known for {$this->os->getDisplayName()}");

@@ -33,7 +33,19 @@ class Factory
      */
     protected function getOSClasses()
     {
-        return [Alpine::class, Debian::class, Ubuntu::class, Windows::class];
+        return [
+            AlmaLinux::class,
+            Alpine::class,
+            AmazonLinux::class,
+            CentOS::class,
+            Debian::class,
+            Fedora::class,
+            OracleLinux::class,
+            RHEL::class,
+            RockyLinux::class,
+            Ubuntu::class,
+            Windows::class,
+        ];
     }
 
     /**
@@ -50,6 +62,32 @@ class Factory
         }
 
         return '';
+    }
+
+    /**
+     * Get the abstract classes and the interfaces of the families of operating systems, indexed by their identifier: this is the only place where they are listed.
+     *
+     * @return array<non-empty-string, array{class-string<\IPE\OS>, bool}> the class or interface, and whether the numeric versions of its operating systems are comparable
+     */
+    protected function getFamilyClasses()
+    {
+        return [
+            'posix' => [Posix::class, false],
+            'rhellike' => [Posix\RHELLike::class, false],
+            'el' => [Posix\RHELLike\EnterpriseLinux::class, true],
+        ];
+    }
+
+    /**
+     * @param string $identifier
+     *
+     * @return array{class-string<\IPE\OS>, bool}|null the class or interface, and whether the numeric versions of its operating systems are comparable (NULL if the identifier is unknown)
+     */
+    public function getFamilyByIdentifier($identifier)
+    {
+        $classes = $this->getFamilyClasses();
+
+        return isset($classes[$identifier]) ? $classes[$identifier] : null;
     }
 
     /**

@@ -18,7 +18,7 @@ abstract class SystemPackager
      */
     protected $os;
 
-    protected function __construct(OS $os)
+    public function __construct(OS $os)
     {
         $this->os = $os;
     }
@@ -73,7 +73,7 @@ abstract class SystemPackager
     /**
      * Find a package in the repositories.
      *
-     * @param non-empty-string $name the name of a package, or of a virtual package provided by a single package
+     * @param non-empty-string $name the name of a package, or of a virtual package provided by a single package (with DNF, by the one that dnf would install)
      * @param string $version empty string for the version that would be installed
      *
      * @throws \IPE\Exception\InvalidArgument
@@ -102,6 +102,36 @@ abstract class SystemPackager
      * @return \IPE\SystemPackager\Package|null
      */
     protected abstract function doFindAvailablePackage($name, $version);
+
+    /**
+     * Check that a package found by findAvailablePackage() isn't built for another PHP version (for example, EPEL builds its PHP packages for the PHP version of the base system, and they can't be installed with the PHP of a module).
+     *
+     * @param int $apiVersion the PHP API version (for example 20230831)
+     *
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\IO
+     *
+     * @return bool|null NULL if it's not known
+     */
+    public final function isBuiltForPHPAPI(SystemPackager\Package $package, $apiVersion)
+    {
+        $this->ensureInitialized();
+
+        return $this->doIsBuiltForPHPAPI($package, $apiVersion);
+    }
+
+    /**
+     * @param int $apiVersion
+     *
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\IO
+     *
+     * @return bool|null
+     */
+    protected function doIsBuiltForPHPAPI(SystemPackager\Package $package, $apiVersion)
+    {
+        return null;
+    }
 
     /**
      * Get the version of the packaged software, without the revision of the package.

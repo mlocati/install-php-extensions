@@ -54,6 +54,12 @@ class liburing extends SystemDependency
                 ['liburing-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['liburing'],
+                ['liburing-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

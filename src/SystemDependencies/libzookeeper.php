@@ -8,7 +8,7 @@ use IPE\SystemDependency\CompiledLibrary;
 use IPE\SystemPackager\Packages;
 
 /**
- * Alpine does not provide the C client of ZooKeeper, and compiling it requires Maven.
+ * Alpine and the RHEL-like systems don't provide the C client of ZooKeeper, and compiling it requires Maven.
  */
 final class libzookeeper extends CompiledLibrary
 {
@@ -51,10 +51,20 @@ final class libzookeeper extends CompiledLibrary
                 ['maven', 'automake', 'libtool', 'openjdk8']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libzookeeper-mt2(t64)?$'],
                 ['libzookeeper-mt-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            if ($this->isInstalled()) {
+                return new Packages();
+            }
+
+            return new Packages(
+                [],
+                ['automake', 'hostname', 'libtool', 'maven']
             );
         }
 
@@ -68,7 +78,7 @@ final class libzookeeper extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return $this->os instanceof OS\Alpine && parent::needsCompilation();
+        return ($this->os instanceof OS\Alpine || $this->os instanceof OS\Posix\RHELLike) && parent::needsCompilation();
     }
 
     /**
@@ -120,11 +130,12 @@ final class libzookeeper extends CompiledLibrary
      */
     protected function build($sourceDirectory)
     {
-        $this->runBuildStep('mvn', ['-pl', 'zookeeper-jute', 'compile'], $sourceDirectory);
+        // With JDK 9+ this profile uses --release 8, which requires the ct.sym file that the headless JDKs of the RHEL-like systems don't include
+        $this->runBuildStep('mvn', ['-pl', 'zookeeper-jute', '-P', '!jdk-release-flag', 'compile'], $sourceDirectory);
         $clientDirectory = "{$sourceDirectory}/zookeeper-client/zookeeper-client-c";
         $this->runBuildStep('autoreconf', ['-if'], $clientDirectory);
         $this->runBuildStep('./configure', ['--without-cppunit'], $clientDirectory);
-        $this->runBuildStep($this->buildTools->getMake(), ['-j' . $this->getParallelJobs(), 'CFLAGS=-Wno-stringop-truncation -Wno-format-overflow'], $clientDirectory);
+        $this->runBuildStep($this->buildTools->getMake(), ['-j' . $this->getParallelJobs(), 'CFLAGS=' . $this->getCFlags() . ' -Wno-stringop-truncation -Wno-format-overflow'], $clientDirectory);
         $this->runBuildStep($this->buildTools->getMake(), ['install'], $clientDirectory);
     }
 }

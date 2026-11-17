@@ -10,12 +10,12 @@ final class FakeConflictsExtension extends Extension implements
     Extension\DeclaresConflicts
 {
     /**
-     * @var list<non-empty-string>
+     * @var array<non-empty-string, non-empty-string>
      */
     private $conflicts;
 
     /**
-     * @param list<non-empty-string> $conflicts
+     * @param array<non-empty-string, non-empty-string> $conflicts
      */
     public function __construct(PHPInfo $php, OS $os, array $conflicts)
     {
@@ -58,7 +58,7 @@ final class FakeConflictsExtension extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
         return $this->conflicts;
     }

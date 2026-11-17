@@ -2,7 +2,6 @@
 
 namespace IPE\Extensions;
 
-use IPE\Exception;
 use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
@@ -17,6 +16,7 @@ final class swoole extends Extension implements
     Extension\DeclaresConflicts,
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresOptions,
+    Extension\DeclaresUnsupportedEnvironments,
     Extension\DependsOnExtensions,
     Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
@@ -32,6 +32,12 @@ final class swoole extends Extension implements
      * @var string
      */
     const OPTION_WITHOUT_IOURING = 'without-iouring';
+
+    /**
+     * @public
+     * @var string
+     */
+    const OPTION_WITHOUT_SSH2 = 'without-ssh2';
 
     /**
      * {@inheritdoc}
@@ -100,9 +106,14 @@ final class swoole extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
-        return [openswoole::HANDLE];
+        $result = [openswoole::HANDLE => 'openswoole is a fork of swoole, and they define the same symbols'];
+        if ($options !== null && $this->usesSSH2($version, $options)) {
+            $result[ssh2::HANDLE] = "swoole is built with its own SSH2 client: use the option '" . self::OPTION_WITHOUT_SSH2 . "' of swoole to build it without";
+        }
+
+        return $result;
     }
 
     /**
@@ -115,7 +126,7 @@ final class swoole extends Extension implements
         $phpVersion = $this->php->getMajorMinorVersion();
         if ($phpVersion <= 506) {
             // 2.0.11 causes a segmentation fault when libpcre-dev is installed (see https://github.com/mlocati/docker-php-extension-installer/issues/1282)
-            return $this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu ? '2.0.10' : '2.0.11';
+            return $this->os instanceof OS\Posix\DebianLike ? '2.0.10' : '2.0.11';
         }
         if ($phpVersion <= 700) {
             return '4.3.6';
@@ -127,12 +138,8 @@ final class swoole extends Extension implements
             // 4.8.11 and 4.8.12 don't include <cstdint>, so they can't be compiled with GCC 13+
             return '4.8.13';
         }
-        if ($this->php->getBits() === 32) {
-            // 32-bit systems are not supported since 5.1 (see https://github.com/swoole/swoole-src/issues/5198#issuecomment-1820162178), and 5.0 doesn't compile with PHP 8.3+
-            if ($phpVersion >= 803) {
-                throw new Exception\UnsupportedExtension('swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+');
-            }
-
+        if ($this->php->getBits() === 32 && $phpVersion <= 802) {
+            // 32-bit systems are not supported since 5.1 (see https://github.com/swoole/swoole-src/issues/5198#issuecomment-1820162178)
             return '5.0.3';
         }
         if ($this->os instanceof OS\Alpine) {
@@ -154,12 +161,29 @@ final class swoole extends Extension implements
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        $reason = 'swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+';
+
+        return [
+            'posix-php8.3-32bit' => $reason,
+            'posix-php8.4-32bit' => $reason,
+            'posix-php8.5-32bit' => $reason,
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\Extension\DeclaresOptions::getOptions()
      */
     public static function getOptions()
     {
         return [
             new Option\CustomOption(self::OPTION_WITHOUT_IOURING, "Don't enable the io_uring support", false),
+            new Option\CustomOption(self::OPTION_WITHOUT_SSH2, "Don't enable the SSH2 client, which conflicts with the ssh2 extension", false),
         ];
     }
 
@@ -213,7 +237,8 @@ final class swoole extends Extension implements
         if (self::isVersionAtLeast($version, '4.7.0')) {
             $result[] = SystemDependencies\libcares::HANDLE;
         }
-        if (self::isVersionAtLeast($version, '5.0.1')) {
+        // Since 4.1.0 the configure script uses brotli when it finds it (for example, libcurl-devel depends on brotli-devel on EL 10), and since 5.0.1 we enable it explicitly
+        if (self::isVersionAtLeast($version, '5.0.1') || (self::isVersionAtLeast($version, '4.1.0') && SystemDependencies\libbrotli::isProvidedByOS($this->os))) {
             $result[] = SystemDependencies\libbrotli::HANDLE;
         }
         if ($this->usesSQLite($version)) {
@@ -228,7 +253,7 @@ final class swoole extends Extension implements
         if ($this->usesFirebird($version)) {
             $result[] = SystemDependencies\libfbclient::HANDLE;
         }
-        if (self::isVersionAtLeast($version, '6.2.0')) {
+        if ($this->usesSSH2($version, $options)) {
             $result[] = SystemDependencies\libssh2::HANDLE;
         }
 
@@ -297,7 +322,7 @@ final class swoole extends Extension implements
         if ($this->usesFirebird($version)) {
             $result[] = '--with-swoole-firebird';
         }
-        if (self::isVersionAtLeast($version, '6.2.0')) {
+        if ($this->usesSSH2($version, $context->getOptionValues())) {
             $result[] = '--with-swoole-ssh2';
         }
 
@@ -329,6 +354,8 @@ final class swoole extends Extension implements
     /**
      * @param string $version
      *
+     * @throws \IPE\Exception\UnsupportedOS
+     *
      * @return bool
      */
     private function usesZstd($version)
@@ -337,6 +364,9 @@ final class swoole extends Extension implements
             return false;
         }
 
+        if ($this->os instanceof OS\Alpine) {
+            return true;
+        }
         // swoole requires libzstd 1.4.0+, but Debian Buster provides 1.3.8 and Ubuntu 18.04 provides 1.3.3
         if ($this->os instanceof OS\Debian) {
             return $this->os->getNumericVersion() >= OS\Debian::BULLSEYE;
@@ -344,12 +374,27 @@ final class swoole extends Extension implements
         if ($this->os instanceof OS\Ubuntu) {
             return $this->os->getNumericVersion() >= OS\Ubuntu::FOCAL;
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return true;
+        }
 
-        return true;
+        throw $this->createUnknownOSException();
     }
 
     /**
      * @param string $version
+     *
+     * @return bool
+     */
+    private function usesSSH2($version, Option\Values $options)
+    {
+        return self::isVersionAtLeast($version, '6.2.0') && !$options->hasCustomValue(self::OPTION_WITHOUT_SSH2);
+    }
+
+    /**
+     * @param string $version
+     *
+     * @throws \IPE\Exception\UnsupportedOS
      *
      * @return bool
      */
@@ -369,12 +414,17 @@ final class swoole extends Extension implements
         if ($this->os instanceof OS\Ubuntu) {
             return $this->os->getNumericVersion() >= OS\Ubuntu::RESOLUTE;
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return false;
+        }
 
-        return false;
+        throw $this->createUnknownOSException();
     }
 
     /**
      * @param string $version
+     *
+     * @throws \IPE\Exception\UnsupportedOS
      *
      * @return bool
      */
@@ -383,8 +433,21 @@ final class swoole extends Extension implements
         if (!self::isVersionAtLeast($version, '6.2.0')) {
             return false;
         }
+        if ($this->os instanceof OS\Alpine) {
+            // swoole requires Firebird 3+, but on Alpine with PHP < 8.4 we use Firebird 2.5 (see libfbclient)
+            return $this->php->getMajorMinorVersion() >= 804;
+        }
+        if ($this->os instanceof OS\Posix\DebianLike) {
+            return true;
+        }
+        // Amazon Linux doesn't provide Firebird
+        if ($this->os instanceof OS\AmazonLinux) {
+            return false;
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return true;
+        }
 
-        // swoole requires Firebird 3+, but on Alpine with PHP < 8.4 we use Firebird 2.5 (see libfbclient)
-        return !$this->os instanceof OS\Alpine || $this->php->getMajorMinorVersion() >= 804;
+        throw $this->createUnknownOSException();
     }
 }

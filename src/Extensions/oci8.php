@@ -3,6 +3,9 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
+use IPE\Option;
+use IPE\OS;
+use IPE\SystemDependencies;
 
 final class oci8 extends Extension\OracleDatabase implements Extension\AvailableAsComposerPackage
 {
@@ -46,6 +49,46 @@ final class oci8 extends Extension\OracleDatabase implements Extension\Available
     public static function getOptions()
     {
         return [self::createClientOption(self::CONFIGURE_OPTION)];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\OracleDatabase::getRequiredSystemDependencies()
+     */
+    public function getRequiredSystemDependencies($version, Option\Values $options)
+    {
+        $result = parent::getRequiredSystemDependencies($version, $options);
+        if ($this->usesDTrace()) {
+            $result[] = SystemDependencies\dtrace::HANDLE;
+        }
+
+        return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\OracleDatabase::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = parent::getConfigureArguments($context);
+        if ($this->usesDTrace()) {
+            $result[] = 'PHP_DTRACE=yes';
+        }
+
+        return $result;
+    }
+
+    /**
+     * The php_config.h of a PHP built with oci8 and DTrace (like the one of Remi) defines HAVE_OCI8_DTRACE, and PHP doesn't tell how it was configured.
+     *
+     * @return bool
+     */
+    private function usesDTrace()
+    {
+        return $this->os instanceof OS\Posix\RHELLike;
     }
 
     /**

@@ -4,7 +4,6 @@ namespace IPE\SystemPackager;
 
 use IPE\Exception;
 use IPE\Filesystem\Command;
-use IPE\OS;
 use IPE\Service\Regex;
 use IPE\SystemPackager;
 
@@ -21,11 +20,6 @@ final class APK extends SystemPackager
      * @var bool
      */
     private $forceOverwrite = false;
-
-    public function __construct(OS $os)
-    {
-        parent::__construct($os);
-    }
 
     /**
      * Overwrite files in other packages?

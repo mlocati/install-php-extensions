@@ -76,6 +76,12 @@ final class libargon2 extends SystemDependency
                 ['libargon2-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libargon2'],
+                ['libargon2-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

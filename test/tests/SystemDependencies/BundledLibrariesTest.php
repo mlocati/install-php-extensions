@@ -168,7 +168,7 @@ final class BundledLibrariesTest extends TestCase
         self::assertPackages(['enchant'], ['enchant-dev'], self::createLibenchant(OS\Alpine::class, 311, 704)->getSystemPackages($state));
         self::assertPackages(['glib', 'aspell-libs', 'libhunspell'], ['glib-dev', 'aspell-dev', 'hunspell-dev'], self::createLibenchant(OS\Alpine::class, 312, 704)->getSystemPackages($state));
         self::assertPackages(['libenchant1c2a'], ['libenchant-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::BUSTER, 704)->getSystemPackages($state));
-        self::assertPackages(['aspell-en', 'libhunspell-1.7-0'], ['libglib2.0-dev', 'libaspell-dev', 'libhunspell-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::BULLSEYE, 704)->getSystemPackages($state));
+        self::assertPackages(['^libglib2\.0-0(t64)?$', 'aspell-en', 'libhunspell-1.7-0'], ['libglib2.0-dev', 'libaspell-dev', 'libhunspell-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::BULLSEYE, 704)->getSystemPackages($state));
         self::assertTrue(self::createLibenchant(OS\Debian::class, OS\Debian::BULLSEYE, 704, ['/usr/local/lib/libenchant.so'])->getSystemPackages($state)->isEmpty());
     }
 
@@ -256,6 +256,8 @@ final class BundledLibrariesTest extends TestCase
         $state = self::createState();
         self::assertPackages(['enchant2'], ['enchant2-dev'], (new libenchant2($php, self::createOS(OS\Alpine::class, 312), new Values()))->getSystemPackages($state));
         self::assertPackages(['libenchant-2-2'], ['libenchant-2-dev'], (new libenchant2($php, self::createOS(OS\Debian::class, OS\Debian::BULLSEYE), new Values()))->getSystemPackages($state));
+        self::assertPackages(['libenchant-2-2'], ['libenchant-2-dev'], (new libenchant2($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::FOCAL), new Values()))->getSystemPackages($state));
+        self::assertPackages(['enchant2'], ['enchant2-devel'], (new libenchant2($php, self::createOS(OS\AlmaLinux::class, 10), new Values()))->getSystemPackages($state));
         self::assertUnsupportedOS(new libenchant2($php, self::createOS(OS\Alpine::class, 311), new Values()));
         self::assertUnsupportedOS(new libenchant2($php, self::createOS(OS\Debian::class, OS\Debian::BUSTER), new Values()));
     }

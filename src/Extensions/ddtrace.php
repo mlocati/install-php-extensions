@@ -104,10 +104,14 @@ final class ddtrace extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
-        // ddtrace disables itself with any Xdebug on PHP 7.0 (with newer PHP versions only with Xdebug < 2.9.5, which xdebug declares)
-        return $this->php->getMajorMinorVersion() <= 700 ? [xdebug::HANDLE] : [];
+        // With newer PHP versions ddtrace disables itself only with Xdebug < 2.9.5, which xdebug declares
+        if ($this->php->getMajorMinorVersion() <= 700) {
+            return [xdebug::HANDLE => 'on PHP 7.0 ddtrace disables itself when Xdebug is loaded'];
+        }
+
+        return [];
     }
 
     /**
@@ -130,7 +134,15 @@ final class ddtrace extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        return [SystemDependencies\libstdcxx::HANDLE];
+        // The installer uses find, gzip and tar, it requires libcurl, and it downloads with curl if PHP has neither curl nor openssl
+        return [
+            SystemDependencies\curl::HANDLE,
+            SystemDependencies\findutils::HANDLE,
+            SystemDependencies\gzip::HANDLE,
+            SystemDependencies\libcurl::HANDLE,
+            SystemDependencies\libstdcxx::HANDLE,
+            SystemDependencies\tar::HANDLE,
+        ];
     }
 
     /**
@@ -170,7 +182,8 @@ final class ddtrace extends Extension implements
         $url = $base . ($version === '' ? 'latest/download' : "download/{$version}") . '/datadog-setup.php';
         $setup = "{$context->getSourceDirectory()}/datadog-setup.php";
         $this->downloader->saveAs($url, $setup);
-        $arguments = ['--php-bin=php'];
+        // The PHP of the Software Collections of Remi is not in the PATH
+        $arguments = ['--php-bin=' . $this->php->getPHPBin()];
         if ($options->hasCustomValue(self::OPTION_APPSEC)) {
             $arguments[] = '--enable-appsec';
         }

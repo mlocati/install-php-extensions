@@ -38,10 +38,16 @@ final class libsodium extends SystemDependency
                 ['libsodium-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libsodium[0-9]*$'],
                 ['libsodium-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libsodium'],
+                ['libsodium-devel']
             );
         }
 

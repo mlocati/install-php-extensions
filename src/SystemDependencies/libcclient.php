@@ -111,6 +111,13 @@ final class libcclient extends SystemDependency
                 ['libkrb5-dev', 'libc-client-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // Only EPEL 8 provides them (the imap extension declares the other systems as unsupported)
+            return new Packages(
+                ['libc-client'],
+                ['krb5-devel', 'uw-imap-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

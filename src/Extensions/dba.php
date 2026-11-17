@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class dba extends Extension implements
@@ -77,7 +78,23 @@ final class dba extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        return [SystemDependencies\libdb::HANDLE];
+        // Besides being useful, these handlers are required when the php_config.h of the PHP packages enables them (like on Alpine and RHEL-like systems)
+        $result = [SystemDependencies\libdb::HANDLE];
+        if ($this->php->getMajorMinorVersion() >= 702) {
+            $result[] = SystemDependencies\liblmdb::HANDLE;
+        }
+        // Alpine doesn't provide Tokyo Cabinet
+        if ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
+            $result[] = SystemDependencies\libtokyocabinet::HANDLE;
+        }
+        // QDBM and GDBM can't be used together
+        if ($this->usesQDBM()) {
+            $result[] = SystemDependencies\libqdbm::HANDLE;
+        } else {
+            $result[] = SystemDependencies\libgdbm::HANDLE;
+        }
+
+        return $result;
     }
 
     /**
@@ -87,7 +104,49 @@ final class dba extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        return ['--with-db4'];
+        $result = ['--with-db4'];
+        // Not every system provides every library (see getRequiredSystemDependencies())
+        $fs = $this->os->getFilesystem();
+        if ($this->php->getMajorMinorVersion() >= 702 && $fs->isFile('/usr/include/lmdb.h')) {
+            $result[] = '--with-lmdb';
+        }
+        if ($fs->isFile('/usr/include/tcadb.h')) {
+            $result[] = '--with-tcadb';
+        }
+        if ($this->php->getMajorMinorVersion() >= 704 && $fs->isFile('/usr/include/qdbm/depot.h')) {
+            $result[] = '--with-qdbm';
+        } elseif ($fs->isFile('/usr/include/gdbm.h')) {
+            $result[] = '--with-gdbm';
+        }
+
+        return $result;
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\UnsupportedOS
+     *
+     * @return bool
+     */
+    private function usesQDBM()
+    {
+        // Before PHP 7.4, configure doesn't look for the headers in /usr/include/qdbm, where the operating systems put them
+        if ($this->php->getMajorMinorVersion() < 704) {
+            return false;
+        }
+        if ($this->os instanceof OS\Alpine) {
+            return false;
+        }
+        if ($this->os instanceof OS\Posix\DebianLike) {
+            return true;
+        }
+        // Among the RHEL-like systems, QDBM is provided by Fedora and by Remi (qdbm-devel only by its remi repository)
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return $this->os->getSystemPackager()->findAvailablePackage('qdbm') !== null;
+        }
+
+        throw $this->createUnknownOSException();
     }
 
     /**

@@ -164,17 +164,25 @@ final class redis extends Extension implements
     /**
      * Old operating systems don't provide libzstd, or they provide a version older than 1.3.0.
      *
+     * @throws \IPE\Exception\UnsupportedOS
+     *
      * @return bool
      */
     private function systemProvidesZstd()
     {
+        if ($this->os instanceof OS\Alpine) {
+            return true;
+        }
         if ($this->os instanceof OS\Debian) {
             return $this->os->getNumericVersion() > OS\Debian::STRETCH;
         }
         if ($this->os instanceof OS\Ubuntu) {
             return $this->os->getNumericVersion() > OS\Ubuntu::XENIAL;
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return true;
+        }
 
-        return true;
+        throw $this->createUnknownOSException();
     }
 }

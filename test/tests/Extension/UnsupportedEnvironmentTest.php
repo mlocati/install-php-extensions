@@ -51,6 +51,11 @@ final class UnsupportedEnvironmentTest extends TestCase
             ['alpine3.9..3.10-php7.3', false, false, false, false],
             ['debian7..9', false, false, true, false],
             ['ubuntu22.04..24.04', false, false, false, true],
+            ['posix', true, true, true, true],
+            ['posix-php7.2', true, true, true, true],
+            ['posix-php8', false, false, false, false],
+            ['rhellike', false, false, false, false],
+            ['el', false, false, false, false],
         ];
     }
 
@@ -105,6 +110,10 @@ final class UnsupportedEnvironmentTest extends TestCase
             ['alpine-nts-php7.2'],
             ['alpine-ts'],
             ['alpine3.9-zts-nts'],
+            ['alpine-32bit-zts'],
+            ['alpine-16bit'],
+            ['alpine-32'],
+            ['32bit'],
             ['alpine3.16..3.10'],
             ['alpine3.10..3.10'],
             ['alpine..3.10'],
@@ -112,6 +121,10 @@ final class UnsupportedEnvironmentTest extends TestCase
             ['alpine3.10..3'],
             ['alpine3.9..3.10..3.11'],
             ['debian8..8.1'],
+            ['el9.8'],
+            ['posix9'],
+            ['rhellike9'],
+            ['rhellike9..10'],
         ];
     }
 
@@ -128,6 +141,47 @@ final class UnsupportedEnvironmentTest extends TestCase
         self::assertFalse($subject->isValid($environment));
         $this->expectException(Exception\InvalidArgument::class);
         $subject->matches($environment, M::mock(PHPInfo::class), M::mock(OS\Alpine::class));
+    }
+
+    /**
+     * @return array<array{string, bool, bool}> the environment, and if it matches thread-safe PHP 7.2 on Alpine 3.9 when PHP is 32-bit and when it's 64-bit
+     */
+    public static function provideBitsCases()
+    {
+        return [
+            ['alpine', true, true],
+            ['alpine-32bit', true, false],
+            ['alpine-64bit', false, true],
+            ['posix-php7.2-32bit', true, false],
+            ['posix-php7.3-32bit', false, false],
+            ['alpine3.9-zts-32bit', true, false],
+            ['alpine3.9-nts-32bit', false, false],
+            ['debian-32bit', false, false],
+        ];
+    }
+
+    /**
+     * @dataProvider provideBitsCases
+     *
+     * @param string $environment
+     * @param bool $when32Bits
+     * @param bool $when64Bits
+     *
+     * @return void
+     */
+    public function testBits($environment, $when32Bits, $when64Bits)
+    {
+        $os = M::mock(OS\Alpine::class);
+        $os->shouldReceive('getNumericVersion')->andReturn(309);
+        $subject = new UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger()));
+        self::assertTrue($subject->isValid($environment));
+        foreach ([[32, $when32Bits], [64, $when64Bits]] as $case) {
+            $php = M::mock(PHPInfo::class);
+            $php->shouldReceive('getMajorMinorVersion')->andReturn(702);
+            $php->shouldReceive('isThreadSafe')->andReturn(true);
+            $php->shouldReceive('getBits')->andReturn($case[0]);
+            self::assertSame($case[1], $subject->matches($environment, $php, $os));
+        }
     }
 
     /**
@@ -179,6 +233,70 @@ final class UnsupportedEnvironmentTest extends TestCase
             $php->shouldReceive('isThreadSafe')->andReturn($case[0]);
             self::assertSame($case[1], $subject->matches($environment, $php, $os));
         }
+    }
+
+    /**
+     * @return array<array{string, bool, bool, bool, bool}> the environment, and if it matches PHP 7.2 on Rocky Linux 9, on AlmaLinux 10, on Fedora 44 and on Amazon Linux 2023
+     */
+    public static function provideRHELLikeCases()
+    {
+        return [
+            ['el', true, true, false, false],
+            ['el9', true, false, false, false],
+            ['el8..9', true, false, false, false],
+            ['el9..10-php7.2', true, true, false, false],
+            ['rocky', true, false, false, false],
+            ['almalinux10', false, true, false, false],
+            ['fedora44', false, false, true, false],
+            ['amzn2023', false, false, false, true],
+            ['rhellike', true, true, true, true],
+            ['rhellike-php7.2', true, true, true, true],
+            ['rhellike-php7.3', false, false, false, false],
+            ['posix', true, true, true, true],
+        ];
+    }
+
+    /**
+     * @dataProvider provideRHELLikeCases
+     *
+     * @param string $environment
+     * @param bool $onRocky9
+     * @param bool $onAlma10
+     * @param bool $onFedora44
+     * @param bool $onAmazon2023
+     *
+     * @return void
+     */
+    public function testRHELLike($environment, $onRocky9, $onAlma10, $onFedora44, $onAmazon2023)
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(702);
+        $rocky9 = M::mock(OS\RockyLinux::class);
+        $rocky9->shouldReceive('getNumericVersion')->andReturn(9);
+        $alma10 = M::mock(OS\AlmaLinux::class);
+        $alma10->shouldReceive('getNumericVersion')->andReturn(10);
+        $fedora44 = M::mock(OS\Fedora::class);
+        $fedora44->shouldReceive('getNumericVersion')->andReturn(44);
+        $amazon2023 = M::mock(OS\AmazonLinux::class);
+        $amazon2023->shouldReceive('getNumericVersion')->andReturn(2023);
+        $subject = new UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger()));
+        self::assertTrue($subject->isValid($environment));
+        self::assertSame($onRocky9, $subject->matches($environment, $php, $rocky9));
+        self::assertSame($onAlma10, $subject->matches($environment, $php, $alma10));
+        self::assertSame($onFedora44, $subject->matches($environment, $php, $fedora44));
+        self::assertSame($onAmazon2023, $subject->matches($environment, $php, $amazon2023));
+    }
+
+    /**
+     * @return void
+     */
+    public function testPosixDoesNotMatchWindows()
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(702);
+        $subject = new UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger()));
+        self::assertTrue($subject->matches('windows', $php, M::mock(OS\Windows::class)));
+        self::assertFalse($subject->matches('posix', $php, M::mock(OS\Windows::class)));
     }
 
     /**

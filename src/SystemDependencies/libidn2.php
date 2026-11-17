@@ -38,10 +38,16 @@ class libidn2 extends SystemDependency
                 ['libidn2-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libidn2-[0-9+]$'],
                 ['^libidn2-[0-9+]-dev$']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libidn2'],
+                ['libidn2-devel']
             );
         }
 

@@ -38,10 +38,16 @@ final class libvpx extends SystemDependency
                 ['libvpx-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libvpx[0-9]+$'],
                 ['libvpx-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libvpx'],
+                ['libvpx-devel']
             );
         }
 

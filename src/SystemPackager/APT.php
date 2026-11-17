@@ -10,11 +10,6 @@ use IPE\SystemPackager;
 
 class APT extends SystemPackager
 {
-    public function __construct(OS $os)
-    {
-        parent::__construct($os);
-    }
-
     /**
      * Like the $PHPIZE_DEPS env var of Debian docker images.
      * The same packages are available on Ubuntu (verified from 14.04 to 26.04).

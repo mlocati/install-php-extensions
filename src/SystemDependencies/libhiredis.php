@@ -45,6 +45,9 @@ class libhiredis extends SystemDependency
 
             return new Packages(['libhiredis1.1.0']);
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(['hiredis']);
+        }
 
         throw $this->createUnknownPackagesException();
     }

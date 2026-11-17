@@ -2,8 +2,10 @@
 
 namespace IPE\Dev;
 
+use IPE\Exception;
 use IPE\Extensions;
 use IPE\Filesystem;
+use IPE\Filesystem\Command;
 use IPE\OS;
 use IPE\Service\PHPSystemPackage;
 use IPE\SystemPackager;
@@ -39,11 +41,16 @@ final class SlowExtensions
     public static function getSystemPackages()
     {
         return [
-            Extensions\cassandra::HANDLE => [],
+            Extensions\cassandra::HANDLE => [
+                'almalinux9-remi' => true,
+                'almalinux10-remi' => true,
+            ],
             Extensions\grpc::HANDLE => [
                 'alpine3.24-apk' => true,
                 'trixie-sury' => true,
                 'ubuntu24.04-sury' => true,
+                'almalinux9-remi' => true,
+                'almalinux10-remi' => true,
             ],
             Extensions\pdo_firebird::HANDLE => [
                 'bookworm-apt' => true,
@@ -53,15 +60,23 @@ final class SlowExtensions
                 'ubuntu24.04-apt' => true,
                 'ubuntu24.04-sury' => true,
                 'ubuntu26.04-apt' => true,
+                'almalinux9-remi' => true,
+                'almalinux10-remi' => true,
+                'fedora44-dnf' => true,
+                'fedora45-dnf' => true,
             ],
             Extensions\phalcon::HANDLE => [
                 'trixie-sury' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
                 'ubuntu24.04-sury' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
+                'almalinux9-remi' => true,
+                'almalinux10-remi' => true,
             ],
             Extensions\swoole::HANDLE => [
                 'alpine3.24-apk' => true,
                 'trixie-sury' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
                 'ubuntu24.04-sury' => ['8.2', '8.3', '8.4', '8.5'],
+                'almalinux9-remi' => true,
+                'almalinux10-remi' => true,
             ],
         ];
     }
@@ -120,22 +135,50 @@ final class SlowExtensions
             if (!isset($packageIndexes[$os])) {
                 throw new \RuntimeException("The package indexes of {$os} are not defined");
             }
-            $apk = $packageIndexes[$os]['packager'] === 'apk';
+            $packager = $packageIndexes[$os]['packager'];
             $index = ['packages' => [], 'providers' => []];
             foreach ($packageIndexes[$os]['urls'] as $url) {
                 if (!isset($loadedIndexes[$url])) {
-                    $loadedIndexes[$url] = $apk ? self::loadAPKIndex($url, $downloader, $archiveExtractor, $volatileDirectory) : self::loadAPTIndex($url, $downloader, $volatileDirectory);
+                    switch ($packager) {
+                        case 'apk':
+                            $loadedIndexes[$url] = self::loadAPKIndex($url, $downloader, $archiveExtractor, $volatileDirectory);
+                            break;
+                        case 'apt':
+                            $loadedIndexes[$url] = self::loadAPTIndex($url, $downloader, $volatileDirectory);
+                            break;
+                        default:
+                            $loadedIndexes[$url] = self::loadRPMIndex($url, $downloader, $volatileDirectory);
+                            break;
+                    }
                 }
                 $index['packages'] += $loadedIndexes[$url]['packages'];
                 $index['providers'] += $loadedIndexes[$url]['providers'];
             }
-            $osWithPackager = $apk ? ExtensionFactory::createOSWithSystemPackager(OS\Alpine::class, SystemPackager\APK::class) : ExtensionFactory::createOSWithSystemPackager(OS\Debian::class, SystemPackager\APT::class);
+            switch ($packager) {
+                case 'apk':
+                    $osWithPackager = ExtensionFactory::createOSWithSystemPackager(OS\Alpine::class, SystemPackager\APK::class);
+                    $phpSourceFormat = 'php{major}{minor}';
+                    break;
+                case 'apt':
+                    $osWithPackager = ExtensionFactory::createOSWithSystemPackager(OS\Debian::class, SystemPackager\APT::class);
+                    $phpSourceFormat = 'php{major}.{minor}';
+                    break;
+                default:
+                    // The names of the packages don't depend on the version of dnf
+                    $osWithPackager = ExtensionFactory::createOSWithSystemPackager(OS\AlmaLinux::class, SystemPackager\DNF\v4::class);
+                    $phpSourceFormat = isset($packageIndexes[$os]['phpSource']) ? $packageIndexes[$os]['phpSource'] : 'php';
+                    break;
+            }
             foreach (self::getClasses() as $class) {
                 $phpVersions = array_values(array_intersect($imagePHPVersions[$os], $class::getSupportedPHPVersions()));
                 $withPackage = [];
                 foreach ($phpVersions as $phpVersion) {
-                    $phpSource = $apk ? 'php' . str_replace('.', '', $phpVersion) : "php{$phpVersion}";
-                    $phpPackage = new SystemPackager\Package($apk ? $phpSource : "{$phpSource}-cli", '0', $phpSource);
+                    list($major, $minor) = explode('.', $phpVersion);
+                    $phpSource = strtr($phpSourceFormat, ['{major}' => $major, '{minor}' => $minor]);
+                    if ($phpSource === '') {
+                        throw new \RuntimeException("Invalid phpSource for {$os}");
+                    }
+                    $phpPackage = new SystemPackager\Package($packager === 'apk' ? $phpSource : "{$phpSource}-cli", '0', $phpSource);
                     $extension = ExtensionFactory::createForPHPVersion($class, $phpVersion, $osWithPackager);
                     // Like PHPSystemPackage::findExtensionPackage() and Resolver::resolveFromSystemPackage()
                     foreach (PHPSystemPackage::getExtensionPackageCandidates($osWithPackager->getSystemPackager(), $phpPackage, $extension) as $packageName) {
@@ -174,8 +217,9 @@ final class SlowExtensions
 
     /**
      * The package indexes used by the images with PHP installed by the system packager.
+     * For dnf, the URLs are the ones of the repositories, and phpSource is the source package of PHP ('php' if not specified).
      *
-     * @return array<non-empty-string, array{packager: 'apk'|'apt', urls: non-empty-list<non-empty-string>}>
+     * @return array<non-empty-string, array{packager: 'apk'|'apt'|'dnf', urls: list<non-empty-string>, phpSource?: non-empty-string}>
      */
     private static function getPackageIndexes()
     {
@@ -233,6 +277,51 @@ final class SlowExtensions
                 'urls' => [
                     'http://archive.ubuntu.com/ubuntu/dists/resolute/main/binary-amd64/Packages.gz',
                     'http://archive.ubuntu.com/ubuntu/dists/resolute/universe/binary-amd64/Packages.gz',
+                ],
+            ],
+            // AppStream and the repositories of Amazon Linux don't provide any of the slow extensions
+            'almalinux8-dnf' => [
+                'packager' => 'dnf',
+                'urls' => [],
+            ],
+            'almalinux9-dnf' => [
+                'packager' => 'dnf',
+                'urls' => [],
+            ],
+            'almalinux10-dnf' => [
+                'packager' => 'dnf',
+                'urls' => [],
+            ],
+            'almalinux9-remi' => [
+                'packager' => 'dnf',
+                'urls' => [
+                    'https://rpms.remirepo.net/enterprise/9/safe/x86_64/',
+                ],
+                'phpSource' => 'php{major}{minor}-php',
+            ],
+            'almalinux10-remi' => [
+                'packager' => 'dnf',
+                'urls' => [
+                    'https://rpms.remirepo.net/enterprise/10/safe/x86_64/',
+                ],
+                'phpSource' => 'php{major}{minor}-php',
+            ],
+            'amazonlinux2023-dnf' => [
+                'packager' => 'dnf',
+                'urls' => [],
+            ],
+            'fedora44-dnf' => [
+                'packager' => 'dnf',
+                'urls' => [
+                    'https://dl.fedoraproject.org/pub/fedora/linux/updates/44/Everything/x86_64/',
+                    'https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Everything/x86_64/os/',
+                ],
+            ],
+            'fedora45-dnf' => [
+                'packager' => 'dnf',
+                'urls' => [
+                    'https://dl.fedoraproject.org/pub/fedora/linux/updates/45/Everything/x86_64/',
+                    'https://dl.fedoraproject.org/pub/fedora/linux/releases/45/Everything/x86_64/os/',
                 ],
             ],
         ];
@@ -339,6 +428,108 @@ final class SlowExtensions
     }
 
     /**
+     * @param non-empty-string $url the URL of an RPM repository (with the trailing slash)
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \RuntimeException
+     *
+     * @return array{packages: array<string, list<string>>, providers: array<string, list<string>>} the PHP packages, and the PHP packages that provide the virtual ones
+     */
+    private static function loadRPMIndex($url, Filesystem\Downloader $downloader, Filesystem\VolatileDirectory $volatileDirectory)
+    {
+        $fs = $volatileDirectory->getFilesystem();
+        $directory = $volatileDirectory->createSubdir() . $fs->getDirectorySeparator();
+        $downloader->saveAs("{$url}repodata/repomd.xml", "{$directory}repomd.xml");
+        $match = null;
+        // The name of the primary metadata includes its checksum, like "repodata/<checksum>-primary.xml.zst"
+        if (!preg_match('/<data type="primary">.*?<location href="(?<href>[^"]+)"/s', $fs->readFile("{$directory}repomd.xml"), $match)) {
+            throw new \RuntimeException("Failed to find the primary metadata in {$url}repodata/repomd.xml");
+        }
+        $compressed = $directory . basename($match['href']);
+        $downloader->saveAs($url . $match['href'], $compressed);
+        $handle = self::openRPMMetadata($compressed, $fs);
+        $depends = [];
+        $providers = [];
+        try {
+            $package = null;
+            $section = '';
+            while (($line = fgets($handle)) !== false) {
+                if (preg_match('#^\s*<name>([^<]+)</name>#', $line, $match)) {
+                    $package = strpos($match[1], 'php') === 0 ? $match[1] : null;
+                    if ($package !== null) {
+                        $depends[$package] = [];
+                    }
+                } elseif ($package === null) {
+                    continue;
+                } elseif (preg_match('#^\s*<rpm:(provides|requires)>#', $line, $match)) {
+                    $section = $match[1];
+                } elseif (preg_match('#^\s*</rpm:#', $line)) {
+                    $section = '';
+                } elseif ($section !== '' && preg_match('#^\s*<rpm:entry name="([^"]+)"#', $line, $match)) {
+                    // Like "php85-php-pecl-igbinary" and "php85-php(api)"
+                    $name = htmlspecialchars_decode($match[1], ENT_QUOTES);
+                    if ($section === 'requires') {
+                        $depends[$package][] = $name;
+                    } else {
+                        $providers[$name][] = $package;
+                    }
+                }
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        return ['packages' => $depends, 'providers' => $providers];
+    }
+
+    /**
+     * @param non-empty-string $file the compressed primary metadata of an RPM repository
+     *
+     * @throws \IPE\Exception\IO if the compression is not supported in this environment
+     * @throws \RuntimeException
+     *
+     * @return resource
+     */
+    private static function openRPMMetadata($file, Filesystem $fs)
+    {
+        switch (strtolower(pathinfo($file, PATHINFO_EXTENSION))) {
+            case 'gz':
+                $wrapper = 'compress.zlib';
+                break;
+            case 'bz2':
+                $wrapper = 'compress.bzip2';
+                break;
+            case 'zst':
+                // Fedora compresses the metadata with zstd
+                if ($fs->resolveCommand('zstd') === '') {
+                    throw new Exception\IO("The zstd command is required to decompress {$file}");
+                }
+                $decompressed = substr($file, 0, -4);
+                list($rc, $output) = $fs->run(Command::create('zstd', ['-d', '-q', '-o', $decompressed, $file]));
+                if ($rc !== 0) {
+                    throw new \RuntimeException("Failed to decompress {$file}:\n{$output}");
+                }
+                $file = $decompressed;
+                $wrapper = '';
+                break;
+            default:
+                throw new \RuntimeException("Unsupported compression of {$file}");
+        }
+        if ($wrapper !== '') {
+            if (!in_array($wrapper, stream_get_wrappers(), true)) {
+                throw new Exception\IO("The {$wrapper} stream wrapper is required to decompress {$file}");
+            }
+            $file = "{$wrapper}://{$file}";
+        }
+        $handle = fopen($file, 'rb');
+        if ($handle === false) {
+            throw new \RuntimeException("Failed to open {$file}");
+        }
+
+        return $handle;
+    }
+
+    /**
      * @param array{packages: array<string, list<string>>, providers: array<string, list<string>>} $index
      * @param string $name the name of a package, or of a virtual package
      *
@@ -358,7 +549,7 @@ final class SlowExtensions
      *
      * @param array{packages: array<string, list<string>>, providers: array<string, list<string>>} $index
      * @param string $package
-     * @param string $phpSource like "php8.4" (APT) or "php84" (APK)
+     * @param string $phpSource like "php8.4" (APT), "php84" (APK), "php" or "php85-php" (Remi SCL)
      * @param array<string, true> $visited
      *
      * @return bool
@@ -366,9 +557,10 @@ final class SlowExtensions
     private static function dependsOnOtherPHPVersions(array $index, $package, $phpSource, array &$visited = [])
     {
         $visited[$package] = true;
-        $match = null;
+        $phpVersionPrefix = PHPSystemPackage::getPHPVersionPrefix($phpSource);
         foreach ($index['packages'][$package] as $dependency) {
-            if (preg_match('/^(?<source>php\d+(?:\.\d+)?)(?:-|$)/', $dependency, $match) && $match['source'] !== $phpSource) {
+            $versionPrefix = PHPSystemPackage::getPHPVersionPrefix($dependency);
+            if ($versionPrefix !== '' && $versionPrefix !== $phpVersionPrefix) {
                 return true;
             }
             $dependencyPackage = self::findPackage($index, $dependency);

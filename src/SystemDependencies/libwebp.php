@@ -45,7 +45,7 @@ final class libwebp extends SystemDependency
                 ['libwebp-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             if ($this->php->getMajorMinorVersion() <= 805) {
                 return new Packages(
                     ['^libwebp[0-9]+$'],
@@ -56,6 +56,13 @@ final class libwebp extends SystemDependency
             return new Packages(
                 ['^libwebp[0-9]+$', '^libwebpdemux[0-9]+$', '^libwebpmux[0-9]+$'],
                 ['libwebp-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // libwebp includes libwebpdemux and libwebpmux
+            return new Packages(
+                ['libwebp'],
+                ['libwebp-devel']
             );
         }
 

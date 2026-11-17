@@ -93,8 +93,8 @@ final class gmagick extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
-        return [imagick::HANDLE];
+        return [imagick::HANDLE => 'imagick refuses to be loaded together with gmagick'];
     }
 }

@@ -50,6 +50,12 @@ final class libjpeg extends SystemDependency
                 ['libjpeg-turbo8-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libjpeg-turbo'],
+                ['libjpeg-turbo-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

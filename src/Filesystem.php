@@ -97,6 +97,17 @@ interface Filesystem
 
     /**
      * @param non-empty-string $path
+     * @param positive-int $timestamp
+     *
+     * @throws \IPE\Exception\InvalidArgument
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    public function setLastModificationTimestamp($path, $timestamp);
+
+    /**
+     * @param non-empty-string $path
      *
      * @throws \IPE\Exception\InvalidArgument
      * @throws \IPE\Exception\IO

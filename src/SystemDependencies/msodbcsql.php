@@ -63,6 +63,14 @@ final class msodbcsql extends SystemDependency
     const APK_VERSION_17_OLD_LIBSTDCPP = '17.10.6.1-1@e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b';
 
     /**
+     * The file that configures the DNF repository of Microsoft (the instructions of Microsoft use the same name).
+     *
+     * @public
+     * @var string
+     */
+    const DNF_REPOSITORY_FILE = '/etc/yum.repos.d/mssql-release.repo';
+
+    /**
      * @var \IPE\Filesystem\Downloader
      */
     private $downloader;
@@ -127,6 +135,13 @@ final class msodbcsql extends SystemDependency
                 ['unixodbc-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux) {
+            return new Packages(
+                // The driver requires openssl: without it, removing the build packages removes the driver too
+                ['krb5-libs', 'libstdc++', 'openssl', 'unixODBC'],
+                ['unixODBC-devel']
+            );
+        }
 
         throw new Exception\UnsupportedOS("The Microsoft ODBC Driver for SQL Server can't be installed on {$this->os->getDisplayName()}");
     }
@@ -154,6 +169,11 @@ final class msodbcsql extends SystemDependency
         }
         if ($this->os instanceof OS\Ubuntu) {
             $this->installOnUbuntu($this->os, $state);
+
+            return;
+        }
+        if ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux) {
+            $this->installOnEnterpriseLinux($this->os);
 
             return;
         }
@@ -262,6 +282,37 @@ final class msodbcsql extends SystemDependency
             $this->getUbuntuPackage($os),
             $state
         );
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return void
+     */
+    private function installOnEnterpriseLinux(OS\Posix\RHELLike\EnterpriseLinux $os)
+    {
+        $fs = $os->getFilesystem();
+        $version = $os->getNumericVersion();
+        if (!$fs->isFile(self::DNF_REPOSITORY_FILE)) {
+            $keyFile = $version >= 10 ? 'microsoft-2025.asc' : 'microsoft.asc';
+            $this->downloader->saveAs("https://packages.microsoft.com/keys/{$keyFile}", '/etc/pki/rpm-gpg/microsoft-prod.asc');
+            $fs->writeFile(self::DNF_REPOSITORY_FILE, implode("\n", [
+                '[packages-microsoft-com-prod]',
+                'name=Microsoft Production',
+                "baseurl=https://packages.microsoft.com/rhel/{$version}/prod/",
+                'enabled=1',
+                'gpgcheck=1',
+                'repo_gpgcheck=1',
+                'gpgkey=file:///etc/pki/rpm-gpg/microsoft-prod.asc',
+                '',
+            ]));
+        }
+        // The package refuses to install if the license is not accepted
+        list($rc) = $fs->run(Command::create('dnf', ['--quiet', 'install', '-y', '--setopt=install_weak_deps=False', $this->needsDriver17() ? 'msodbcsql17' : 'msodbcsql18'])->withEnvironment(['ACCEPT_EULA' => 'Y'])->withOutput(Command::OUTPUT_SHOW));
+        if ($rc !== 0) {
+            throw new Exception\SystemPackager('Failed to install the Microsoft ODBC Driver for SQL Server');
+        }
     }
 
     /**

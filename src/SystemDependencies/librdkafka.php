@@ -38,10 +38,16 @@ final class librdkafka extends SystemDependency
                 ['librdkafka-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['librdkafka1'],
                 ['librdkafka-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['librdkafka'],
+                ['librdkafka-devel']
             );
         }
 

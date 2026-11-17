@@ -10,8 +10,9 @@ interface DeclaresConflicts
 {
     /**
      * @param string $version
+     * @param \IPE\Option\Values|null $options null if the extension isn't built by us (so we don't know how it was configured)
      *
-     * @return list<non-empty-string> the names of the extensions as seen by PHP
+     * @return array<non-empty-string, non-empty-string> the keys are the names of the extensions as seen by PHP, the values describe the conflicts
      */
-    public function getConflictingExtensions($version);
+    public function getConflictingExtensions($version, $options = null);
 }

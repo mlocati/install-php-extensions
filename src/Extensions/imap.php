@@ -11,6 +11,7 @@ final class imap extends Extension implements
     Extension\BundledInPHPSource,
     Extension\AvailableOnPECL,
     Extension\DeclaresConflicts,
+    Extension\DeclaresUnsupportedEnvironments,
     Extension\RequiresSystemDependencies,
     Extension\ProvidesConfigureArguments
 {
@@ -43,6 +44,20 @@ final class imap extends Extension implements
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            'amzn' => "this system doesn't provide the c-client library",
+            'el9..10' => "this system doesn't provide the c-client library",
+            'fedora' => "this system doesn't provide the c-client library",
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\Extension::getInstalledNames()
      */
     public static function getInstalledNames()
@@ -57,11 +72,10 @@ final class imap extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
         if ($this->os instanceof OS\Alpine) {
-            // On Alpine the second one to be loaded fails.
-            return [recode::HANDLE];
+            return [recode::HANDLE => 'on Alpine the second one to be loaded fails'];
         }
 
         return [];
@@ -124,7 +138,18 @@ final class imap extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        // libc-client is not in the multiarch directory of Debian
-        return ['--with-kerberos', '--with-imap-ssl', '--with-libdir=lib'];
+        if ($this->os instanceof OS\Alpine) {
+            return ['--with-kerberos', '--with-imap-ssl', '--with-libdir=lib'];
+        }
+        if ($this->os instanceof OS\Posix\DebianLike) {
+            // libc-client is not in the multiarch directory
+            return ['--with-kerberos', '--with-imap-ssl', '--with-libdir=lib'];
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // libc-client is in lib64, the libdir of PHP that the compiler passes
+            return ['--with-kerberos', '--with-imap-ssl'];
+        }
+
+        throw $this->createUnknownOSException();
     }
 }

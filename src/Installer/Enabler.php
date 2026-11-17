@@ -76,6 +76,11 @@ class Enabler
      */
     private $enabledIniFiles = [];
 
+    /**
+     * @var list<non-empty-string> the names (as seen by PHP) of the modules that we saw loading
+     */
+    private $checkedModules = [];
+
     public function __construct(PHPInfo $php, Filesystem $fs, \IPE\Logger $logger, Enabler\Options $options)
     {
         $this->logger = $logger;
@@ -132,6 +137,7 @@ class Enabler
         $iniFile = $this->writeIniFile($compiled, "{$iniScanDir}/{$iniBasename}.ini", $iniContent);
         $this->addLoadedModules($newModules);
         $this->enabledIniFiles[$compiled->getModuleName()] = [$iniFile, $iniContent];
+        $this->checkedModules = array_merge($this->checkedModules, $newModules);
 
         return $newModules;
     }
@@ -247,6 +253,8 @@ class Enabler
                 throw new Exception\IO('The extension ' . $extension::getHandle() . ' does not load' . ($errors === '' ? '' : ":\n{$errors}"));
             }
             $newModules = array_values($extension::getInstalledNames());
+        } else {
+            $this->checkedModules = array_merge($this->checkedModules, $newModules);
         }
         $this->php->addInstalledExtensions($newModules);
         $this->enabledIniFiles[$extension::getHandle()] = [$iniFile, $this->readModuleIniFile($iniFile)];
@@ -283,8 +291,27 @@ class Enabler
             }
         }
         $this->enabledIniFiles = [];
+        $this->checkedModules = [];
 
         return $result;
+    }
+
+    /**
+     * Check that the modules seen loading by enable(), reenable() and checkEnabled() still load: removing the packages used only for the installation may remove the libraries they need.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    public function checkStillLoaded()
+    {
+        if ($this->checkedModules !== []) {
+            list($loaded, $errors) = $this->listLoadedModules();
+            $missing = array_values(array_udiff($this->checkedModules, $loaded, 'strcasecmp'));
+            if ($missing !== []) {
+                throw new Exception\IO('After removing the packages used only for the installation, PHP no longer loads ' . implode(', ', $missing) . ($errors === '' ? '' : ":\n{$errors}"));
+            }
+        }
     }
 
     /**
@@ -392,6 +419,7 @@ class Enabler
     {
         list($loaded, $errors) = $this->listLoadedModules();
         $names = array_values(array_uintersect($loaded, $extension::getInstalledNames(), 'strcasecmp'));
+        $this->checkedModules = array_merge($this->checkedModules, $names);
         if ($names === [] && $this->options->shouldSkipCheck()) {
             $names = array_values($extension::getInstalledNames());
         }

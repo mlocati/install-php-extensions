@@ -177,14 +177,32 @@ final class BuildToolsTest extends TestCase
 
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(801);
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--configure-options'])))->andReturn([0, "--enable-fpm\n"]);
+        $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('');
         self::assertSame('', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
+    }
+
+    /**
+     * @return void
+     */
+    public function testLibdirFromPhpConfig()
+    {
+        $php = self::createPHPInfo();
+        $php->shouldReceive('getConfigureCommand')->andReturn('');
+        $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
+        $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--configure-options'])))->andReturn([0, "--build=x86_64-redhat-linux --libdir=/usr/lib64 --with-libdir=lib64 --enable-fpm\n"]);
+        self::assertSame('lib64', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
     }
 
     /**
      * @return array<array{string, int, string, string}> the path of gcc, its exit code, its output, and the expected libdir
      */
-    public static function provideLibdirOnOldPHP()
+    public static function provideLibdirFromMultiarch()
     {
         return [
             ['/usr/bin/gcc', 0, "x86_64-linux-gnu\n", 'lib/x86_64-linux-gnu'],
@@ -195,7 +213,7 @@ final class BuildToolsTest extends TestCase
     }
 
     /**
-     * @dataProvider provideLibdirOnOldPHP
+     * @dataProvider provideLibdirFromMultiarch
      *
      * @param string $gcc
      * @param int $rc
@@ -204,12 +222,13 @@ final class BuildToolsTest extends TestCase
      *
      * @return void
      */
-    public function testLibdirOnOldPHP($gcc, $rc, $output, $expected)
+    public function testLibdirFromMultiarch($gcc, $rc, $output, $expected)
     {
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(700);
         $fs = self::createFilesystem();
+        $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(false);
+        $fs->shouldReceive('resolveCommand')->with('php-config')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn($gcc);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('gcc', ['-print-multiarch'])))->andReturn([$rc, $output]);
         self::assertSame($expected, (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());

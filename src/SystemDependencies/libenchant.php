@@ -58,7 +58,7 @@ final class libenchant extends CompiledLibrary
                 ['glib-dev', 'aspell-dev', 'hunspell-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             if ($osProvidesEnchant1) {
                 return new Packages(
                     ['libenchant1c2a'],
@@ -70,8 +70,14 @@ final class libenchant extends CompiledLibrary
             }
 
             return new Packages(
-                ['aspell-en', 'libhunspell-1.7-0'],
+                ['^libglib2\.0-0(t64)?$', 'aspell-en', 'libhunspell-1.7-0'],
                 ['libglib2.0-dev', 'libaspell-dev', 'libhunspell-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['enchant'],
+                ['enchant-devel']
             );
         }
 
@@ -85,7 +91,8 @@ final class libenchant extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return libenchant2::isProvidedByOS($this->os) && parent::needsCompilation();
+        // RHEL-like systems provide both enchant 1 and enchant 2
+        return !$this->os instanceof OS\Posix\RHELLike && libenchant2::isProvidedByOS($this->os) && parent::needsCompilation();
     }
 
     /**
@@ -137,7 +144,7 @@ final class libenchant extends CompiledLibrary
      */
     protected function build($sourceDirectory)
     {
-        $this->runBuildStep('./configure', [], $sourceDirectory);
+        $this->runBuildStep('./configure', ['CFLAGS=' . $this->getCFlags()], $sourceDirectory);
         $this->runBuildStep($this->buildTools->getMake(), ['-j' . $this->getParallelJobs(), 'install'], $sourceDirectory);
     }
 }

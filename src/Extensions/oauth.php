@@ -4,11 +4,14 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
+use IPE\SystemPackager;
 
 final class oauth extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\ProvidesSystemPackageNames,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -94,5 +97,20 @@ final class oauth extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return $this->php->getMajorMinorVersion() >= 700 ? [SystemDependencies\libpcre::HANDLE] : [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        if ($this->os instanceof OS\Posix && $this->os->getSystemPackager() instanceof SystemPackager\DNF) {
+            // php-oauth of Fedora is a PHP library, not the extension
+            return ["{$phpPackage->getSource()}-pecl-oauth"];
+        }
+
+        return null;
     }
 }

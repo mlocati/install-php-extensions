@@ -38,10 +38,16 @@ final class librabbitmq extends SystemDependency
                 ['rabbitmq-c-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^librabbitmq[0-9]*(t64)?$'],
                 ['librabbitmq-dev', 'libssh-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['librabbitmq'],
+                ['librabbitmq-devel']
             );
         }
 

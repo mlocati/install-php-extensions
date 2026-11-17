@@ -355,6 +355,47 @@ final class EnablerTest extends TestCase
     /**
      * @return void
      */
+    public function testCheckStillLoaded()
+    {
+        $fs = self::createFilesystem();
+        $modulesAfter = "[PHP Modules]\napcu\nCore\njson\n\n[Zend Modules]\n";
+        $fs->shouldReceive('run')
+            ->with(self::isCommand(Command::create('/usr/local/bin/php', ['-d', 'display_startup_errors=1', '-d', 'display_errors=1', '-d', 'error_reporting=-1', '-m'])))
+            ->andReturn([0, self::MODULES_BEFORE], [0, $modulesAfter], [0, $modulesAfter], [0, "PHP Warning:  PHP Startup: Unable to load dynamic library 'apcu.so' (tried: ...)\n" . self::MODULES_BEFORE])
+        ;
+        $fs->shouldReceive('run')
+            ->with(self::isCommand(Command::create('/usr/local/bin/php', ['-d', 'display_startup_errors=1', '-d', 'display_errors=1', '-d', 'error_reporting=-1', '-r', 'return;'])->withEnvironment(['LD_BIND_NOW' => '1'])))
+            ->andReturn([0, ''])
+        ;
+        $fs->shouldReceive('writeFile');
+        $fs->shouldReceive('deleteFile');
+        $php = self::createPHPInfo();
+        $php->shouldReceive('addInstalledExtensions')->once()->with(['apcu']);
+        $enabler = new Enabler($php, $fs, new \IPE\Logger(), new Options());
+        $enabler->enable(self::createCompiledExtension('apcu'));
+        $enabler->checkStillLoaded();
+        try {
+            $enabler->checkStillLoaded();
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertStringContainsString('PHP no longer loads apcu', $x->getMessage());
+            self::assertStringContainsString('Unable to load dynamic library', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testCheckStillLoadedWithoutCheckedModules()
+    {
+        // Without expectations, running php -m would fail
+        (new Enabler(self::createPHPInfo(), self::createFilesystem(), new \IPE\Logger(), new Options()))->checkStillLoaded();
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * @return void
+     */
     public function testDisableZendExtensionKeepsTheSettings()
     {
         $fs = self::createFilesystem();

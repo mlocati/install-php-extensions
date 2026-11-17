@@ -9,7 +9,7 @@ use IPE\SystemDependencies;
 final class seasclick extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
-    Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesMakeEnvironment,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -36,18 +36,6 @@ final class seasclick extends Extension implements
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
-     */
-    public static function getUnsupportedEnvironments()
-    {
-        return [
-            'alpine3.23..3.24' => 'the extension can\'t be compiled with the compiler or the libraries of this system',
-        ];
     }
 
     /**
@@ -98,5 +86,16 @@ final class seasclick extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libstdcxx::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesMakeEnvironment::getMakeEnvironment()
+     */
+    public function getMakeEnvironment(Extension\BuildContext $context)
+    {
+        // The bundled clickhouse-cpp uses uint8_t without including <cstdint>, and newer compilers don't include it implicitly anymore
+        return ['EXTRA_CXXFLAGS' => '-include cstdint'];
     }
 }

@@ -42,4 +42,12 @@ abstract class Extension implements Extension\DeclaresIdentity
     {
         return $version === '' || version_compare($version, $minimum) >= 0;
     }
+
+    /**
+     * @return \IPE\Exception\UnsupportedOS
+     */
+    protected function createUnknownOSException()
+    {
+        return new Exception\UnsupportedOS('How to install ' . static::getHandle() . " is not known for {$this->os->getDisplayName()}");
+    }
 }

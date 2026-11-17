@@ -117,6 +117,20 @@ final class snuffleupagus extends Extension\GitHubExtension implements
         if (version_compare($version, '0.8.0') >= 0 && version_compare($version, '0.14.0') < 0) {
             $rules .= "\n# Disable \"PHP version is not officially maintained anymore\" message\nsp.global.show_old_php_warning.disable();\n";
         }
+        // Before 0.12.0 the rules use the parameter names of PHP 7, which PHP 8 renamed: the rules wouldn't match
+        if (version_compare($version, '0.12.0') < 0 && $this->php->getMajorMinorVersion() >= 800) {
+            $rules = strtr($rules, [
+                'function("chmod").param("mode")' => 'function("chmod").param("permissions")',
+                'function("function_exists").param("function_name")' => 'function("function_exists").param("function")',
+                'function("ini_get").param("varname")' => 'function("ini_get").param("option")',
+                'function("ini_set").param("varname")' => 'function("ini_set").param("option")',
+                'function("is_callable").param("var")' => 'function("is_callable").param("value")',
+                'function("mail").param("additional_parameters")' => 'function("mail").param("additional_params")',
+                'function("move_uploaded_file").param("destination")' => 'function("move_uploaded_file").param("to")',
+                'function("move_uploaded_file").param("new_path")' => 'function("move_uploaded_file").param("to")',
+                'function("putenv").param("setting")' => 'function("putenv").param("assignment")',
+            ]);
+        }
         $ipeRoot = self::getCLIRootDir();
         if ($ipeRoot !== '' && $context->getOptionValues()->hasCustomValue(self::OPTION_ALLOW_IPE)) {
             // The first matching rule wins

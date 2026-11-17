@@ -54,10 +54,9 @@ final class mssql extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
-        // Both of them define the mssql_* functions
-        return [sybase_ct::HANDLE];
+        return [sybase_ct::HANDLE => 'both of them define the mssql_* functions'];
     }
 
     /**

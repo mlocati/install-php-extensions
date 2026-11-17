@@ -8,7 +8,7 @@ use IPE\Service\Container;
 use IPE\SystemPackager;
 use IPE\Traits;
 
-class Debian implements Posix
+class Debian implements Posix\DebianLike
 {
     use Traits\PosixMachineArchitecture;
 
@@ -171,7 +171,9 @@ class Debian implements Posix
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
+     *
+     * @see \IPE\OS\Posix\DebianLike::getCodename()
      *
      * @example 'trixie'
      */

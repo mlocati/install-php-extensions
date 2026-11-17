@@ -96,6 +96,13 @@ final class stomp extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        return [$this->os instanceof OS\Alpine ? '--with-openssl-dir=/usr' : '--with-openssl-dir=yes'];
+        if ($this->os instanceof OS\Alpine) {
+            return ['--with-openssl-dir=/usr'];
+        }
+        if ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
+            return ['--with-openssl-dir=yes'];
+        }
+
+        throw $this->createUnknownOSException();
     }
 }

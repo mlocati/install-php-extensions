@@ -84,6 +84,7 @@ final class pkcs11 extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
+        // Not required by the extension: it's a software token that users can start with
         return [SystemDependencies\libsofthsm::HANDLE];
     }
 }

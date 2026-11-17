@@ -50,6 +50,7 @@ final class amqp extends Extension implements
     {
         return [
             'ubuntu14.04' => 'the version of the librabbitmq library of this system is too old',
+            'amzn2023' => 'this system does not provide the librabbitmq library',
         ];
     }
 

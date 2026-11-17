@@ -64,6 +64,20 @@ final class libpcre extends SystemDependency
                 ['libpcre2-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            // The PHP packages use the PCRE library of the system, and PHP switched to PCRE2 in 7.3
+            if ($this->php->getMajorMinorVersion() <= 702) {
+                return new Packages(
+                    ['pcre'],
+                    ['pcre-devel']
+                );
+            }
+
+            return new Packages(
+                ['pcre2'],
+                ['pcre2-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

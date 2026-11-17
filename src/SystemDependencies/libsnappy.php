@@ -38,10 +38,16 @@ final class libsnappy extends SystemDependency
                 ['snappy-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libsnappy[0-9]+(v[0-9]+)?(t64)?$'],
                 ['libsnappy-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['snappy'],
+                ['snappy-devel']
             );
         }
 

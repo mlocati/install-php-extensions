@@ -14,6 +14,7 @@ interface Posix extends OS
      * @param array<non-empty-string, string> $data the contents of /etc/os-release
      *
      * @throws \IPE\Exception\UnsupportedOS
+     * @throws \IPE\Exception\IO
      *
      * @return static
      */

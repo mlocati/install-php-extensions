@@ -38,10 +38,16 @@ final class libffi extends SystemDependency
                 ['libffi-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 ['libffi-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libffi'],
+                ['libffi-devel']
             );
         }
 

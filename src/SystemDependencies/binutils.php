@@ -3,6 +3,7 @@
 namespace IPE\SystemDependencies;
 
 use IPE\Installer\State;
+use IPE\OS;
 use IPE\SystemDependency;
 use IPE\SystemPackager\Packages;
 
@@ -34,9 +35,13 @@ final class binutils extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        return new Packages(
-            [],
-            ['binutils']
-        );
+        if ($this->os instanceof OS\Alpine || $this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                [],
+                ['binutils']
+            );
+        }
+
+        throw $this->createUnknownPackagesException();
     }
 }

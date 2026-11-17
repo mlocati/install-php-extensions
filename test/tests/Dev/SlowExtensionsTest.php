@@ -20,6 +20,8 @@ final class SlowExtensionsTest extends TestCase
             ['swoole', 'trixie-sury', '8.0', true],
             ['swoole', 'trixie-sury', '8.1', false],
             ['cassandra', 'alpine3.24-apk', '8.4', true],
+            ['cassandra', 'almalinux9-remi', '7.4', false],
+            ['grpc', 'almalinux10-dnf', '8.4', true],
             ['redis', 'trixie-apt', '8.4', false],
         ];
     }
@@ -48,7 +50,7 @@ final class SlowExtensionsTest extends TestCase
     }
 
     /**
-     * Downloads the package indexes (about 90 MB).
+     * Downloads the package indexes (about 130 MB), and needs the zstd command to read the ones of Fedora.
      *
      * @group online
      *

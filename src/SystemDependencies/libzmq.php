@@ -38,10 +38,16 @@ final class libzmq extends SystemDependency
                 []
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['libzmq3-dev'],
                 []
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['zeromq'],
+                ['zeromq-devel']
             );
         }
 

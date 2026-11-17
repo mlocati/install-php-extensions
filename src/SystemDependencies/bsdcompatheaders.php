@@ -38,11 +38,14 @@ final class bsdcompatheaders extends SystemDependency
                 ['bsd-compat-headers']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 []
             );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages();
         }
 
         throw $this->createUnknownPackagesException();

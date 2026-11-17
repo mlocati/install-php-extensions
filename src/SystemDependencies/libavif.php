@@ -65,10 +65,16 @@ class libavif extends CompiledLibrary
                 ['libavif-dev', 'aom-dev', 'dav1d-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libavif[0-9]+$', '^libaom[0-9]+$', '^libdav1d[0-9]+$'],
                 ['libavif-dev', 'libaom-dev', 'libdav1d-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libavif'],
+                ['libavif-devel']
             );
         }
 
@@ -158,6 +164,12 @@ class libavif extends CompiledLibrary
         }
         if ($os instanceof OS\Ubuntu) {
             return $os->getNumericVersion() >= (self::requiresVersion1($php) ? OS\Ubuntu::NOBLE : OS\Ubuntu::JAMMY);
+        }
+        if ($os instanceof OS\Posix\RHELLike\EnterpriseLinux) {
+            return $os->getNumericVersion() >= (self::requiresVersion1($php) ? 9 : 8);
+        }
+        if ($os instanceof OS\Fedora) {
+            return true;
         }
 
         return false;

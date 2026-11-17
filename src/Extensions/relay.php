@@ -51,13 +51,18 @@ final class relay extends Extension\PrecompiledExtension implements
     {
         $noBuild = 'the vendor doesn\'t publish ZTS builds for this system';
         $noHiredis = 'the ZTS build requires libhiredis 1.1.0, which is not available';
+        $noCK = 'the ZTS build requires the ck library, which is not available';
 
         return [
             'alpine3.10..3.16-zts' => $noBuild,
-            'alpine3.17-zts' => 'the ZTS build requires the ck library, which is not available',
+            'alpine3.17-zts' => $noCK,
             'alpine3.22..3.24-zts' => $noHiredis,
             'debian10..11-zts' => $noBuild,
             'debian12-zts' => $noHiredis,
+            'amzn2023-zts' => $noCK,
+            'el8-zts' => $noBuild,
+            'el9-zts' => $noHiredis,
+            'fedora45..46' => 'the vendor builds require OpenSSL 3, but this system uses OpenSSL 4',
         ];
     }
 
@@ -102,13 +107,17 @@ final class relay extends Extension\PrecompiledExtension implements
     {
         // The module is published with its debug symbols
         $result = [SystemDependencies\binutils::HANDLE];
-        // The builds for Alpine link to these libraries
+        // The builds for Alpine and for the RHEL-like systems link to these libraries
         if ($this->os instanceof OS\Alpine) {
             $result[] = SystemDependencies\liblz4::HANDLE;
             $result[] = SystemDependencies\libzstd::HANDLE;
             if ($this->os->getNumericVersion() >= 317) {
                 $result[] = SystemDependencies\libopenssl::HANDLE;
             }
+        } elseif ($this->os instanceof OS\Posix\RHELLike) {
+            $result[] = SystemDependencies\libopenssl::HANDLE;
+        } elseif (!$this->os instanceof OS\Posix\DebianLike) {
+            throw $this->createUnknownOSException();
         }
         // The ZTS builds link to these libraries
         if ($this->php->isThreadSafe()) {
@@ -133,6 +142,13 @@ final class relay extends Extension\PrecompiledExtension implements
             $build = 'debian' . ($this->os->getNumericVersion() >= OS\Debian::BOOKWORM ? '+libssl3' : '');
         } elseif ($this->os instanceof OS\Ubuntu) {
             $build = 'debian' . ($this->os->getNumericVersion() >= OS\Ubuntu::JAMMY ? '+libssl3' : '');
+        } elseif ($this->os instanceof OS\Posix\RHELLike\EnterpriseLinux) {
+            $build = $this->os->getNumericVersion() <= 8 ? 'centos8' : "el{$this->os->getNumericVersion()}";
+        } elseif ($this->os instanceof OS\AmazonLinux) {
+            $build = 'el9';
+        } elseif ($this->os instanceof OS\Fedora) {
+            // The vendor doesn't publish builds for Fedora
+            $build = 'el10';
         } else {
             throw new Exception\UnsupportedOS("Relay can't be installed on {$this->os->getDisplayName()}");
         }

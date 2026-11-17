@@ -78,6 +78,12 @@ final class libimagemagick extends SystemDependency
                 ['libmagickwand-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['ImageMagick-libs', 'ghostscript'],
+                ['ImageMagick-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

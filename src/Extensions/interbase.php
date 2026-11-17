@@ -8,6 +8,7 @@ use IPE\SystemDependencies;
 
 final class interbase extends Extension implements
     Extension\BundledInPHPSource,
+    Extension\DeclaresUnsupportedEnvironments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -34,6 +35,18 @@ final class interbase extends Extension implements
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            'amzn2023' => "this system doesn't provide the Firebird client library",
+        ];
     }
 
     /**

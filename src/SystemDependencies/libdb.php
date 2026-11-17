@@ -38,10 +38,16 @@ final class libdb extends SystemDependency
                 ['db-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 ['^libdb5\.3-dev$']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libdb'],
+                ['libdb-devel']
             );
         }
 

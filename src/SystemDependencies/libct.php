@@ -38,10 +38,16 @@ final class libct extends SystemDependency
                 ['freetds-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['libct4'],
                 ['freetds-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['freetds-libs'],
+                ['freetds-devel']
             );
         }
 

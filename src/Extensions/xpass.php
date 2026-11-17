@@ -47,6 +47,7 @@ final class xpass extends Extension implements
     {
         return [
             'debian10' => 'the extension can\'t be compiled with the compiler or the libraries of this system',
+            'el8' => 'the extension requires libxcrypt 4.4 or later',
         ];
     }
 

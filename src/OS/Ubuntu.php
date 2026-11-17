@@ -8,7 +8,7 @@ use IPE\Service\Container;
 use IPE\SystemPackager;
 use IPE\Traits;
 
-class Ubuntu implements Posix
+class Ubuntu implements Posix\DebianLike
 {
     use Traits\PosixMachineArchitecture;
 
@@ -433,7 +433,9 @@ class Ubuntu implements Posix
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
+     *
+     * @see \IPE\OS\Posix\DebianLike::getCodename()
      *
      * @example 'noble'
      */

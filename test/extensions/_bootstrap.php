@@ -53,3 +53,23 @@ function getInstallOption($name)
 
     return null;
 }
+
+/**
+ * Get where install-php-extensions took an extension from (for example 'system package').
+ *
+ * @param string $name
+ *
+ * @return string|null NULL if the extension is not in the installation report
+ */
+function getInstalledExtensionOrigin($name)
+{
+    $file = (string) getenv('TEST_IPE_REPORT');
+    $report = $file !== '' && is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
+    foreach (is_array($report) && isset($report['extensions']) && is_array($report['extensions']) ? $report['extensions'] : [] as $extension) {
+        if (is_array($extension) && isset($extension['name'], $extension['origin']) && $extension['name'] === $name) {
+            return (string) $extension['origin'];
+        }
+    }
+
+    return null;
+}

@@ -50,6 +50,7 @@ final class memprof extends Extension implements
         return [
             'alpine3.0..3.8' => "this system doesn't provide the Judy library",
             'alpine3.9..3.15' => 'the extension can\'t be compiled with the compiler or the libraries of this system',
+            'el8' => "this system doesn't provide the Judy library",
         ];
     }
 

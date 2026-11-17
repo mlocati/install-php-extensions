@@ -68,11 +68,10 @@ final class recode extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
         if ($this->os instanceof OS\Alpine) {
-            // On Alpine the second one to be loaded fails.
-            return [imap::HANDLE];
+            return [imap::HANDLE => 'on Alpine the second one to be loaded fails'];
         }
 
         return [];

@@ -419,10 +419,11 @@ final class ResolverTest extends TestCase
         self::assertCount(2, self::createResolver($php, null, [new FakeConflictsExtension($php, self::createOS(), [])])->resolveAskedExtensions($asked, $state));
         $asked = [new Asked\FromDirectory(self::getAssetPath('directories/conflicting-old')), new Asked\FromDirectory(self::getAssetPath('directories/known-pecl'))];
         try {
-            self::createResolver($php, null, [new FakeConflictsExtension($php, self::createOS(), ['lzf'])])->resolveAskedExtensions($asked, $state);
+            self::createResolver($php, null, [new FakeConflictsExtension($php, self::createOS(), ['lzf' => 'they define the same functions'])])->resolveAskedExtensions($asked, $state);
             self::fail('Expected exception not thrown');
         } catch (Exception\UnsupportedExtension $x) {
             self::assertStringContainsString('conflicts with the extension lzf', $x->getMessage());
+            self::assertStringEndsWith(' (they define the same functions)', $x->getMessage());
         }
     }
 
@@ -1102,6 +1103,7 @@ final class ResolverTest extends TestCase
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/bin/php');
+        $php->shouldReceive('getAPIVersion')->andReturn(20240924);
         $os = M::mock(OS\Debian::class);
         $packager = new FakePackager($os, [], $expansions);
         $packager->owningPackage = $phpPackage;

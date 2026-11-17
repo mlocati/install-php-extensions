@@ -65,10 +65,19 @@ final class libfbclient extends CompiledLibrary
                 ['icu-dev', 'ncurses-dev', 'zlib-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['libfbclient2'],
                 ['firebird-dev', 'libib-util']
+            );
+        }
+        if ($this->os instanceof OS\AmazonLinux) {
+            throw $this->createNotProvidedException();
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libfbclient2'],
+                ['firebird-devel']
             );
         }
 

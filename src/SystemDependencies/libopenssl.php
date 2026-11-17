@@ -78,6 +78,12 @@ class libopenssl extends SystemDependency
                 ['libssl-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['openssl-libs'],
+                ['openssl-devel']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

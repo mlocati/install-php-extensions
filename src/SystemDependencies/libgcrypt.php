@@ -38,10 +38,16 @@ class libgcrypt extends SystemDependency
                 ['libgcrypt-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 ['libgcrypt20-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libgcrypt'],
+                ['libgcrypt-devel']
             );
         }
 

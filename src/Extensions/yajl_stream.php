@@ -8,7 +8,9 @@ use IPE\SystemDependencies;
 /**
  * @see https://github.com/vlydev/php-yajl-stream
  */
-final class yajl_stream extends Extension\GitHubExtension implements Extension\ProvidesConfigureArguments
+final class yajl_stream extends Extension\GitHubExtension implements
+    Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -40,6 +42,18 @@ final class yajl_stream extends Extension\GitHubExtension implements Extension\P
     public static function getSupportedPHPVersions()
     {
         return ['8.2', '8.3', '8.4', '8.5'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            'el10' => "this system doesn't provide the YAJL library",
+        ];
     }
 
     /**

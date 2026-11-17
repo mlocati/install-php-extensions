@@ -48,6 +48,7 @@ final class judy extends Extension implements
     {
         return [
             'alpine3.13..3.15' => 'the extension can\'t be compiled with the compiler or the libraries of this system',
+            'el8' => "this system doesn't provide the Judy library",
         ];
     }
 

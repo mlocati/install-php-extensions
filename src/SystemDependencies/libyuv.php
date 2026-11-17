@@ -47,8 +47,13 @@ class libyuv extends CompiledLibrary
                 ['libstdc++']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages();
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['libstdc++']
+            );
         }
 
         throw $this->createUnknownPackagesException();

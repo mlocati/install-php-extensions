@@ -3,10 +3,12 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Exception;
+use IPE\Extension\UnsupportedEnvironment;
 use IPE\Extensions\swoole;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\Service\Container;
 use IPE\SystemDependencies;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
@@ -79,10 +81,21 @@ final class SwooleTest extends TestCase
     /**
      * @return void
      */
-    public function testNoDefaultVersionFor32BitsWithRecentPHP()
+    public function testUnsupportedOn32BitsWithRecentPHP()
     {
-        $this->expectException(Exception\UnsupportedExtension::class);
-        self::createExtension(803, OS\Debian::class, OS\Debian::TRIXIE, false, 32)->getDefaultVersionRequirements();
+        $subject = new UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger()));
+        $os = M::mock(OS\Debian::class);
+        foreach ([[802, 32, false], [803, 32, true], [805, 32, true], [803, 64, false]] as $case) {
+            list($phpVersion, $bits, $expected) = $case;
+            $php = M::mock(PHPInfo::class);
+            $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
+            $php->shouldReceive('getBits')->andReturn($bits);
+            $matches = false;
+            foreach (array_keys(swoole::getUnsupportedEnvironments()) as $environment) {
+                $matches = $matches || $subject->matches($environment, $php, $os);
+            }
+            self::assertSame($expected, $matches, "PHP {$phpVersion} with {$bits} bits");
+        }
     }
 
     /**
@@ -183,6 +196,7 @@ final class SwooleTest extends TestCase
             [OS\Alpine::class, 320, '6.0.0', true],
             [OS\Alpine::class, 320, '6.2.0', false],
             [OS\Alpine::class, 321, '6.2.0', true],
+            [OS\AlmaLinux::class, 10, '6.2.0', false],
         ];
     }
 
@@ -209,6 +223,29 @@ final class SwooleTest extends TestCase
     /**
      * @return void
      */
+    public function testSSH2()
+    {
+        $extension = self::createExtension(804, OS\Debian::class, OS\Debian::TRIXIE);
+        $with = new Values();
+        $without = new Values([], [swoole::OPTION_WITHOUT_SSH2 => true]);
+        self::assertNotContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.1.7', $with)));
+        self::assertNotContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.1.7', $with));
+        self::assertSame(['openswoole'], array_keys($extension->getConflictingExtensions('6.1.7', $with)));
+        self::assertContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.2.0', $with)));
+        self::assertContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.2.0', $with));
+        $conflicts = $extension->getConflictingExtensions('6.2.0', $with);
+        self::assertSame(['openswoole', 'ssh2'], array_keys($conflicts));
+        self::assertStringContainsString("'without-ssh2'", $conflicts['ssh2']);
+        self::assertNotContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.2.0', $without)));
+        self::assertNotContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.2.0', $without));
+        self::assertSame(['openswoole'], array_keys($extension->getConflictingExtensions('6.2.0', $without)));
+        // System packages may be built without the SSH2 client (like the ones of Remi)
+        self::assertSame(['openswoole'], array_keys($extension->getConflictingExtensions('6.2.0')));
+    }
+
+    /**
+     * @return void
+     */
     public function testDatabasesAndCompressionDependOnTheEnvironment()
     {
         $old = self::createExtension(801, OS\Debian::class, OS\Debian::BUSTER);
@@ -222,6 +259,12 @@ final class SwooleTest extends TestCase
         self::assertNotContains('--with-swoole-firebird', self::createExtension(803, OS\Alpine::class, 322)->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertContains('--with-swoole-firebird', self::createExtension(804, OS\Alpine::class, 322)->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertContains(SystemDependencies\libfbclient::HANDLE, self::createExtension(804, OS\Alpine::class, 322)->getRequiredSystemDependencies('6.2.0', new Values()));
+        self::assertContains('--with-swoole-firebird', self::createExtension(804, OS\AlmaLinux::class, 10)->getConfigureArguments(self::createBuildContext('6.2.0')));
+        self::assertNotContains('--with-swoole-firebird', self::createExtension(804, OS\AmazonLinux::class, 2023)->getConfigureArguments(self::createBuildContext('6.2.0')));
+        self::assertContains('--enable-zstd', self::createExtension(804, OS\AlmaLinux::class, 8)->getConfigureArguments(self::createBuildContext('6.2.0')));
+        self::assertNotContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(700, OS\Debian::class, OS\Debian::BUSTER)->getRequiredSystemDependencies('4.0.4', new Values()));
+        self::assertNotContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(704, OS\Debian::class, OS\Debian::STRETCH)->getRequiredSystemDependencies('4.8.13', new Values()));
+        self::assertContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(704, OS\Debian::class, OS\Debian::BUSTER)->getRequiredSystemDependencies('4.8.13', new Values()));
     }
 
     /**
@@ -235,5 +278,21 @@ final class SwooleTest extends TestCase
         $with = self::createExtension(804, OS\Debian::class, OS\Debian::TRIXIE, false, 64, ['Core', 'sockets']);
         self::assertContains('--enable-sockets', $with->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertSame([], $with->getConfigureArguments(self::createBuildContext('2.0.10')));
+    }
+
+    /**
+     * @return void
+     */
+    public function testUnknownOS()
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(804);
+        $php->shouldReceive('getBits')->andReturn(64);
+        $php->shouldReceive('getInstalledExtensions')->andReturn([]);
+        $os = M::mock(OS\Posix::class);
+        $os->shouldReceive('getDisplayName')->andReturn('Test OS');
+        $this->expectException(Exception\UnsupportedOS::class);
+        $this->expectExceptionMessage('How to install swoole is not known for Test OS');
+        (new swoole($php, $os))->getConfigureArguments(self::createBuildContext('6.2.0'));
     }
 }

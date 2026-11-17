@@ -147,6 +147,26 @@ final class FactoryTest extends TestCase
     }
 
     /**
+     * @return void
+     */
+    public function testRHELLikeWithoutDNF()
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('isFile')->withArgs(['/etc/os-release'])->andReturn(true);
+        $fs->shouldReceive('readFile')->withArgs(['/etc/os-release'])->andReturn("NAME=\"AlmaLinux\"\nID=\"almalinux\"\nVERSION_ID=\"9.8\"\n");
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('dnf', ['--version'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([127, '']);
+        $app = self::createApp();
+        $app->singleton(Filesystem::class, static function () use ($fs) { return $fs; });
+        try {
+            (new OS\Factory($app, new \IPE\Logger()))->detectOS();
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedOS $x) {
+            self::assertStringContainsString('Unsupported dnf version', $x->getMessage());
+        }
+    }
+
+    /**
      * @return array<array{class-string<\IPE\OS>, string, int|null}>
      */
     public static function provideNumericVersions()
@@ -163,6 +183,13 @@ final class FactoryTest extends TestCase
             [OS\Ubuntu::class, '24', null],
             [OS\Windows::class, '10.0.26200', 100026200],
             [OS\Windows::class, '10.0', null],
+            [OS\Posix\RHELLike\EnterpriseLinux::class, '9', 9],
+            [OS\Posix\RHELLike\EnterpriseLinux::class, '9.8', null],
+            [OS\RockyLinux::class, '10', 10],
+            [OS\Fedora::class, '44', 44],
+            [OS\Fedora::class, 'rawhide', null],
+            [OS\AmazonLinux::class, '2023', 2023],
+            [OS\AmazonLinux::class, '0', null],
         ];
     }
 
@@ -325,6 +352,30 @@ final class FactoryTest extends TestCase
                 "ID=ubuntu\nVERSION=\"24.04.3 LTS (Noble Numbat)\"\nVERSION_CODENAME=Noble",
                 'Invalid $codename',
             ],
+            [
+                "ID=el\nVERSION_ID=9",
+                'defines an unsupported distribution (el)',
+            ],
+            [
+                'ID=almalinux',
+                'Invalid $version',
+            ],
+            [
+                "ID=rocky\nVERSION_ID=9.8.1",
+                'Invalid $version',
+            ],
+            [
+                "NAME=\"CentOS Linux\"\nID=centos\nVERSION_ID=7",
+                'CentOS Linux 7 is not supported',
+            ],
+            [
+                "ID=fedora\nVERSION_ID=rawhide",
+                'Invalid $version',
+            ],
+            [
+                "NAME=\"Amazon Linux\"\nID=amzn\nVERSION_ID=2",
+                'Amazon Linux 2 is not supported',
+            ],
         ];
     }
 
@@ -354,7 +405,7 @@ final class FactoryTest extends TestCase
     }
 
     /**
-     * @return list<array{list<string>, array<string, mixed>}> the lines of /etc/os-release and the expected results of the OS getters
+     * @return list<array{0: list<string>, 1: array<string, mixed>, 2?: class-string<\IPE\OS\Posix\RHELLike>, 3?: string}> the lines of /etc/os-release, the expected results of the OS getters, and (for dnf) the expected class and the output of dnf --version
      */
     public static function provideSupportedOSReleaseFileCases()
     {
@@ -467,6 +518,213 @@ final class FactoryTest extends TestCase
                     'getNumericVersion' => 1404,
                 ],
             ],
+            [
+                [
+                    'NAME="AlmaLinux"',
+                    'VERSION="8.10 (Cerulean Leopard)"',
+                    'ID="almalinux"',
+                    'ID_LIKE="rhel centos fedora"',
+                    'VERSION_ID="8.10"',
+                    'PLATFORM_ID="platform:el8"',
+                    'PRETTY_NAME="AlmaLinux 8.10 (Cerulean Leopard)"',
+                    'ANSI_COLOR="0;34"',
+                    'LOGO="fedora-logo-icon"',
+                    'CPE_NAME="cpe:/o:almalinux:almalinux:8::baseos"',
+                    'HOME_URL="https://almalinux.org/"',
+                    'DOCUMENTATION_URL="https://wiki.almalinux.org/"',
+                    'BUG_REPORT_URL="https://bugs.almalinux.org/"',
+                    '',
+                    'ALMALINUX_MANTISBT_PROJECT="AlmaLinux-8"',
+                    'ALMALINUX_MANTISBT_PROJECT_VERSION="8.10"',
+                    'REDHAT_SUPPORT_PRODUCT="AlmaLinux"',
+                    'REDHAT_SUPPORT_PRODUCT_VERSION="8.10"',
+                    'SUPPORT_END=2029-06-01',
+                ],
+                [
+                    'getDisplayName' => 'AlmaLinux 8.10',
+                    'getVersion' => '8.10',
+                    'getNumericVersion' => 8,
+                ],
+                OS\AlmaLinux::class,
+                "4.7.0\n",
+            ],
+            [
+                [
+                    'NAME="Rocky Linux"',
+                    'VERSION="9.8 (Blue Onyx)"',
+                    'RELEASE_TYPE="stable"',
+                    'ID="rocky"',
+                    'ID_LIKE="rhel centos fedora"',
+                    'VERSION_ID="9.8"',
+                    'PLATFORM_ID="platform:el9"',
+                    'PRETTY_NAME="Rocky Linux 9.8 (Blue Onyx)"',
+                    'ANSI_COLOR="0;32"',
+                    'LOGO="fedora-logo-icon"',
+                    'CPE_NAME="cpe:/o:rocky:rocky:9::baseos"',
+                    'HOME_URL="https://rockylinux.org/"',
+                    'VENDOR_NAME="RESF"',
+                    'VENDOR_URL="https://resf.org/"',
+                    'BUG_REPORT_URL="https://bugs.rockylinux.org/"',
+                    'SUPPORT_END="2032-05-31"',
+                    'ROCKY_SUPPORT_PRODUCT="Rocky-Linux-9"',
+                    'ROCKY_SUPPORT_PRODUCT_VERSION="9.8"',
+                    'REDHAT_SUPPORT_PRODUCT="Rocky Linux"',
+                    'REDHAT_SUPPORT_PRODUCT_VERSION="9.8"',
+                ],
+                [
+                    'getDisplayName' => 'Rocky Linux 9.8',
+                    'getVersion' => '9.8',
+                    'getNumericVersion' => 9,
+                ],
+                OS\RockyLinux::class,
+                "4.14.0\n",
+            ],
+            [
+                [
+                    'NAME="Red Hat Enterprise Linux"',
+                    'VERSION="9.9 (Plow)"',
+                    'ID="rhel"',
+                    'ID_LIKE="fedora"',
+                    'VERSION_ID="9.9"',
+                    'PLATFORM_ID="platform:el9"',
+                    'PRETTY_NAME="Red Hat Enterprise Linux 9.9 (Plow)"',
+                    'ANSI_COLOR="0;31"',
+                    'LOGO="fedora-logo-icon"',
+                    'CPE_NAME="cpe:/o:redhat:enterprise_linux:9::baseos"',
+                    'HOME_URL="https://www.redhat.com/"',
+                    'DOCUMENTATION_URL="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9"',
+                    'BUG_REPORT_URL="https://issues.redhat.com/"',
+                    '',
+                    'REDHAT_BUGZILLA_PRODUCT="Red Hat Enterprise Linux 9"',
+                    'REDHAT_BUGZILLA_PRODUCT_VERSION=9.9',
+                    'REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux"',
+                    'REDHAT_SUPPORT_PRODUCT_VERSION="9.9"',
+                ],
+                [
+                    'getDisplayName' => 'Red Hat Enterprise Linux 9.9',
+                    'getVersion' => '9.9',
+                    'getNumericVersion' => 9,
+                ],
+                OS\RHEL::class,
+                "4.14.0\n",
+            ],
+            [
+                [
+                    'NAME="Oracle Linux Server"',
+                    'VERSION="9.8"',
+                    'ID="ol"',
+                    'ID_LIKE="fedora"',
+                    'VARIANT="Server"',
+                    'VARIANT_ID="server"',
+                    'VERSION_ID="9.8"',
+                    'PLATFORM_ID="platform:el9"',
+                    'PRETTY_NAME="Oracle Linux Server 9.8"',
+                    'ANSI_COLOR="0;31"',
+                    'CPE_NAME="cpe:/o:oracle:linux:9:8:server"',
+                    'HOME_URL="https://linux.oracle.com/"',
+                    'BUG_REPORT_URL="https://github.com/oracle/oracle-linux"',
+                    '',
+                    'ORACLE_BUGZILLA_PRODUCT="Oracle Linux 9"',
+                    'ORACLE_BUGZILLA_PRODUCT_VERSION=9.8',
+                    'ORACLE_SUPPORT_PRODUCT="Oracle Linux"',
+                    'ORACLE_SUPPORT_PRODUCT_VERSION=9.8',
+                ],
+                [
+                    'getDisplayName' => 'Oracle Linux Server 9.8',
+                    'getVersion' => '9.8',
+                    'getNumericVersion' => 9,
+                ],
+                OS\OracleLinux::class,
+                "4.14.0\n",
+            ],
+            [
+                [
+                    'NAME="CentOS Stream"',
+                    'VERSION="10 (Coughlan)"',
+                    'RELEASE_TYPE=stable',
+                    'ID="centos"',
+                    'ID_LIKE="rhel fedora"',
+                    'VERSION_ID="10"',
+                    'PLATFORM_ID="platform:el10"',
+                    'PRETTY_NAME="CentOS Stream 10 (Coughlan)"',
+                    'ANSI_COLOR="0;31"',
+                    'LOGO="fedora-logo-icon"',
+                    'CPE_NAME="cpe:/o:centos:centos:10"',
+                    'HOME_URL="https://centos.org/"',
+                    'VENDOR_NAME="CentOS"',
+                    'VENDOR_URL="https://centos.org/"',
+                    'BUG_REPORT_URL="https://issues.redhat.com/"',
+                    'REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux 10"',
+                    'REDHAT_SUPPORT_PRODUCT_VERSION="CentOS Stream"',
+                ],
+                [
+                    'getDisplayName' => 'CentOS Stream 10',
+                    'getVersion' => '10',
+                    'getNumericVersion' => 10,
+                ],
+                OS\CentOS::class,
+                "4.20.0\n",
+            ],
+            [
+                [
+                    'NAME="Fedora Linux"',
+                    'VERSION="44 (Container Image)"',
+                    'RELEASE_TYPE=stable',
+                    'ID=fedora',
+                    'VERSION_ID=44',
+                    'VERSION_CODENAME=""',
+                    'PRETTY_NAME="Fedora Linux 44 (Container Image)"',
+                    'ANSI_COLOR="0;38;2;60;110;180"',
+                    'LOGO=fedora-logo-icon',
+                    'CPE_NAME="cpe:/o:fedoraproject:fedora:44"',
+                    'DEFAULT_HOSTNAME="fedora"',
+                    'HOME_URL="https://fedoraproject.org/"',
+                    'DOCUMENTATION_URL="https://docs.fedoraproject.org/en-US/fedora/f44/"',
+                    'SUPPORT_URL="https://ask.fedoraproject.org/"',
+                    'BUG_REPORT_URL="https://bugzilla.redhat.com/"',
+                    'REDHAT_BUGZILLA_PRODUCT="Fedora"',
+                    'REDHAT_BUGZILLA_PRODUCT_VERSION=44',
+                    'REDHAT_SUPPORT_PRODUCT="Fedora"',
+                    'REDHAT_SUPPORT_PRODUCT_VERSION=44',
+                    'SUPPORT_END=2027-05-19',
+                    'VARIANT="Container Image"',
+                    'VARIANT_ID=container',
+                ],
+                [
+                    'getDisplayName' => 'Fedora Linux 44',
+                    'getVersion' => '44',
+                    'getNumericVersion' => 44,
+                ],
+                OS\Fedora::class,
+                "dnf5 version 5.4.6.0\ndnf5 plugin API version 2.0\n",
+            ],
+            [
+                [
+                    'NAME="Amazon Linux"',
+                    'VERSION="2023"',
+                    'ID="amzn"',
+                    'ID_LIKE="fedora"',
+                    'VERSION_ID="2023"',
+                    'PLATFORM_ID="platform:al2023"',
+                    'PRETTY_NAME="Amazon Linux 2023.12.20261102"',
+                    'ANSI_COLOR="0;33"',
+                    'CPE_NAME="cpe:2.3:o:amazon:amazon_linux:2023"',
+                    'HOME_URL="https://aws.amazon.com/linux/amazon-linux-2023/"',
+                    'DOCUMENTATION_URL="https://docs.aws.amazon.com/linux/"',
+                    'SUPPORT_URL="https://aws.amazon.com/premiumsupport/"',
+                    'BUG_REPORT_URL="https://github.com/amazonlinux/amazon-linux-2023"',
+                    'VENDOR_NAME="AWS"',
+                    'VENDOR_URL="https://aws.amazon.com/"',
+                    'SUPPORT_END="2029-06-30"',
+                ],
+                [
+                    'getDisplayName' => 'Amazon Linux 2023',
+                    'getVersion' => '2023',
+                    'getNumericVersion' => 2023,
+                ],
+                OS\AmazonLinux::class,
+                "4.14.0\n",
+            ],
         ];
     }
 
@@ -475,20 +733,28 @@ final class FactoryTest extends TestCase
      *
      * @param array<string> $osReleaseFileContents
      * @param array<string, mixed> $gettersAndExpectedValues
+     * @param class-string<\IPE\OS\Posix\RHELLike>|'' $expectedClass
+     * @param string $dnfVersion
      *
      * @return void
      */
-    public function testSupportedOSReleaseFile(array $osReleaseFileContents, array $gettersAndExpectedValues)
+    public function testSupportedOSReleaseFile(array $osReleaseFileContents, array $gettersAndExpectedValues, $expectedClass = '', $dnfVersion = '')
     {
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
         $fs->shouldReceive('isFile')->withArgs(['/etc/os-release'])->andReturn(true);
         $fs->shouldReceive('readFile')->withArgs(['/etc/os-release'])->andReturn(implode("\n", $osReleaseFileContents) . "\n");
+        if ($dnfVersion !== '') {
+            $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('dnf', ['--version'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, $dnfVersion]);
+        }
         $app = self::createApp();
         $app->singleton(Filesystem::class, static function () use ($fs) { return $fs; });
         $factory = new OS\Factory($app, new \IPE\Logger());
         $os = $factory->detectOS();
         self::assertInstanceOf(OS\Posix::class, $os);
+        if ($expectedClass !== '') {
+            self::assertSame($expectedClass, get_class($os));
+        }
         self::assertSame($fs, $os->getFilesystem());
         foreach ($gettersAndExpectedValues as $getter => $expectedValue) {
             $actualValue = $os->{$getter}();
@@ -506,6 +772,11 @@ final class FactoryTest extends TestCase
         if ($os instanceof OS\Ubuntu) {
             self::assertInstanceOf(SystemPackager\APT::class, $packager);
             self::assertNotInstanceOf(SystemPackager\APT\OnDebian::class, $packager);
+        }
+        if ($os instanceof OS\Posix\RHELLike) {
+            self::assertInstanceOf($os instanceof OS\Fedora ? SystemPackager\DNF\v5::class : SystemPackager\DNF\v4::class, $packager);
+            // The packager is created only once
+            self::assertSame($packager, $os->getSystemPackager());
         }
     }
 }

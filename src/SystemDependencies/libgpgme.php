@@ -38,10 +38,16 @@ final class libgpgme extends SystemDependency
                 ['gpgme-dev']
             );
         }
-        if ($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) {
+        if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libgpgme[0-9]*$'],
                 ['^libgpgme[0-9]*-dev$']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                ['gpgme'],
+                ['gpgme-devel']
             );
         }
 
