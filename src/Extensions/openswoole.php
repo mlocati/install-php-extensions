@@ -167,7 +167,7 @@ final class openswoole extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
         return [swoole::HANDLE];
     }

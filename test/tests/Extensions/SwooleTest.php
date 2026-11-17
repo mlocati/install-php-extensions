@@ -209,6 +209,27 @@ final class SwooleTest extends TestCase
     /**
      * @return void
      */
+    public function testSSH2()
+    {
+        $extension = self::createExtension(804, OS\Debian::class, OS\Debian::TRIXIE);
+        $with = new Values();
+        $without = new Values([], [swoole::OPTION_WITHOUT_SSH2 => true]);
+        self::assertNotContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.1.7', $with)));
+        self::assertNotContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.1.7', $with));
+        self::assertSame(['openswoole'], $extension->getConflictingExtensions('6.1.7', $with));
+        self::assertContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.2.0', $with)));
+        self::assertContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.2.0', $with));
+        self::assertSame(['openswoole', 'ssh2'], $extension->getConflictingExtensions('6.2.0', $with));
+        self::assertNotContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.2.0', $without)));
+        self::assertNotContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.2.0', $without));
+        self::assertSame(['openswoole'], $extension->getConflictingExtensions('6.2.0', $without));
+        // System packages may be built without the SSH2 client (like the ones of Remi)
+        self::assertSame(['openswoole'], $extension->getConflictingExtensions('6.2.0'));
+    }
+
+    /**
+     * @return void
+     */
     public function testDatabasesAndCompressionDependOnTheEnvironment()
     {
         $old = self::createExtension(801, OS\Debian::class, OS\Debian::BUSTER);

@@ -34,6 +34,12 @@ final class swoole extends Extension implements
     const OPTION_WITHOUT_IOURING = 'without-iouring';
 
     /**
+     * @public
+     * @var string
+     */
+    const OPTION_WITHOUT_SSH2 = 'without-ssh2';
+
+    /**
      * {@inheritdoc}
      *
      * @see \IPE\Extension::getHandle()
@@ -100,9 +106,14 @@ final class swoole extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
-        return [openswoole::HANDLE];
+        $result = [openswoole::HANDLE];
+        if ($options !== null && $this->usesSSH2($version, $options)) {
+            $result[] = ssh2::HANDLE;
+        }
+
+        return $result;
     }
 
     /**
@@ -160,6 +171,7 @@ final class swoole extends Extension implements
     {
         return [
             new Option\CustomOption(self::OPTION_WITHOUT_IOURING, "Don't enable the io_uring support", false),
+            new Option\CustomOption(self::OPTION_WITHOUT_SSH2, "Don't enable the SSH2 client, which conflicts with the ssh2 extension", false),
         ];
     }
 
@@ -229,7 +241,7 @@ final class swoole extends Extension implements
         if ($this->usesFirebird($version)) {
             $result[] = SystemDependencies\libfbclient::HANDLE;
         }
-        if (self::isVersionAtLeast($version, '6.2.0')) {
+        if ($this->usesSSH2($version, $options)) {
             $result[] = SystemDependencies\libssh2::HANDLE;
         }
 
@@ -298,7 +310,7 @@ final class swoole extends Extension implements
         if ($this->usesFirebird($version)) {
             $result[] = '--with-swoole-firebird';
         }
-        if (self::isVersionAtLeast($version, '6.2.0')) {
+        if ($this->usesSSH2($version, $context->getOptionValues())) {
             $result[] = '--with-swoole-ssh2';
         }
 
@@ -347,6 +359,16 @@ final class swoole extends Extension implements
         }
 
         return true;
+    }
+
+    /**
+     * @param string $version
+     *
+     * @return bool
+     */
+    private function usesSSH2($version, Option\Values $options)
+    {
+        return self::isVersionAtLeast($version, '6.2.0') && !$options->hasCustomValue(self::OPTION_WITHOUT_SSH2);
     }
 
     /**

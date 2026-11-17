@@ -83,7 +83,7 @@ final class parallel extends Extension implements
      *
      * @see \IPE\Extension\DeclaresConflicts::getConflictingExtensions()
      */
-    public function getConflictingExtensions($version)
+    public function getConflictingExtensions($version, $options = null)
     {
         // PHP crashes at shutdown in raphf if a thread has been started
         return [http::HANDLE];

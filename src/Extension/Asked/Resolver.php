@@ -287,7 +287,9 @@ abstract class Resolver
     {
         $known = $resolved->getKnownExtension();
         if ($known instanceof Extension\DeclaresConflicts) {
-            return array_fill_keys($known->getConflictingExtensions($resolved->getVersion()), '*');
+            $builtByUs = !in_array($resolved->getOrigin(), [Resolved::ORIGIN_DISABLED, Resolved::ORIGIN_SYSTEM_PACKAGE], true);
+
+            return array_fill_keys($known->getConflictingExtensions($resolved->getVersion(), $builtByUs ? $resolved->getOptionValues() : null), '*');
         }
         $manifest = $resolved->getManifest();
 
