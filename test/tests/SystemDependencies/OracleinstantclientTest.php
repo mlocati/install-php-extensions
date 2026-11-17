@@ -14,6 +14,7 @@ use IPE\Option\ConfigureOption;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\SystemDependencies\dtrace;
 use IPE\SystemDependencies\oracleinstantclient;
 use IPE\SystemDependencies\unzip;
 use IPE\SystemPackager\Package;
@@ -318,6 +319,43 @@ final class OracleinstantclientTest extends TestCase
         self::assertSame([], (new oci8($php, self::createOS(OS\AlmaLinux::class, 9)))->getSystemPackageNames($phpPackage));
         self::assertSame([], (new pdo_oci($php, self::createOS(OS\Fedora::class, 44)))->getSystemPackageNames($phpPackage));
         self::assertNull((new oci8($php, self::createOS(OS\Debian::class)))->getSystemPackageNames($phpPackage));
+    }
+
+    /**
+     * @return void
+     */
+    public function testDTraceOnRHELLike()
+    {
+        $php = self::createPHP(64, 802);
+        $options = new Values();
+        $oci8 = new oci8($php, self::createOS(OS\AlmaLinux::class, 9));
+        self::assertSame([oracleinstantclient::HANDLE, dtrace::HANDLE], $oci8->getRequiredSystemDependencies('', $options));
+        self::assertSame(['--with-oci8=instantclient,' . self::LIBRARY_PATH, 'PHP_DTRACE=yes'], $oci8->getConfigureArguments(self::createBuildContext('', $options)));
+        $oci8 = new oci8($php, self::createOS(OS\Debian::class));
+        self::assertSame([oracleinstantclient::HANDLE], $oci8->getRequiredSystemDependencies('', $options));
+        self::assertSame(['--with-oci8=instantclient,' . self::LIBRARY_PATH], $oci8->getConfigureArguments(self::createBuildContext('', $options)));
+        self::assertSame([oracleinstantclient::HANDLE], (new pdo_oci($php, self::createOS(OS\AlmaLinux::class, 9)))->getRequiredSystemDependencies('', $options));
+    }
+
+    /**
+     * @return void
+     */
+    public function testDTracePackages()
+    {
+        self::assertSame(['systemtap-sdt-dev'], self::getDTracePackages(self::createOS(OS\Debian::class, OS\Debian::TRIXIE)));
+        self::assertSame(['systemtap-sdt-devel'], self::getDTracePackages(self::createOS(OS\AlmaLinux::class, 8)));
+        self::assertSame(['systemtap-sdt-devel', 'systemtap-sdt-dtrace'], self::getDTracePackages(self::createOS(OS\AlmaLinux::class, 9)));
+        self::assertSame(['systemtap-sdt-devel', 'systemtap-sdt-dtrace'], self::getDTracePackages(self::createOS(OS\Fedora::class, 44)));
+        $this->expectException(Exception\UnsupportedOS::class);
+        self::getDTracePackages(self::createOS(OS\Alpine::class, 322));
+    }
+
+    /**
+     * @return string[]
+     */
+    private static function getDTracePackages(OS\Posix $os)
+    {
+        return (new dtrace(self::createPHP(), $os, new Values()))->getSystemPackages(self::createState())->getVolatile();
     }
 
     /**
