@@ -114,9 +114,10 @@ final class relay extends Extension\PrecompiledExtension implements
             if ($this->os->getNumericVersion() >= 317) {
                 $result[] = SystemDependencies\libopenssl::HANDLE;
             }
-        }
-        if ($this->os instanceof OS\Posix\RHELLike) {
+        } elseif ($this->os instanceof OS\Posix\RHELLike) {
             $result[] = SystemDependencies\libopenssl::HANDLE;
+        } elseif (!$this->os instanceof OS\Posix\DebianLike) {
+            throw $this->createUnknownOSException();
         }
         // The ZTS builds link to these libraries
         if ($this->php->isThreadSafe()) {

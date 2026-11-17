@@ -354,6 +354,8 @@ final class swoole extends Extension implements
     /**
      * @param string $version
      *
+     * @throws \IPE\Exception\UnsupportedOS
+     *
      * @return bool
      */
     private function usesZstd($version)
@@ -362,6 +364,9 @@ final class swoole extends Extension implements
             return false;
         }
 
+        if ($this->os instanceof OS\Alpine) {
+            return true;
+        }
         // swoole requires libzstd 1.4.0+, but Debian Buster provides 1.3.8 and Ubuntu 18.04 provides 1.3.3
         if ($this->os instanceof OS\Debian) {
             return $this->os->getNumericVersion() >= OS\Debian::BULLSEYE;
@@ -369,8 +374,11 @@ final class swoole extends Extension implements
         if ($this->os instanceof OS\Ubuntu) {
             return $this->os->getNumericVersion() >= OS\Ubuntu::FOCAL;
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return true;
+        }
 
-        return true;
+        throw $this->createUnknownOSException();
     }
 
     /**
@@ -385,6 +393,8 @@ final class swoole extends Extension implements
 
     /**
      * @param string $version
+     *
+     * @throws \IPE\Exception\UnsupportedOS
      *
      * @return bool
      */
@@ -404,12 +414,17 @@ final class swoole extends Extension implements
         if ($this->os instanceof OS\Ubuntu) {
             return $this->os->getNumericVersion() >= OS\Ubuntu::RESOLUTE;
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return false;
+        }
 
-        return false;
+        throw $this->createUnknownOSException();
     }
 
     /**
      * @param string $version
+     *
+     * @throws \IPE\Exception\UnsupportedOS
      *
      * @return bool
      */
@@ -418,12 +433,21 @@ final class swoole extends Extension implements
         if (!self::isVersionAtLeast($version, '6.2.0')) {
             return false;
         }
+        if ($this->os instanceof OS\Alpine) {
+            // swoole requires Firebird 3+, but on Alpine with PHP < 8.4 we use Firebird 2.5 (see libfbclient)
+            return $this->php->getMajorMinorVersion() >= 804;
+        }
+        if ($this->os instanceof OS\Posix\DebianLike) {
+            return true;
+        }
         // Amazon Linux doesn't provide Firebird
         if ($this->os instanceof OS\AmazonLinux) {
             return false;
         }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return true;
+        }
 
-        // swoole requires Firebird 3+, but on Alpine with PHP < 8.4 we use Firebird 2.5 (see libfbclient)
-        return !$this->os instanceof OS\Alpine || $this->php->getMajorMinorVersion() >= 804;
+        throw $this->createUnknownOSException();
     }
 }

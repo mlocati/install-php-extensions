@@ -84,7 +84,7 @@ final class dba extends Extension implements
             $result[] = SystemDependencies\liblmdb::HANDLE;
         }
         // Alpine doesn't provide Tokyo Cabinet
-        if (!$this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
             $result[] = SystemDependencies\libtokyocabinet::HANDLE;
         }
         // QDBM and GDBM can't be used together
@@ -125,6 +125,7 @@ final class dba extends Extension implements
     /**
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\UnsupportedOS
      *
      * @return bool
      */
@@ -132,6 +133,9 @@ final class dba extends Extension implements
     {
         // Before PHP 7.4, configure doesn't look for the headers in /usr/include/qdbm, where the operating systems put them
         if ($this->php->getMajorMinorVersion() < 704) {
+            return false;
+        }
+        if ($this->os instanceof OS\Alpine) {
             return false;
         }
         if ($this->os instanceof OS\Posix\DebianLike) {
@@ -142,7 +146,7 @@ final class dba extends Extension implements
             return $this->os->getSystemPackager()->findAvailablePackage('qdbm') !== null;
         }
 
-        return false;
+        throw $this->createUnknownOSException();
     }
 
     /**

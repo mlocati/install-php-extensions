@@ -186,7 +186,11 @@ final class cassandra extends Extension implements
         if ($this->os instanceof OS\Fedora) {
             return true;
         }
+        if ($this->os instanceof OS\AmazonLinux) {
+            return false;
+        }
 
+        // The callers can't throw UnsupportedOS: the system dependencies will
         return false;
     }
 

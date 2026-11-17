@@ -2,6 +2,7 @@
 
 namespace IPE\Test\Extensions;
 
+use IPE\Exception;
 use IPE\Extension\UnsupportedEnvironment;
 use IPE\Extensions\swoole;
 use IPE\Option\Values;
@@ -195,6 +196,7 @@ final class SwooleTest extends TestCase
             [OS\Alpine::class, 320, '6.0.0', true],
             [OS\Alpine::class, 320, '6.2.0', false],
             [OS\Alpine::class, 321, '6.2.0', true],
+            [OS\AlmaLinux::class, 10, '6.2.0', false],
         ];
     }
 
@@ -257,6 +259,9 @@ final class SwooleTest extends TestCase
         self::assertNotContains('--with-swoole-firebird', self::createExtension(803, OS\Alpine::class, 322)->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertContains('--with-swoole-firebird', self::createExtension(804, OS\Alpine::class, 322)->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertContains(SystemDependencies\libfbclient::HANDLE, self::createExtension(804, OS\Alpine::class, 322)->getRequiredSystemDependencies('6.2.0', new Values()));
+        self::assertContains('--with-swoole-firebird', self::createExtension(804, OS\AlmaLinux::class, 10)->getConfigureArguments(self::createBuildContext('6.2.0')));
+        self::assertNotContains('--with-swoole-firebird', self::createExtension(804, OS\AmazonLinux::class, 2023)->getConfigureArguments(self::createBuildContext('6.2.0')));
+        self::assertContains('--enable-zstd', self::createExtension(804, OS\AlmaLinux::class, 8)->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertNotContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(700, OS\Debian::class, OS\Debian::BUSTER)->getRequiredSystemDependencies('4.0.4', new Values()));
         self::assertNotContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(704, OS\Debian::class, OS\Debian::STRETCH)->getRequiredSystemDependencies('4.8.13', new Values()));
         self::assertContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(704, OS\Debian::class, OS\Debian::BUSTER)->getRequiredSystemDependencies('4.8.13', new Values()));
@@ -273,5 +278,21 @@ final class SwooleTest extends TestCase
         $with = self::createExtension(804, OS\Debian::class, OS\Debian::TRIXIE, false, 64, ['Core', 'sockets']);
         self::assertContains('--enable-sockets', $with->getConfigureArguments(self::createBuildContext('6.2.0')));
         self::assertSame([], $with->getConfigureArguments(self::createBuildContext('2.0.10')));
+    }
+
+    /**
+     * @return void
+     */
+    public function testUnknownOS()
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(804);
+        $php->shouldReceive('getBits')->andReturn(64);
+        $php->shouldReceive('getInstalledExtensions')->andReturn([]);
+        $os = M::mock(OS\Posix::class);
+        $os->shouldReceive('getDisplayName')->andReturn('Test OS');
+        $this->expectException(Exception\UnsupportedOS::class);
+        $this->expectExceptionMessage('How to install swoole is not known for Test OS');
+        (new swoole($php, $os))->getConfigureArguments(self::createBuildContext('6.2.0'));
     }
 }
