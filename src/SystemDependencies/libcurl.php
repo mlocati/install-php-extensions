@@ -105,11 +105,15 @@ class libcurl extends SystemDependency
         // Before PHP 7.4 some configure scripts (curl, solr, http) don't look in the multiarch directories
         $fs = $this->os->getFilesystem();
         if (($this->os instanceof OS\Debian || $this->os instanceof OS\Ubuntu) && $this->php->getMajorMinorVersion() < 704 && !$fs->exists(self::HEADERS_DIRECTORY)) {
-            list(, $multiarch) = $fs->run(Command::create('gcc', ['-print-multiarch'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
-            $fs->createSymlink('/usr/include/' . trim($multiarch) . '/curl', self::HEADERS_DIRECTORY);
-            $state->registerShutdownCallback(static function () use ($fs) {
-                $fs->deleteFile(self::HEADERS_DIRECTORY);
-            });
+            // gcc is missing when we install binaries (for example, ddtrace)
+            list($rc, $output) = $fs->run(Command::create('gcc', ['-print-multiarch'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+            $multiarch = trim($output);
+            if ($rc === 0 && $multiarch !== '') {
+                $fs->createSymlink("/usr/include/{$multiarch}/curl", self::HEADERS_DIRECTORY);
+                $state->registerShutdownCallback(static function () use ($fs) {
+                    $fs->deleteFile(self::HEADERS_DIRECTORY);
+                });
+            }
         }
     }
 }
