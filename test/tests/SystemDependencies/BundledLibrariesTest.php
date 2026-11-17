@@ -168,7 +168,7 @@ final class BundledLibrariesTest extends TestCase
         self::assertPackages(['enchant'], ['enchant-dev'], self::createLibenchant(OS\Alpine::class, 311, 704)->getSystemPackages($state));
         self::assertPackages(['glib', 'aspell-libs', 'libhunspell'], ['glib-dev', 'aspell-dev', 'hunspell-dev'], self::createLibenchant(OS\Alpine::class, 312, 704)->getSystemPackages($state));
         self::assertPackages(['libenchant1c2a'], ['libenchant-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::BUSTER, 704)->getSystemPackages($state));
-        self::assertPackages(['aspell-en', 'libhunspell-1.7-0'], ['libglib2.0-dev', 'libaspell-dev', 'libhunspell-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::BULLSEYE, 704)->getSystemPackages($state));
+        self::assertPackages(['^libglib2\.0-0(t64)?$', 'aspell-en', 'libhunspell-1.7-0'], ['libglib2.0-dev', 'libaspell-dev', 'libhunspell-dev'], self::createLibenchant(OS\Debian::class, OS\Debian::BULLSEYE, 704)->getSystemPackages($state));
         self::assertTrue(self::createLibenchant(OS\Debian::class, OS\Debian::BULLSEYE, 704, ['/usr/local/lib/libenchant.so'])->getSystemPackages($state)->isEmpty());
     }
 

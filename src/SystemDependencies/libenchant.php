@@ -70,7 +70,7 @@ final class libenchant extends CompiledLibrary
             }
 
             return new Packages(
-                ['aspell-en', 'libhunspell-1.7-0'],
+                ['^libglib2\.0-0(t64)?$', 'aspell-en', 'libhunspell-1.7-0'],
                 ['libglib2.0-dev', 'libaspell-dev', 'libhunspell-dev']
             );
         }
