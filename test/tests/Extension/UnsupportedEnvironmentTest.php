@@ -110,6 +110,10 @@ final class UnsupportedEnvironmentTest extends TestCase
             ['alpine-nts-php7.2'],
             ['alpine-ts'],
             ['alpine3.9-zts-nts'],
+            ['alpine-32bit-zts'],
+            ['alpine-16bit'],
+            ['alpine-32'],
+            ['32bit'],
             ['alpine3.16..3.10'],
             ['alpine3.10..3.10'],
             ['alpine..3.10'],
@@ -137,6 +141,47 @@ final class UnsupportedEnvironmentTest extends TestCase
         self::assertFalse($subject->isValid($environment));
         $this->expectException(Exception\InvalidArgument::class);
         $subject->matches($environment, M::mock(PHPInfo::class), M::mock(OS\Alpine::class));
+    }
+
+    /**
+     * @return array<array{string, bool, bool}> the environment, and if it matches thread-safe PHP 7.2 on Alpine 3.9 when PHP is 32-bit and when it's 64-bit
+     */
+    public static function provideBitsCases()
+    {
+        return [
+            ['alpine', true, true],
+            ['alpine-32bit', true, false],
+            ['alpine-64bit', false, true],
+            ['posix-php7.2-32bit', true, false],
+            ['posix-php7.3-32bit', false, false],
+            ['alpine3.9-zts-32bit', true, false],
+            ['alpine3.9-nts-32bit', false, false],
+            ['debian-32bit', false, false],
+        ];
+    }
+
+    /**
+     * @dataProvider provideBitsCases
+     *
+     * @param string $environment
+     * @param bool $when32Bits
+     * @param bool $when64Bits
+     *
+     * @return void
+     */
+    public function testBits($environment, $when32Bits, $when64Bits)
+    {
+        $os = M::mock(OS\Alpine::class);
+        $os->shouldReceive('getNumericVersion')->andReturn(309);
+        $subject = new UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger()));
+        self::assertTrue($subject->isValid($environment));
+        foreach ([[32, $when32Bits], [64, $when64Bits]] as $case) {
+            $php = M::mock(PHPInfo::class);
+            $php->shouldReceive('getMajorMinorVersion')->andReturn(702);
+            $php->shouldReceive('isThreadSafe')->andReturn(true);
+            $php->shouldReceive('getBits')->andReturn($case[0]);
+            self::assertSame($case[1], $subject->matches($environment, $php, $os));
+        }
     }
 
     /**

@@ -7,9 +7,9 @@ use IPE\OS;
 use IPE\PHPInfo;
 
 /**
- * An environment is the identifier of an operating system or of a family of operating systems, optionally followed by its version or by an inclusive range of versions (only for families whose versions are comparable), optionally followed by the PHP version, optionally followed by "-zts" or "-nts" (to match only thread-safe or non-thread-safe PHP).
+ * An environment is the identifier of an operating system or of a family of operating systems, optionally followed by its version or by an inclusive range of versions (only for families whose versions are comparable), optionally followed by the PHP version, optionally followed by "-zts" or "-nts" (to match only thread-safe or non-thread-safe PHP), optionally followed by "-32bit" or "-64bit" (to match only 32-bit or 64-bit PHP).
  *
- * @example 'alpine', 'alpine3.14', 'debian', 'debian12', 'alpine-php7', 'alpine-php7.2', 'alpine3.9-php7.1', 'ubuntu24.04-php8.3', 'debian12-zts', 'alpine3.17-php8.2-nts', 'alpine3.10..3.16', 'debian10..11-zts', 'el9' (all the Enterprise Linux distributions), 'rhellike-php7' (all the systems that use dnf)
+ * @example 'alpine', 'alpine3.14', 'debian', 'debian12', 'alpine-php7', 'alpine-php7.2', 'alpine3.9-php7.1', 'ubuntu24.04-php8.3', 'debian12-zts', 'alpine3.17-php8.2-nts', 'alpine3.10..3.16', 'debian10..11-zts', 'el9' (all the Enterprise Linux distributions), 'rhellike-php7' (all the systems that use dnf), 'posix-php8.3-32bit', 'debian-zts-64bit'
  *
  * @see \IPE\OS\Factory::getFamilyClasses()
  */
@@ -48,23 +48,24 @@ class UnsupportedEnvironment
         if ($parsed === null) {
             throw new Exception\InvalidArgument("Invalid environment: '{$environment}'");
         }
-        list($osClass, $osVersionFrom, $osVersionTo, $phpVersion, $threadSafety) = $parsed;
+        list($osClass, $osVersionFrom, $osVersionTo, $phpVersion, $threadSafety, $bits) = $parsed;
 
         return $os instanceof $osClass
             && ($osVersionFrom === null || ($osVersionFrom <= $os->getNumericVersion() && $os->getNumericVersion() <= $osVersionTo))
             && self::matchesPHP($phpVersion, $php)
-            && ($threadSafety === '' || ($threadSafety === 'zts') === $php->isThreadSafe());
+            && ($threadSafety === '' || ($threadSafety === 'zts') === $php->isThreadSafe())
+            && ($bits === null || $bits === $php->getBits());
     }
 
     /**
      * @param string $environment
      *
-     * @return array{class-string<\IPE\OS>, positive-int|null, positive-int|null, string, string}|null the OS or family class, its first and last numeric versions, the PHP version, and the thread safety ('zts', 'nts', or empty for both)
+     * @return array{class-string<\IPE\OS>, positive-int|null, positive-int|null, string, string, int|null}|null the OS or family class, its first and last numeric versions, the PHP version, the thread safety ('zts', 'nts', or empty for both), and the bits of PHP (null for both)
      */
     private function parse($environment)
     {
         $match = null;
-        if (!preg_match('/^(?<os>[a-z]+)(?:(?<osVersion>\d+(?:\.\d+)*)(?:\.\.(?<osVersionTo>\d+(?:\.\d+)*))?)?(?:-php(?<php>\d+(?:\.\d+)?))?(?:-(?<threadSafety>nts|zts))?$/D', $environment, $match)) {
+        if (!preg_match('/^(?<os>[a-z]+)(?:(?<osVersion>\d+(?:\.\d+)*)(?:\.\.(?<osVersionTo>\d+(?:\.\d+)*))?)?(?:-php(?<php>\d+(?:\.\d+)?))?(?:-(?<threadSafety>nts|zts))?(?:-(?<bits>32|64)bit)?$/D', $environment, $match)) {
             return null;
         }
         $osClass = $this->osFactory->getOSClassByIdentifier($match['os']);
@@ -95,7 +96,14 @@ class UnsupportedEnvironment
             }
         }
 
-        return [$osClass, $osVersionFrom, $osVersionTo, isset($match['php']) ? $match['php'] : '', isset($match['threadSafety']) ? $match['threadSafety'] : ''];
+        return [
+            $osClass,
+            $osVersionFrom,
+            $osVersionTo,
+            isset($match['php']) ? $match['php'] : '',
+            isset($match['threadSafety']) ? $match['threadSafety'] : '',
+            isset($match['bits']) ? (int) $match['bits'] : null,
+        ];
     }
 
     /**

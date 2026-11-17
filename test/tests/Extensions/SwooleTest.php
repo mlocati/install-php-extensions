@@ -2,11 +2,12 @@
 
 namespace IPE\Test\Extensions;
 
-use IPE\Exception;
+use IPE\Extension\UnsupportedEnvironment;
 use IPE\Extensions\swoole;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\Service\Container;
 use IPE\SystemDependencies;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
@@ -79,10 +80,21 @@ final class SwooleTest extends TestCase
     /**
      * @return void
      */
-    public function testNoDefaultVersionFor32BitsWithRecentPHP()
+    public function testUnsupportedOn32BitsWithRecentPHP()
     {
-        $this->expectException(Exception\UnsupportedExtension::class);
-        self::createExtension(803, OS\Debian::class, OS\Debian::TRIXIE, false, 32)->getDefaultVersionRequirements();
+        $subject = new UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger()));
+        $os = M::mock(OS\Debian::class);
+        foreach ([[802, 32, false], [803, 32, true], [805, 32, true], [803, 64, false]] as $case) {
+            list($phpVersion, $bits, $expected) = $case;
+            $php = M::mock(PHPInfo::class);
+            $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
+            $php->shouldReceive('getBits')->andReturn($bits);
+            $matches = false;
+            foreach (array_keys(swoole::getUnsupportedEnvironments()) as $environment) {
+                $matches = $matches || $subject->matches($environment, $php, $os);
+            }
+            self::assertSame($expected, $matches, "PHP {$phpVersion} with {$bits} bits");
+        }
     }
 
     /**

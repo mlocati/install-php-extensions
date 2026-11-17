@@ -2,7 +2,6 @@
 
 namespace IPE\Extensions;
 
-use IPE\Exception;
 use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
@@ -17,6 +16,7 @@ final class swoole extends Extension implements
     Extension\DeclaresConflicts,
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresOptions,
+    Extension\DeclaresUnsupportedEnvironments,
     Extension\DependsOnExtensions,
     Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
@@ -138,12 +138,8 @@ final class swoole extends Extension implements
             // 4.8.11 and 4.8.12 don't include <cstdint>, so they can't be compiled with GCC 13+
             return '4.8.13';
         }
-        if ($this->php->getBits() === 32) {
-            // 32-bit systems are not supported since 5.1 (see https://github.com/swoole/swoole-src/issues/5198#issuecomment-1820162178), and 5.0 doesn't compile with PHP 8.3+
-            if ($phpVersion >= 803) {
-                throw new Exception\UnsupportedExtension('swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+');
-            }
-
+        if ($this->php->getBits() === 32 && $phpVersion <= 802) {
+            // 32-bit systems are not supported since 5.1 (see https://github.com/swoole/swoole-src/issues/5198#issuecomment-1820162178)
             return '5.0.3';
         }
         if ($this->os instanceof OS\Alpine) {
@@ -160,6 +156,22 @@ final class swoole extends Extension implements
         }
 
         return $phpVersion <= 801 ? '6.1.7' : '';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        $reason = 'swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+';
+
+        return [
+            'posix-php8.3-32bit' => $reason,
+            'posix-php8.4-32bit' => $reason,
+            'posix-php8.5-32bit' => $reason,
+        ];
     }
 
     /**
