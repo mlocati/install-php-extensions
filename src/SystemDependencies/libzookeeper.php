@@ -135,7 +135,7 @@ final class libzookeeper extends CompiledLibrary
         $clientDirectory = "{$sourceDirectory}/zookeeper-client/zookeeper-client-c";
         $this->runBuildStep('autoreconf', ['-if'], $clientDirectory);
         $this->runBuildStep('./configure', ['--without-cppunit'], $clientDirectory);
-        $this->runBuildStep($this->buildTools->getMake(), ['-j' . $this->getParallelJobs(), 'CFLAGS=-Wno-stringop-truncation -Wno-format-overflow -Wno-discarded-qualifiers'], $clientDirectory);
+        $this->runBuildStep($this->buildTools->getMake(), ['-j' . $this->getParallelJobs(), 'CFLAGS=' . $this->getCFlags() . ' -Wno-stringop-truncation -Wno-format-overflow'], $clientDirectory);
         $this->runBuildStep($this->buildTools->getMake(), ['install'], $clientDirectory);
     }
 }

@@ -99,8 +99,7 @@ class libidnkit extends CompiledLibrary
      */
     protected function build($sourceDirectory)
     {
-        // Recent compilers refuse its code otherwise
-        $this->runBuildStep('./configure', ['CFLAGS=-Wno-incompatible-pointer-types'], $sourceDirectory);
+        $this->runBuildStep('./configure', ['CFLAGS=' . $this->getCFlags()], $sourceDirectory);
         $fs = $this->os->getFilesystem();
         // make install copies idn2.conf there without creating it (it's missing in the alpine images)
         if (!$fs->isDirectory('/usr/local/etc')) {

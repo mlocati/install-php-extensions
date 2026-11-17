@@ -144,7 +144,7 @@ final class libenchant extends CompiledLibrary
      */
     protected function build($sourceDirectory)
     {
-        $this->runBuildStep('./configure', [], $sourceDirectory);
+        $this->runBuildStep('./configure', ['CFLAGS=' . $this->getCFlags()], $sourceDirectory);
         $this->runBuildStep($this->buildTools->getMake(), ['-j' . $this->getParallelJobs(), 'install'], $sourceDirectory);
     }
 }

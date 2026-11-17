@@ -98,7 +98,7 @@ final class libionc extends CompiledLibrary
     protected function build($sourceDirectory)
     {
         $buildDirectory = $this->createBuildDirectory($sourceDirectory);
-        $this->runBuildStep('sh', ['-c', "CFLAGS='-Wno-incompatible-pointer-types -Wno-stringop-overflow -Wno-discarded-qualifiers' exec cmake -DCMAKE_BUILD_TYPE=Release .. -Wno-dev"], $buildDirectory);
+        $this->runBuildStep('sh', ['-c', "CFLAGS='" . $this->getCFlags() . " -Wno-stringop-overflow' exec cmake -DCMAKE_BUILD_TYPE=Release .. -Wno-dev"], $buildDirectory);
         $this->runBuildStep($this->buildTools->getMake(), ['-j' . $this->getParallelJobs(), 'install'], $buildDirectory);
     }
 }

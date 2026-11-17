@@ -8,6 +8,7 @@ use IPE\Filesystem\Command;
 use IPE\Filesystem\Downloader;
 use IPE\Installer\BuildOptions;
 use IPE\Installer\BuildTools;
+use IPE\Installer\Compiler;
 use IPE\Installer\State;
 use IPE\Option\Values;
 use IPE\OS;
@@ -197,6 +198,16 @@ abstract class CompiledLibrary extends SystemDependency
         if ($rc !== 0) {
             throw new Exception\IO('Failed to compile ' . static::getHandle() . ": {$executable} failed with exit code {$rc}");
         }
+    }
+
+    /**
+     * The C flags for the libraries, with the same warnings we silence for the extensions (GCC 14 turns some of them into errors).
+     *
+     * @return non-empty-string
+     */
+    protected function getCFlags()
+    {
+        return '-O2 ' . Compiler::WARNING_FLAGS . ' ' . Compiler::C_WARNING_FLAGS;
     }
 
     /**
