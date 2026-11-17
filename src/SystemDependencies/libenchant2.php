@@ -70,10 +70,13 @@ final class libenchant2 extends SystemDependency
                 ['enchant2-devel']
             );
         }
+        if ($this->os instanceof OS\Posix\DebianLike) {
+            return new Packages(
+                ['libenchant-2-2'],
+                ['libenchant-2-dev']
+            );
+        }
 
-        return new Packages(
-            ['libenchant-2-2'],
-            ['libenchant-2-dev']
-        );
+        throw $this->createUnknownPackagesException();
     }
 }

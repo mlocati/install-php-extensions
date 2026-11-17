@@ -256,6 +256,8 @@ final class BundledLibrariesTest extends TestCase
         $state = self::createState();
         self::assertPackages(['enchant2'], ['enchant2-dev'], (new libenchant2($php, self::createOS(OS\Alpine::class, 312), new Values()))->getSystemPackages($state));
         self::assertPackages(['libenchant-2-2'], ['libenchant-2-dev'], (new libenchant2($php, self::createOS(OS\Debian::class, OS\Debian::BULLSEYE), new Values()))->getSystemPackages($state));
+        self::assertPackages(['libenchant-2-2'], ['libenchant-2-dev'], (new libenchant2($php, self::createOS(OS\Ubuntu::class, OS\Ubuntu::FOCAL), new Values()))->getSystemPackages($state));
+        self::assertPackages(['enchant2'], ['enchant2-devel'], (new libenchant2($php, self::createOS(OS\AlmaLinux::class, 10), new Values()))->getSystemPackages($state));
         self::assertUnsupportedOS(new libenchant2($php, self::createOS(OS\Alpine::class, 311), new Values()));
         self::assertUnsupportedOS(new libenchant2($php, self::createOS(OS\Debian::class, OS\Debian::BUSTER), new Values()));
     }

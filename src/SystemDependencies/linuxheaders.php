@@ -38,7 +38,19 @@ final class linuxheaders extends SystemDependency
                 ['linux-headers']
             );
         }
+        if ($this->os instanceof OS\Posix\DebianLike) {
+            return new Packages(
+                [],
+                ['linux-libc-dev']
+            );
+        }
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            return new Packages(
+                [],
+                ['kernel-headers']
+            );
+        }
 
-        return new Packages();
+        throw $this->createUnknownPackagesException();
     }
 }
