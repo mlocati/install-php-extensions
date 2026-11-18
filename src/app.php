@@ -29,6 +29,10 @@ function createApp()
     $app->singleton(ComposerRepository\Registry::class, static function (Container $app) {
         return $app->build(ComposerRepository\Registry::class)->registerDefaultRepositories();
     });
+    // Git hosts
+    $app->singleton(GitHost\Registry::class, static function (Container $app) {
+        return $app->build(GitHost\Registry::class)->registerDefaultHosts();
+    });
     // Extension registry
     $app->singleton(Extension\Registry::class, static function (Container $app) {
         $registry = $app->build(Extension\Registry::class);

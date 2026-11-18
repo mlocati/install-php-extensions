@@ -4,6 +4,7 @@ namespace IPE\CLI;
 
 use IPE\CLI\Argv\Option\Definition;
 use IPE\Extension;
+use IPE\GitHosts;
 
 /**
  * Translates the environment variables and the arguments of the shell version of install-php-extensions (used in the official Docker PHP images).
@@ -322,7 +323,7 @@ final class LegacyCompatibility
             return '';
         }
 
-        return "gh:{$argument}";
+        return GitHosts\GitHub::HANDLE . ":{$argument}";
     }
 
     /**

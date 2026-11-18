@@ -7,6 +7,7 @@ use IPE\Extension;
 use IPE\Extension\Asked;
 use IPE\Extension\Version;
 use IPE\Filesystem;
+use IPE\GitHost;
 
 /**
  * @internal
@@ -18,9 +19,15 @@ final class ArgumentsParser
      */
     private $fs;
 
-    public function __construct(Filesystem $fs)
+    /**
+     * @var \IPE\GitHost\Registry
+     */
+    private $gitHosts;
+
+    public function __construct(Filesystem $fs, GitHost\Registry $gitHosts)
     {
         $this->fs = $fs;
+        $this->gitHosts = $gitHosts;
     }
 
     /**
@@ -54,7 +61,7 @@ final class ArgumentsParser
      */
     public function parseArgument($argument, array $optionsByHandle = [])
     {
-        $result = $this->tryGitHubArgument($argument)
+        $result = $this->tryGitHostArgument($argument)
             ?: $this->tryURLArgument($argument)
             ?: $this->tryDirectoryArgument($argument)
             ?: $this->tryComposerArgument($argument, $optionsByHandle)
@@ -89,20 +96,26 @@ final class ArgumentsParser
      *          gh:organization/repository@main#path/to/subdir
      *          gh:organization/repository@refs/heads/main
      *          gh:organization/repository@refs/heads/main#path/to/subdir
+     * @example other hosts
+     *          gl:group/subgroup/project@v1.0.0
+     *          cb:owner/repository@main
+     *          bb:workspace/repository@cafebabecafe
      */
-    private function tryGitHubArgument($argument)
+    private function tryGitHostArgument($argument)
     {
-        if (substr($argument, 0, 3) !== 'gh:') {
+        list($base, $subdir) = $this->extractSubdirFromUrlLike($argument);
+        if (!preg_match('/^(?<handle>[^\s:]+):(?<repository>[^@\s]*)(?:@(?<ref>\S*))?$/D', $base, $match)) {
             return null;
         }
-        list($base, $subdir) = $this->extractSubdirFromUrlLike($argument);
-        $matches = null;
-        if (!preg_match('#^gh:(?<organization>[A-Za-z0-9\-]{1,39})/(?<repository>[A-Za-z0-9.\-_]{1,100})@(?<ref>\S+)$#D', $base, $matches)) {
-            throw new Exception\InvalidArgument("'{$base}' is not a valid GitHub shorthand");
+        $host = $this->gitHosts->getByHandle($match['handle']);
+        if ($host === null) {
+            return null;
         }
-        $url = "https://codeload.github.com/{$matches['organization']}/{$matches['repository']}/tar.gz/{$matches['ref']}";
+        if (!isset($match['ref']) || $match['ref'] === '' || $match['repository'] === '' || !$host->isValidRepository($match['repository'])) {
+            throw new Exception\InvalidArgument("'{$argument}' is not a valid {$host->getName()} shortcut");
+        }
 
-        return new Asked\FromURL($url, $subdir);
+        return new Asked\FromURL($host->getArchiveURL($match['repository'], $match['ref']), $subdir);
     }
 
     /**
