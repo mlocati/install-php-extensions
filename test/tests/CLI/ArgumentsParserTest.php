@@ -5,6 +5,7 @@ namespace IPE\Test\CLI;
 use IPE\CLI\ArgumentsParser;
 use IPE\Extension\Asked;
 use IPE\Filesystem;
+use IPE\GitHost;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -32,7 +33,7 @@ final class ArgumentsParserTest extends TestCase
         ] as $path => $realPath) {
             $fs->shouldReceive('getRealPath')->with($path)->zeroOrMoreTimes()->andReturn($realPath);
         }
-        $parser = new ArgumentsParser($fs);
+        $parser = new ArgumentsParser($fs, (new GitHost\Registry())->registerDefaultHosts());
 
         return [
             [
@@ -294,11 +295,72 @@ final class ArgumentsParserTest extends TestCase
     }
 
     /**
+     * @return list<array{non-empty-string, non-empty-string, string}> the argument, the expected URL and the expected subdirectory
+     */
+    public static function provideGitHostShortcuts()
+    {
+        return [
+            ['gh:organization/repository@main', 'https://codeload.github.com/organization/repository/tar.gz/main', ''],
+            ['gl:group/project@v1.0.0', 'https://gitlab.com/api/v4/projects/group%2Fproject/repository/archive.tar.gz?sha=v1.0.0', ''],
+            ['gl:group/subgroup/project@refs/heads/feature/x#ext', 'https://gitlab.com/api/v4/projects/group%2Fsubgroup%2Fproject/repository/archive.tar.gz?sha=refs%2Fheads%2Ffeature%2Fx', 'ext'],
+            ['cb:owner/repository@cafebabecafe', 'https://codeberg.org/owner/repository/archive/cafebabecafe.tar.gz', ''],
+            ['bb:workspace/repository@refs/tags/1.2.3#path/to/ext', 'https://bitbucket.org/workspace/repository/get/refs/tags/1.2.3.tar.gz', 'path/to/ext'],
+        ];
+    }
+
+    /**
+     * @dataProvider provideGitHostShortcuts
+     *
+     * @param non-empty-string $argument
+     * @param non-empty-string $expectedURL
+     * @param string $expectedSubdir
+     *
+     * @return void
+     */
+    public function testGitHostShortcuts($argument, $expectedURL, $expectedSubdir)
+    {
+        $asked = (new ArgumentsParser(M::mock(Filesystem::class), (new GitHost\Registry())->registerDefaultHosts()))->parseArgument($argument);
+        self::assertInstanceOf(Asked\FromURL::class, $asked);
+        self::assertSame($expectedURL, $asked->getURL());
+        self::assertSame($expectedSubdir, $asked->getSubdir());
+    }
+
+    /**
+     * @return list<array{non-empty-string, non-empty-string}> the argument, and the expected error message
+     */
+    public static function provideInvalidGitHostShortcuts()
+    {
+        return [
+            ['gh:organization/repository', "'gh:organization/repository' is not a valid GitHub shortcut"],
+            ['gh:organization/sub/repository@main', "'gh:organization/sub/repository@main' is not a valid GitHub shortcut"],
+            ['gl:project@main', "'gl:project@main' is not a valid GitLab shortcut"],
+            ['cb:../repository@main', "'cb:../repository@main' is not a valid Codeberg shortcut"],
+            ['bb:workspace/repository@', "'bb:workspace/repository@' is not a valid Bitbucket shortcut"],
+        ];
+    }
+
+    /**
+     * @dataProvider provideInvalidGitHostShortcuts
+     *
+     * @param non-empty-string $argument
+     * @param non-empty-string $expectedMessage
+     *
+     * @return void
+     */
+    public function testInvalidGitHostShortcuts($argument, $expectedMessage)
+    {
+        $parser = new ArgumentsParser(M::mock(Filesystem::class), (new GitHost\Registry())->registerDefaultHosts());
+        $this->expectException(\IPE\Exception\InvalidArgument::class);
+        $this->expectExceptionMessage($expectedMessage);
+        $parser->parseArgument($argument);
+    }
+
+    /**
      * @return void
      */
     public function testComposerOptions()
     {
-        $parser = new ArgumentsParser(M::mock(Filesystem::class)->shouldIgnoreMissing());
+        $parser = new ArgumentsParser(M::mock(Filesystem::class)->shouldIgnoreMissing(), (new GitHost\Registry())->registerDefaultHosts());
         $options = ['vendor/name' => ['enable-foo' => true], 'other' => ['with-bar' => '/usr']];
         self::assertSame(['enable-foo' => true], $parser->parseArgument('vendor/name:^1', $options)->getOptions());
         self::assertSame([], $parser->parseArgument('vendor/another', $options)->getOptions());

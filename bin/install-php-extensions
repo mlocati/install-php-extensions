@@ -6,6 +6,7 @@ use IPE\CLI\Argv;
 use IPE\Exception as IPEException;
 use IPE\Extension;
 use IPE\Filesystem;
+use IPE\GitHost;
 use IPE\Installer;
 use IPE\Logger;
 use IPE\OS;
@@ -50,15 +51,21 @@ function isAnyOptionPresent(array $options, array $argv)
  *
  * @return void
  */
-function showSyntax(array $argv, Argv $options)
+function showSyntax(array $argv, Argv $options, GitHost\Registry $gitHosts)
 {
+    $gitShortcuts = implode("\n", array_map(
+        static function (GitHost $host) {
+            return "- a {$host->getName()} shortcut (example: " . $host::getHandle() . ":{$host->getRepositoryExample()}@ref)";
+        },
+        $gitHosts->getHosts()
+    ));
     echo <<<EOT
 Syntax: {$argv[0]} [options] [--] [extensions]
 
 Every extension can be specified with:
 - its handle (example: xdebug)
 - the name of its Composer package (example: vendor/name)
-- a GitHub shortcut (example: gh:organization/repository@ref)
+{$gitShortcuts}
 - the URL of an archive containing its source code (example: https://example.com/extension.tar.gz)
 - the path of a local directory containing its source code (example: ./path/to/extension)
 You can choose the version of the extensions specified with their handle or with their Composer package (example: 'xdebug:^3.3').
@@ -161,7 +168,7 @@ foreach ($legacyWarnings as $legacyWarning) {
 }
 
 if (isAnyOptionPresent(['-h', '--help'], $argv)) {
-    showSyntax($argv, $options);
+    showSyntax($argv, $options, $app->make(GitHost\Registry::class));
     exit(0);
 }
 if (isAnyOptionPresent(['-v', '--version'], $argv)) {

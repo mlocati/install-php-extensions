@@ -49,7 +49,7 @@ function isHelpRequested(array $argv)
  *
  * @return void
  */
-function showSyntax(array $argv, Argv $options)
+function showBuildPharSyntax(array $argv, Argv $options)
 {
     echo <<<EOT
 Syntax: {$argv[0]} [options] [--] [phar-file]...
@@ -75,7 +75,7 @@ try {
     ]);
 
     if (isHelpRequested($argv)) {
-        showSyntax($argv, $options);
+        showBuildPharSyntax($argv, $options);
         exit(0);
     }
 

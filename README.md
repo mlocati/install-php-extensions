@@ -116,10 +116,13 @@ Every argument identifies an extension to be installed:
 | Composer package | `vendor/name` | A PHP extension published as a Composer package on Packagist (like the ones installed by PIE) |
 | PHP bundled extension | `php/name` | One of the [supported PHP extensions](#supported-php-extensions) bundled in the PHP source code (in some or all the PHP versions): it's the same as its handle (for example, `php/imap` is the same as `imap`) |
 | GitHub shortcut | `gh:organization/repository@ref` | The source code of a GitHub repository, where `ref` is a commit, a tag or a branch |
+| GitLab shortcut | `gl:group/project@ref` | The source code of a repository on gitlab.com (also in subgroups, like `gl:group/subgroup/project@ref`), where `ref` is a commit, a tag or a branch |
+| Codeberg shortcut | `cb:owner/repository@ref` | The source code of a Codeberg repository, where `ref` is a commit, a tag or a branch |
+| Bitbucket shortcut | `bb:workspace/repository@ref` | The source code of a Bitbucket repository, where `ref` is a commit, a tag or a branch |
 | URL | `https://example.com/extension.tar.gz` | An archive containing the source code of the extension |
 | Local directory | `./path/to/extension` | A directory containing the source code of the extension (the path must start with `/`, `./` or `../`) |
 
-If the source code is not in the root directory of the GitHub repository or of the archive, append `#` followed by its path, for example:
+If the source code is not in the root directory of the repository or of the archive, append `#` followed by its path, for example:
 
 - `gh:organization/repository@main#path/to/extension`
 - `https://example.com/archive.tar.gz#path/to/extension`
