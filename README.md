@@ -368,6 +368,7 @@ These options apply to all the extensions (the options of specific extensions ar
 | `--system-packages[=]<auto\|never\|only>` | When PHP has been installed by the system packager (APT, APK), install the extensions from its packages: when available (auto), never, or only from them (only). | `auto` |
 | `--build-type[=]<optimized\|with-symbols\|debug>` | How to compile the extensions: optimized (debug symbols stripped), with-symbols (optimized, keeping the debug symbols), debug (no optimizations, with debug symbols) | `optimized` |
 | `--cpus[=]value` | Number of parallel processors to be used while compiling (0: all the available ones) | all the available ones |
+| `--git-submodules` | Fetch the git submodules missing from the source code of the extensions |  |
 | `--skip-check` | Don't check that PHP loads the extensions correctly before enabling them |  |
 | `--dont-enable` | Disable the extensions at the end of the installation (they can be enabled later with --enable) |  |
 | `--enable[=]value` | Enable the extension loaded by this ini file, by uncommenting its extension= and zend_extension= lines, or with phpenmod for the files in the mods-available directory of Debian and Ubuntu (can be specified multiple times) |  |
