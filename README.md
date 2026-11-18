@@ -24,12 +24,13 @@ When PHP has been installed by the system packager (APT, APK or DNF), IPE may in
 
 ## Getting IPE
 
-IPE is distributed as a PHAR file attached to the [releases](https://github.com/mlocati/install-php-extensions/releases), in two variants:
+IPE is distributed as a PHAR file attached to the [releases](https://github.com/mlocati/install-php-extensions/releases), in three variants:
 
 - `install-php-extensions`: not compressed;
-- `install-php-extensions-gz`: smaller, but it requires the zlib PHP extension (which should be always available in the official Docker PHP images).
+- `install-php-extensions-gz`: smaller, but it requires the zlib PHP extension (which should be always available in the official Docker PHP images);
+- `install-php-extensions-debug`: not compressed, and with the original PHP source code, so that the error messages point to the right lines of the source files.
 
-Both the PHAR files are also available in the `ghcr.io/mlocati/install-php-extensions` Docker image.
+All the PHAR files are also available in the `ghcr.io/mlocati/install-php-extensions` Docker image.
 
 IPE requires the phar PHP extension.
 It's always available in the official Docker PHP images and with the Debian and Ubuntu packages, but the Alpine packages provide it separately: install the package with the name of the PHP package followed by `-phar` (for example, `apk add php84-phar`).
@@ -77,6 +78,8 @@ It also contains the compressed variant, `/usr/bin/install-php-extensions-gz` (w
 COPY --from=ghcr.io/mlocati/install-php-extensions:latest /usr/bin/install-php-extensions-gz /usr/local/bin/install-php-extensions
 ```
 
+And the variant for debugging, `/usr/bin/install-php-extensions-debug`.
+
 ### Using a specific version of IPE
 
 The URLs and the image above provide the most recent release of IPE, so a new release may change what your builds do.
@@ -107,6 +110,8 @@ composer install --no-dev
 composer run-script build-phar -- install-php-extensions
 # Compressed with gzip
 composer run-script build-phar -- --compress=gz install-php-extensions-gz
+# With the original PHP source code, for debugging
+composer run-script build-phar -- --no-strip install-php-extensions-debug
 ```
 
 ## Specifying the extensions
