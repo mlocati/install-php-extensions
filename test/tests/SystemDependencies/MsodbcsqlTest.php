@@ -64,6 +64,7 @@ final class MsodbcsqlTest extends TestCase
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $php->shouldReceive('getBits')->andReturn($bits);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $os = M::mock($osClass);
         self::assertInstanceOf(OS\Posix::class, $os);
         $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);
@@ -345,6 +346,7 @@ final class MsodbcsqlTest extends TestCase
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getMajorMinorVersion')->andReturn(804);
         $php->shouldReceive('getBits')->andReturn(64);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $os = M::mock(OS\Alpine::class);
         $os->shouldReceive('getMachineArchitecture')->andReturn(OS\Architecture::X64);
         $os->shouldReceive('getNumericVersion')->andReturn(323);

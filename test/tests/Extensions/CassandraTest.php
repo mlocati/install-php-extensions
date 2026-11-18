@@ -53,6 +53,7 @@ final class CassandraTest extends TestCase
         $php->shouldReceive('getVersion')->andReturn('8.3.20');
         $php->shouldReceive('getMajorMinorVersion')->andReturn(803);
         $php->shouldReceive('getBits')->andReturn(64);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $php->shouldReceive('getExtensionDir')->andReturn('/ext');
         $os = M::mock(OS\Debian::class);
         $os->shouldReceive('getNumericVersion')->andReturn(OS\Debian::TRIXIE);

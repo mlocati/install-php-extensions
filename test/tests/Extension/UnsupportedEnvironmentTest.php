@@ -180,6 +180,7 @@ final class UnsupportedEnvironmentTest extends TestCase
             $php->shouldReceive('getMajorMinorVersion')->andReturn(702);
             $php->shouldReceive('isThreadSafe')->andReturn(true);
             $php->shouldReceive('getBits')->andReturn($case[0]);
+            $php->shouldReceive('getBuildArchitecture')->andReturn('');
             self::assertSame($case[1], $subject->matches($environment, $php, $os));
         }
     }

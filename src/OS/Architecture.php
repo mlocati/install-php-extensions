@@ -41,6 +41,30 @@ final class Architecture
     const OTHER = 'other';
 
     /**
+     * @param string $name
+     *
+     * @return non-empty-string one of the \IPE\OS\Architecture constants
+     *
+     * @example fromName('x86_64') returns \IPE\OS\Architecture::X64
+     * @example fromName('AMD64') returns \IPE\OS\Architecture::X64
+     */
+    public static function fromName($name)
+    {
+        if (preg_match('/^(i[3-6]86|x86)$/Di', $name)) {
+            return self::X86;
+        }
+        if (preg_match('/^(x86_64|amd64|x64)$/Di', $name)) {
+            return self::X64;
+        }
+        if (preg_match('/^(aarch64|arm64|armv8)$/Di', $name)) {
+            return self::ARM64;
+        }
+
+        // armv8l is an ARMv8 kernel running in 32-bit mode
+        return preg_match('/^arm(v[5-8].*)?$/Di', $name) ? self::ARM32 : self::OTHER;
+    }
+
+    /**
      * Get the architecture that the binaries loaded by PHP must have.
      *
      * @throws \IPE\Exception\IO
@@ -49,6 +73,11 @@ final class Architecture
      */
     public static function ofPHP(PHPInfo $php, OS $os)
     {
+        // For example, Windows on ARM64 runs x64 builds of PHP
+        $architecture = self::fromName($php->getBuildArchitecture());
+        if ($architecture !== self::OTHER) {
+            return $architecture;
+        }
         $architecture = $os->getMachineArchitecture();
         if ($php->getBits() === 32) {
             if ($architecture === self::X64) {
@@ -85,6 +114,14 @@ final class Architecture
             case self::ARM32:
                 return 'armv7l';
         }
+        if ($architecture !== $os->getMachineArchitecture()) {
+            switch ($architecture) {
+                case self::X64:
+                    return 'x86_64';
+                case self::ARM64:
+                    return 'aarch64';
+            }
+        }
 
         return $os->getRawMachineArchitecture();
     }
@@ -98,9 +135,17 @@ final class Architecture
      *
      * @example 'x86_64'
      * @example '32-bit PHP on x86_64'
+     * @example 'x64 PHP on ARM64'
      */
     public static function describe(PHPInfo $php, OS $os)
     {
-        return ($php->getBits() === 32 ? '32-bit PHP on ' : '') . $os->getRawMachineArchitecture();
+        $raw = $os->getRawMachineArchitecture();
+        $buildArchitecture = $php->getBuildArchitecture();
+        $architecture = self::fromName($buildArchitecture);
+        if ($architecture !== self::OTHER && $architecture !== $os->getMachineArchitecture()) {
+            return "{$buildArchitecture} PHP on {$raw}";
+        }
+
+        return ($php->getBits() === 32 ? '32-bit PHP on ' : '') . $raw;
     }
 }

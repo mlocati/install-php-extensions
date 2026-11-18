@@ -65,6 +65,7 @@ final class GrpcTest extends TestCase
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getBits')->andReturn(64);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $os = M::mock(OS\AlmaLinux::class);
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
         $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);

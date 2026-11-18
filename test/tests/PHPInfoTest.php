@@ -47,6 +47,73 @@ final class PHPInfoTest extends TestCase
         $sslLibrary = $current->getSSLLibrary();
         self::assertSame($current, $current->detectSSLLibrary($fs));
         self::assertEquals($sslLibrary, $current->getSSLLibrary());
+        if (DIRECTORY_SEPARATOR === '\\') {
+            self::assertContains($current->getBuildArchitecture(), ['x86', 'x64', 'arm64']);
+            self::assertMatchesRegularExpression('/^V[CS]\d+$/', $current->getCompilerID());
+        } else {
+            self::assertSame('', $current->getCompilerID());
+        }
+    }
+
+    /**
+     * @return list<array{string, string, string}>
+     */
+    public static function provideWindowsBuildCases()
+    {
+        return [
+            ['x86', 'API20121212,NTS,VC11', 'VC11'],
+            ['x64', 'API20170718,TS,VC15', 'VC15'],
+            ['x64', 'API20240924,NTS,VS17', 'VS17'],
+            ['arm64', 'API20240924,TS,debug,VS17', 'VS17'],
+            ['x64', 'API20240924,NTS,debug', ''],
+            ['x64', '', ''],
+        ];
+    }
+
+    /**
+     * @dataProvider provideWindowsBuildCases
+     *
+     * @param string $architecture
+     * @param string $extensionBuild
+     * @param string $expectedCompilerID
+     *
+     * @return void
+     */
+    public function testWindowsBuild($architecture, $extensionBuild, $expectedCompilerID)
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('\\');
+        $fs->shouldReceive('isFile')->andReturn(true);
+        $fs->shouldReceive('getRealPath')->andReturnUsing(static function ($path) {
+            return $path;
+        });
+        $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
+            [0, implode("\r\n", ['8.4.14', '8', '4', '8', '0', 'C:\\php\\ext', '', 'Core', ''])],
+            [0, implode("\r\n", [
+                'phpinfo()',
+                'PHP Version => 8.4.14',
+                '',
+                'System => Windows NT MACHINE 10.0 build 26100 (Windows 11) AMD64',
+                'Build Date => Oct 21 2025 18:51:05',
+                'Build System => Microsoft Windows Server 2022 Datacenter [10.0.20348]',
+                'Compiler => Visual C++ 2022',
+                "Architecture => {$architecture}",
+                'Configure Command => cscript /nologo /e:jscript configure.js  "--enable-snapshot-build"',
+                'Loaded Configuration File => (none)',
+                'Scan this dir for additional .ini files => (none)',
+                'PHP API => 20240924',
+                'PHP Extension => 20240924',
+                'Zend Extension Build => ' . ($extensionBuild === '' ? '' : 'API4' . substr($extensionBuild, 3)),
+                'PHP Extension Build => ' . $extensionBuild,
+                '',
+            ])],
+            [0, '']
+        );
+        $php = PHPInfo::fromPHPBin('C:\\php\\php.exe', $fs);
+        self::assertSame($architecture, $php->getBuildArchitecture());
+        self::assertSame($expectedCompilerID, $php->getCompilerID());
+        self::assertSame('', $php->getLoadedIniFile());
+        self::assertSame('', $php->getIniScanDir());
     }
 
     /**
@@ -74,11 +141,14 @@ final class PHPInfoTest extends TestCase
                 'Scan this dir for additional .ini files => /usr/local/etc/php/conf.d',
                 'PHP API => 20240924',
                 'PHP Extension => 20240924',
+                'PHP Extension Build => API20240924,NTS',
                 '',
             ])],
             [0, 'OpenSSL 3.0.15 3 Sep 2024']
         );
         $php = PHPInfo::fromPHPBin('/usr/local/bin/php', $fs);
+        self::assertSame('', $php->getBuildArchitecture());
+        self::assertSame('', $php->getCompilerID());
         self::assertSame('8.4.14', $php->getVersion());
         self::assertSame(804, $php->getMajorMinorVersion());
         self::assertSame(64, $php->getBits());

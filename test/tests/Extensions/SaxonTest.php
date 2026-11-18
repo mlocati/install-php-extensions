@@ -60,6 +60,7 @@ final class SaxonTest extends TestCase
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getBits')->andReturn($bits);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
 
         return $php;
     }

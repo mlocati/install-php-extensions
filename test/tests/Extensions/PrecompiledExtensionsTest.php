@@ -42,6 +42,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $php->shouldReceive('getBaseVersion')->andReturn($fullVersion);
         $php->shouldReceive('isThreadSafe')->andReturn($threadSafe);
         $php->shouldReceive('getBits')->andReturn($bits);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
 
         return $php;

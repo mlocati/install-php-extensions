@@ -31,6 +31,7 @@ final class SwooleTest extends TestCase
         $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $php->shouldReceive('isThreadSafe')->andReturn($threadSafe);
         $php->shouldReceive('getBits')->andReturn($bits);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $php->shouldReceive('getInstalledExtensions')->andReturn($installed);
         $os = M::mock($osClass);
         self::assertInstanceOf(OS::class, $os);
@@ -90,6 +91,7 @@ final class SwooleTest extends TestCase
             $php = M::mock(PHPInfo::class);
             $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
             $php->shouldReceive('getBits')->andReturn($bits);
+            $php->shouldReceive('getBuildArchitecture')->andReturn('');
             $matches = false;
             foreach (array_keys(swoole::getUnsupportedEnvironments()) as $environment) {
                 $matches = $matches || $subject->matches($environment, $php, $os);
@@ -128,6 +130,7 @@ final class SwooleTest extends TestCase
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getBits')->andReturn($bits);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $php->shouldReceive('isThreadSafe')->andReturn(false);
         $php->shouldReceive('getMajorMinorVersion')->andReturn(802);
         $php->shouldReceive('getInstalledExtensions')->andReturn([]);
@@ -288,6 +291,7 @@ final class SwooleTest extends TestCase
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getMajorMinorVersion')->andReturn(804);
         $php->shouldReceive('getBits')->andReturn(64);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $php->shouldReceive('getInstalledExtensions')->andReturn([]);
         $os = M::mock(OS\Posix::class);
         $os->shouldReceive('getDisplayName')->andReturn('Test OS');

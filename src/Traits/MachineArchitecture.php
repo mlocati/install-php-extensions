@@ -22,19 +22,7 @@ trait MachineArchitecture
      */
     public function getMachineArchitecture()
     {
-        $raw = $this->getRawMachineArchitecture();
-        if (preg_match('/^(i[3-6]86|x86)$/Di', $raw)) {
-            return OS\Architecture::X86;
-        }
-        if (preg_match('/^(x86_64|amd64)$/Di', $raw)) {
-            return OS\Architecture::X64;
-        }
-        if (preg_match('/^(aarch64|arm64|armv8)$/Di', $raw)) {
-            return OS\Architecture::ARM64;
-        }
-
-        // armv8l is an ARMv8 kernel running in 32-bit mode
-        return preg_match('/^arm(v[5-8].*)?$/Di', $raw) ? OS\Architecture::ARM32 : OS\Architecture::OTHER;
+        return OS\Architecture::fromName($this->getRawMachineArchitecture());
     }
 
     /**

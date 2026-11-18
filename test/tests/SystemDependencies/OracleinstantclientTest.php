@@ -64,6 +64,7 @@ final class OracleinstantclientTest extends TestCase
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getBits')->andReturn($bits);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $php->shouldReceive('getMajorMinorVersion')->andReturn($majorMinorVersion);
 
         return $php;

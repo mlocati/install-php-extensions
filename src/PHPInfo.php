@@ -58,6 +58,16 @@ class PHPInfo
     private $threadSafe;
 
     /**
+     * @var string
+     */
+    private $buildArchitecture;
+
+    /**
+     * @var string
+     */
+    private $compilerID;
+
+    /**
      * @var non-empty-string
      */
     private $extensionDir;
@@ -375,6 +385,33 @@ class PHPInfo
     }
 
     /**
+     * Get the architecture PHP has been built for, as reported by PHP (use \IPE\OS\Architecture::ofPHP() to know the architecture of the binaries that PHP can load).
+     *
+     * @return string empty string if PHP doesn't report it (Unix builds report it only if configured with PHP_BUILD_ARCH)
+     *
+     * @example 'x86'
+     * @example 'x64'
+     * @example 'arm64'
+     */
+    public function getBuildArchitecture()
+    {
+        return $this->buildArchitecture;
+    }
+
+    /**
+     * Get the ID of the compiler PHP has been built with: the extensions must be built with a compiler with the same ID.
+     *
+     * @return string empty string if it's not part of the build ID of the extensions (that is, on Unix)
+     *
+     * @example 'VC15' (Visual C++ 2017)
+     * @example 'VS17' (Visual C++ 2022)
+     */
+    public function getCompilerID()
+    {
+        return $this->compilerID;
+    }
+
+    /**
      * @return string[]
      */
     public function getInstalledExtensions()
@@ -470,10 +507,29 @@ class PHPInfo
             throw new Exception\IO("Failed to determine the PHP API version from the general PHP info\n{$info}");
         }
         $this->apiVersion = (int) $api;
+        $this->buildArchitecture = self::readInfoValue($info, 'Architecture');
+        $this->compilerID = self::parseCompilerID(self::readInfoValue($info, 'PHP Extension Build'));
         $this->configureCommand = self::readInfoValue($info, 'Configure Command');
         list($this->iniScanDir, $this->iniScanDirs) = self::parseIniScanDirs(self::readInfoValue($info, 'Scan this dir for additional .ini files'), $defaultIniScanDir, $fs);
         $loadedIniFile = self::readInfoValue($info, 'Loaded Configuration File');
         $this->loadedIniFile = $loadedIniFile === '' ? '' : $fs->getRealPath($loadedIniFile);
+    }
+
+    /**
+     * @param string $buildID the build ID of the extensions (ZEND_MODULE_BUILD_ID)
+     *
+     * @return string
+     *
+     * @example parseCompilerID('API20240924,NTS,VS17') returns 'VS17'
+     * @example parseCompilerID('API20240924,TS,debug,VS17') returns 'VS17'
+     * @example parseCompilerID('API20240924,NTS') returns ''
+     */
+    private static function parseCompilerID($buildID)
+    {
+        $parts = array_slice(explode(',', $buildID), 1);
+        $parts = array_values(array_diff($parts, ['TS', 'NTS', 'debug']));
+
+        return isset($parts[0]) ? $parts[0] : '';
     }
 
     /**

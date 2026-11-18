@@ -26,6 +26,7 @@ final class IoncubeLoaderTest extends TestCase
         $php->shouldReceive('getMajorMinorVersion')->andReturn($version);
         $php->shouldReceive('isThreadSafe')->andReturn($threadSafe);
         $php->shouldReceive('getBits')->andReturn($bits);
+        $php->shouldReceive('getBuildArchitecture')->andReturn('');
 
         return $php;
     }
