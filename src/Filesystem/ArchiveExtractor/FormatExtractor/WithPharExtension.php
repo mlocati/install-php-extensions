@@ -59,6 +59,29 @@ final class WithPharExtension extends FormatExtractor
      */
     protected function doExtractTo($archive, $destinationDirectory)
     {
+        $extension = ".{$this->format}";
+        if (substr($archive, -strlen($extension)) === $extension) {
+            $this->extractArchive($archive, $destinationDirectory);
+
+            return;
+        }
+        // PharData recognizes the archives by the extension of their name
+        $copyDirectory = $this->fs->createVolatileDirectory();
+        $copy = $copyDirectory->getPath() . $this->fs->getDirectorySeparator() . 'archive' . $extension;
+        $this->fs->copyFile($archive, $copy);
+        $this->extractArchive($copy, $destinationDirectory);
+    }
+
+    /**
+     * @param non-empty-string $archive the real path to an existing and readable file, with the .zip or .tar extension
+     * @param non-empty-string $destinationDirectory the real path to an existing and writable directory
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    private function extractArchive($archive, $destinationDirectory)
+    {
         if ($this->format === ArchiveFormat::ZIP) {
             $this->logger->debug('Extracting archive with Phar extension', ['archive' => $archive, 'destination' => $destinationDirectory]);
             $this->extractZipEntries($this->openArchive($archive, \Phar::ZIP), $destinationDirectory);
