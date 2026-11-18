@@ -297,7 +297,7 @@ final class GitSubmodules
         }
         // The submodules and the additional worktrees have a .git file pointing to the actual git directory
         if ($this->fs->isFile($git)) {
-            return strpos($this->fs->readFile($git), 'gitdir:') === 0;
+            return $this->fs->readFile($git, strlen('gitdir:')) === 'gitdir:';
         }
 
         return false;

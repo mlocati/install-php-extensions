@@ -470,7 +470,7 @@ final class GitSubmodulesTest extends TestCase
             return;
         }
         $fs->shouldReceive('isFile')->with($git)->andReturn($kind !== 'none');
-        $fs->shouldReceive('readFile')->with($git)->andReturn($kind === 'file' ? "gitdir: ../.git/modules/repo\n" : "not a git file\n");
+        $fs->shouldReceive('readFile')->with($git, strlen('gitdir:'))->andReturn($kind === 'file' ? 'gitdir:' : 'not a g');
     }
 
     /**

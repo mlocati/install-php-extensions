@@ -175,7 +175,7 @@ final class WithModsAvailableTest extends TestCase
         $iniFile = self::MODS_AVAILABLE_DIR . '/redis.ini';
         $fs = self::createFilesystem();
         $fs->shouldReceive('exists')->with($iniFile)->andReturn(true);
-        $fs->shouldReceive('readFile')->with($iniFile)->andReturn("; configuration for php redis module\n; priority=20\nextension=redis.so\n");
+        $fs->shouldReceive('readFile')->with($iniFile, strlen(ModsAvailable::MARKER))->andReturn(substr("; configuration for php redis module\n; priority=20\nextension=redis.so\n", 0, strlen(ModsAvailable::MARKER)));
         $fs->shouldNotReceive('writeFile');
         $fs->shouldNotReceive('run');
         $this->expectException(Exception\IO::class);
