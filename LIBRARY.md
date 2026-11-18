@@ -1,7 +1,7 @@
 # Using IPE as a library
 
 IPE can be installed with Composer and used from PHP code.
-At the moment, IPE can install extensions only on Debian and Alpine Linux.
+The supported operating systems are listed in the [README](README.md).
 
 All the services are available from the application container returned by `\IPE\createApp()`:
 
