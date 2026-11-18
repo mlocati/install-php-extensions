@@ -255,11 +255,17 @@ jobs:
         name: Build install-php-extensions-gz
         run: composer --no-interaction --ansi run-script build-phar -- --verbose --compress=gz install-php-extensions-gz
       -
+        name: Build install-php-extensions-debug
+        run: composer --no-interaction --ansi run-script build-phar -- --verbose --no-strip install-php-extensions-debug
+      -
         name: Run install-php-extensions
         run: php install-php-extensions --version
       -
         name: Run install-php-extensions-gz
         run: php install-php-extensions-gz --version
+      -
+        name: Run install-php-extensions-debug
+        run: php install-php-extensions-debug --version
       -
         name: Upload PHAR files
         uses: actions/upload-artifact@v7

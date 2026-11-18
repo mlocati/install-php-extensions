@@ -51,26 +51,22 @@ jobs:
         name: Build install-php-extensions
         run: composer --no-interaction --ansi run-script build-phar -- --verbose "--version=$TAG" install-php-extensions
       -
-        name: Check the version of install-php-extensions
-        run: |
-          actual="$(php -d error_reporting=-1 -d display_errors=stdout -d display_startup_errors=1 install-php-extensions --version)"
-          expected="$(printf 'install-php-extensions v%s\nhttps://github.com/mlocati/install-php-extensions' "$TAG")"
-          if [ "$actual" != "$expected" ]; then
-            echo "::error::Wrong version: $actual"
-            exit 1
-          fi
-      -
         name: Build install-php-extensions-gz
         run: composer --no-interaction --ansi run-script build-phar -- --verbose --compress=gz "--version=$TAG" install-php-extensions-gz
       -
-        name: Check the version of install-php-extensions-gz
+        name: Build install-php-extensions-debug
+        run: composer --no-interaction --ansi run-script build-phar -- --verbose --no-strip "--version=$TAG" install-php-extensions-debug
+      -
+        name: Check the version of the PHAR files
         run: |
-          actual="$(php -d error_reporting=-1 -d display_errors=stdout -d display_startup_errors=1 install-php-extensions-gz --version)"
           expected="$(printf 'install-php-extensions v%s\nhttps://github.com/mlocati/install-php-extensions' "$TAG")"
-          if [ "$actual" != "$expected" ]; then
-            echo "::error::Wrong version: $actual"
-            exit 1
-          fi
+          for phar in install-php-extensions install-php-extensions-gz install-php-extensions-debug; do
+            actual="$(php -d error_reporting=-1 -d display_errors=stdout -d display_startup_errors=1 "$phar" --version)"
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::Wrong version of $phar: $actual"
+              exit 1
+            fi
+          done
       -
         name: Update README.md
         id: update-readme
@@ -154,5 +150,5 @@ jobs:
           fi
           # With release immutability the files must be attached before publishing the release
           # (stdout discarded: it's the URL of the draft, not the final one)
-          gh release create "$TAG" --draft --target "$TARGET" --title "v$TAG" --generate-notes $CREATE_OPTIONS install-php-extensions install-php-extensions-gz >/dev/null
+          gh release create "$TAG" --draft --target "$TARGET" --title "v$TAG" --generate-notes $CREATE_OPTIONS install-php-extensions install-php-extensions-gz install-php-extensions-debug >/dev/null
           gh release edit "$TAG" --draft=false $UPDATE_OPTIONS

@@ -5,3 +5,4 @@
 /composer.lock
 /*.cache
 /install-php-extensions
+/install-php-extensions-debug

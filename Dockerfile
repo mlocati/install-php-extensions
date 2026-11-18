@@ -1,4 +1,4 @@
-# Used by the Release workflow: install-php-extensions and install-php-extensions-gz are the PHAR files built by it
+# Used by the Release workflow: install-php-extensions, install-php-extensions-gz and install-php-extensions-debug are the PHAR files built by it
 FROM scratch
 
 LABEL org.opencontainers.image.source="https://github.com/mlocati/install-php-extensions"
@@ -7,3 +7,4 @@ LABEL org.opencontainers.image.licenses="MIT"
 
 COPY --chmod=755 install-php-extensions /usr/bin/install-php-extensions
 COPY --chmod=755 install-php-extensions-gz /usr/bin/install-php-extensions-gz
+COPY --chmod=755 install-php-extensions-debug /usr/bin/install-php-extensions-debug
