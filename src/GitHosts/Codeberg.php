@@ -75,6 +75,16 @@ final class Codeberg implements GitHost
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\GitHost::getRawFileURL()
+     */
+    public function getRawFileURL($repository, $ref, $path)
+    {
+        return "https://codeberg.org/api/v1/repos/{$repository}/raw/" . implode('/', array_map('rawurlencode', explode('/', $path))) . ($ref === '' ? '' : '?ref=' . rawurlencode($ref));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\GitHost::parseArchiveURL()
      */
     public function parseArchiveURL($url)

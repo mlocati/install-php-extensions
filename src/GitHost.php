@@ -55,6 +55,17 @@ interface GitHost
     public function getCloneURL($repository);
 
     /**
+     * Get the URL to download a file of a repository.
+     *
+     * @param non-empty-string $repository a valid repository
+     * @param string $ref the commit, tag or branch (empty string for the default branch)
+     * @param non-empty-string $path the path of the file in the repository
+     *
+     * @return non-empty-string
+     */
+    public function getRawFileURL($repository, $ref, $path);
+
+    /**
      * Extract the repository and the ref from the URL of an archive with the source code.
      *
      * @param string $url

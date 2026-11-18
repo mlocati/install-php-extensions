@@ -7,6 +7,7 @@ use IPE\Extension\GitSource;
 use IPE\Extension\Resolved;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
+use IPE\Filesystem\Downloader;
 
 /**
  * Fetch the git submodules missing from the source code of the extensions.
@@ -19,6 +20,11 @@ final class GitSubmodules
     private $fs;
 
     /**
+     * @var \IPE\Filesystem\Downloader
+     */
+    private $downloader;
+
+    /**
      * @var \IPE\Installer\BuildOptions
      */
     private $buildOptions;
@@ -28,9 +34,15 @@ final class GitSubmodules
      */
     private $logger;
 
-    public function __construct(Filesystem $fs, BuildOptions $buildOptions, \IPE\Logger $logger)
+    /**
+     * @var array<string, string|null> the contents of the downloaded .gitmodules files (empty string if missing, NULL if the download failed)
+     */
+    private $downloadedGitmodules = [];
+
+    public function __construct(Filesystem $fs, Downloader $downloader, BuildOptions $buildOptions, \IPE\Logger $logger)
     {
         $this->fs = $fs;
+        $this->downloader = $downloader;
         $this->buildOptions = $buildOptions;
         $this->logger = $logger;
     }
@@ -54,8 +66,8 @@ final class GitSubmodules
             if ($gitSource === null) {
                 continue;
             }
-            $root = $gitSource->getRoot();
-            if ($this->findMissing($root, $this->readSubmodulePaths($root, false)) !== [] && ($gitSource->getRemoteURL() !== '' || $this->isWorkingTree($root))) {
+            $missing = $this->findMissingSubmodules($resolvedExtension, $gitSource, false);
+            if ($missing === null || ($missing !== [] && ($gitSource->getRemoteURL() !== '' || $this->isWorkingTree($gitSource->getRoot())))) {
                 $this->logger->debug("git is needed to fetch the git submodules of {$resolvedExtension}");
 
                 return true;
@@ -81,35 +93,128 @@ final class GitSubmodules
 
             return;
         }
-        $root = $gitSource->getRoot();
-        $paths = $this->readSubmodulePaths($root, true);
-        if ($paths === []) {
-            $this->logger->debug("No git submodules are declared in {$root}");
-
-            return;
-        }
-        $missing = $this->findMissing($root, $paths);
+        $missing = $this->findMissingSubmodules($resolvedExtension, $gitSource, true);
         if ($missing === []) {
-            $this->logger->debug("The git submodules of {$resolvedExtension} are already present: " . implode(', ', $paths));
-
             return;
         }
-        $description = "the git submodules of {$resolvedExtension} (" . implode(', ', $missing) . ')';
+        $root = $gitSource->getRoot();
         try {
-            if ($gitSource->getRemoteURL() !== '') {
-                $this->logger->info("Fetching {$description} from {$gitSource->getRemoteURL()}");
-                $this->fetchFromRepository($gitSource, $root, $missing, $state);
+            if ($missing === null || $gitSource->getRemoteURL() !== '') {
+                $this->fetchFromRepository($resolvedExtension, $gitSource, $missing, $state);
             } elseif ($this->isWorkingTree($root)) {
-                $this->logger->info("Fetching {$description}");
+                $this->logger->info('Fetching ' . self::describe($resolvedExtension, $missing));
                 // The directory may be owned by another user (for example, when it's mounted in a container).
                 // Only the missing submodules, so that we don't change the commits of the other ones.
                 $this->runGit(array_merge(['-c', "safe.directory={$root}", '-C', $root, 'submodule', 'update', '--init', '--recursive', '--'], $missing));
             } else {
-                $this->logger->warning("Unable to fetch {$description}: {$root} is not a git working tree and its repository is unknown");
+                $this->logger->warning('Unable to fetch ' . self::describe($resolvedExtension, $missing) . ": {$root} is not a git working tree and its repository is unknown");
             }
         } catch (Exception\IO $x) {
-            $this->logger->warning("Unable to fetch {$description}: {$x->getMessage()}");
+            $this->logger->warning('Unable to fetch ' . self::describe($resolvedExtension, $missing) . ": {$x->getMessage()}");
         }
+    }
+
+    /**
+     * @param list<non-empty-string>|null $paths
+     *
+     * @return string
+     */
+    private static function describe(Resolved $resolvedExtension, $paths)
+    {
+        $result = "the git submodules of {$resolvedExtension}";
+
+        return $paths === null ? $result : ($result . ' (' . implode(', ', $paths) . ')');
+    }
+
+    /**
+     * @param bool $log
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return list<non-empty-string>|null the paths of the missing submodules, or NULL if we need to clone the repository to find them
+     */
+    private function findMissingSubmodules(Resolved $resolvedExtension, GitSource $gitSource, $log)
+    {
+        $root = $gitSource->getRoot();
+        if ($this->fs->isFile("{$root}/.gitmodules")) {
+            $gitmodules = "{$root}/.gitmodules";
+            $paths = $this->parseSubmodulePaths($this->fs->readFile($gitmodules), $gitmodules, $log);
+        } elseif ($gitSource->getRemoteURL() === '') {
+            if ($log) {
+                $this->logger->debug("There's no .gitmodules file in {$root}");
+            }
+
+            return [];
+        } else {
+            $gitmodules = $gitSource->getGitmodulesURL();
+            $contents = $gitmodules === '' ? null : $this->downloadGitmodules($gitmodules);
+            if ($contents === null) {
+                if ($log) {
+                    $this->logger->debug("There's no .gitmodules file in {$root}: we need to clone the repository to find the git submodules of {$resolvedExtension}");
+                }
+
+                return null;
+            }
+            if ($contents === '') {
+                if ($log) {
+                    $this->logger->debug("The repository of {$resolvedExtension} doesn't have a .gitmodules file");
+                }
+
+                return [];
+            }
+            $paths = $this->parseSubmodulePaths($contents, $gitmodules, $log);
+        }
+
+        return $this->findMissing($resolvedExtension, $root, $paths, $gitmodules, $log);
+    }
+
+    /**
+     * @param non-empty-string $url
+     *
+     * @return string|null empty string if the repository doesn't have a .gitmodules file, NULL if the download failed
+     */
+    private function downloadGitmodules($url)
+    {
+        if (!array_key_exists($url, $this->downloadedGitmodules)) {
+            try {
+                $contents = $this->downloader->getContent($url);
+            } catch (Exception\IO\NotFound $x) {
+                $contents = '';
+            } catch (Exception $x) {
+                $this->logger->debug("Failed to download {$url}: {$x->getMessage()}");
+                $contents = null;
+            }
+            $this->downloadedGitmodules[$url] = $contents;
+        }
+
+        return $this->downloadedGitmodules[$url];
+    }
+
+    /**
+     * @param non-empty-string $root
+     * @param list<non-empty-string> $paths
+     * @param string $gitmodules where the paths come from
+     * @param bool $log
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return list<non-empty-string>
+     */
+    private function findMissing(Resolved $resolvedExtension, $root, array $paths, $gitmodules, $log)
+    {
+        if ($paths === []) {
+            if ($log) {
+                $this->logger->debug("No git submodules are declared in {$gitmodules}");
+            }
+
+            return [];
+        }
+        $missing = $this->findMissingPaths($root, $paths);
+        if ($missing === [] && $log) {
+            $this->logger->debug("The git submodules of {$resolvedExtension} are already present: " . implode(', ', $paths));
+        }
+
+        return $missing;
     }
 
     /**
@@ -120,7 +225,7 @@ final class GitSubmodules
      *
      * @return list<non-empty-string> the paths of the submodules that are missing
      */
-    private function findMissing($root, array $paths)
+    private function findMissingPaths($root, array $paths)
     {
         $missing = [];
         foreach ($paths as $path) {
@@ -147,15 +252,28 @@ final class GitSubmodules
         if (!$this->fs->isFile("{$root}/.gitmodules")) {
             return [];
         }
+
+        return $this->parseSubmodulePaths($this->fs->readFile("{$root}/.gitmodules"), "{$root}/.gitmodules", $warnInvalid);
+    }
+
+    /**
+     * @param string $contents the contents of a .gitmodules file
+     * @param string $gitmodules where the contents come from
+     * @param bool $warnInvalid
+     *
+     * @return list<non-empty-string> the valid paths
+     */
+    private function parseSubmodulePaths($contents, $gitmodules, $warnInvalid)
+    {
         $matches = null;
-        preg_match_all('/^\s*path\s*=\s*(.+?)\s*$/m', $this->fs->readFile("{$root}/.gitmodules"), $matches);
+        preg_match_all('/^\s*path\s*=\s*(.+?)\s*$/m', $contents, $matches);
         $result = [];
         foreach ($matches[1] as $declaredPath) {
             $path = rtrim($declaredPath, '/');
             if (self::isValidPath($path)) {
                 $result[] = $path;
             } elseif ($warnInvalid) {
-                $this->logger->warning("Ignoring the git submodule path '{$declaredPath}' of {$root}/.gitmodules: it must be a relative path inside that directory");
+                $this->logger->warning("Ignoring the git submodule path '{$declaredPath}' of {$gitmodules}: it must be a relative path inside that directory");
             }
         }
 
@@ -210,18 +328,19 @@ final class GitSubmodules
     }
 
     /**
-     * @param non-empty-string $root
-     * @param non-empty-list<non-empty-string> $missing
+     * @param non-empty-list<non-empty-string>|null $missing NULL if we need to look for them in the repository
      *
      * @throws \IPE\Exception\IO
      *
      * @return void
      */
-    private function fetchFromRepository(GitSource $gitSource, $root, array $missing, State $state)
+    private function fetchFromRepository(Resolved $resolvedExtension, GitSource $gitSource, $missing, State $state)
     {
-        $clone = $state->getVolatileDir()->createSubdir();
+        $root = $gitSource->getRoot();
         $url = $gitSource->getRemoteURL();
         $reference = $gitSource->getRemoteReference();
+        $this->logger->info($missing === null ? ('Looking for ' . self::describe($resolvedExtension, null) . " in {$url}") : ('Fetching ' . self::describe($resolvedExtension, $missing) . " from {$url}"));
+        $clone = $state->getVolatileDir()->createSubdir();
         $this->runGit(['init', '-q', $clone]);
         try {
             $this->runGit(['-C', $clone, 'fetch', '-q', '--depth', '1', $url, $reference === '' ? 'HEAD' : $reference]);
@@ -236,6 +355,13 @@ final class GitSubmodules
             $checkout = $reference;
         }
         $this->runGit(['-C', $clone, '-c', 'advice.detachedHead=false', 'checkout', '-q', $checkout]);
+        if ($missing === null) {
+            $missing = $this->findMissing($resolvedExtension, $root, $this->readSubmodulePaths($clone, true), "{$clone}/.gitmodules", true);
+            if ($missing === []) {
+                return;
+            }
+            $this->logger->info('Fetching ' . self::describe($resolvedExtension, $missing));
+        }
         $this->runGit(['-C', $clone, 'submodule', 'update', '-q', '--init', '--recursive', '--depth', '1']);
         foreach ($missing as $path) {
             $this->deleteGitFiles("{$clone}/{$path}");

@@ -25,6 +25,11 @@ final class GitSource
     private $remoteReference = '';
 
     /**
+     * @var string
+     */
+    private $gitmodulesURL = '';
+
+    /**
      * @param non-empty-string $root the local directory, or the root of the downloaded archive (not its subdirectory with the extension)
      */
     public function __construct($root)
@@ -43,6 +48,7 @@ final class GitSource
         $result = clone $this;
         $result->remoteURL = $url;
         $result->remoteReference = $reference;
+        $result->gitmodulesURL = '';
 
         return $result;
     }
@@ -59,7 +65,10 @@ final class GitSource
         foreach ($gitHosts->getHosts() as $host) {
             $parsed = $host->parseArchiveURL($url);
             if ($parsed !== null) {
-                return $this->withRemoteRepository($host->getCloneURL($parsed[0]), $parsed[1]);
+                $result = $this->withRemoteRepository($host->getCloneURL($parsed[0]), $parsed[1]);
+                $result->gitmodulesURL = $host->getRawFileURL($parsed[0], $parsed[1], '.gitmodules');
+
+                return $result;
             }
         }
 
@@ -88,5 +97,15 @@ final class GitSource
     public function getRemoteReference()
     {
         return $this->remoteReference;
+    }
+
+    /**
+     * The archives may lack the .gitmodules file (when it's export-ignore in .gitattributes): we can download it without cloning the repository.
+     *
+     * @return string empty string if unknown
+     */
+    public function getGitmodulesURL()
+    {
+        return $this->gitmodulesURL;
     }
 }

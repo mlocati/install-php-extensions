@@ -77,6 +77,17 @@ final class GitLab implements GitHost
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\GitHost::getRawFileURL()
+     */
+    public function getRawFileURL($repository, $ref, $path)
+    {
+        // The API, since the web URLs don't support the refs/... references
+        return 'https://gitlab.com/api/v4/projects/' . rawurlencode($repository) . '/repository/files/' . rawurlencode($path) . '/raw' . ($ref === '' ? '' : '?ref=' . rawurlencode($ref));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\GitHost::parseArchiveURL()
      */
     public function parseArchiveURL($url)

@@ -75,6 +75,26 @@ final class GitHub implements GitHost
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\GitHost::getRawFileURL()
+     */
+    public function getRawFileURL($repository, $ref, $path)
+    {
+        return "https://raw.githubusercontent.com/{$repository}/" . self::encodePath($ref === '' ? 'HEAD' : $ref) . '/' . self::encodePath($path);
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return string
+     */
+    private static function encodePath($path)
+    {
+        return implode('/', array_map('rawurlencode', explode('/', $path)));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\GitHost::parseArchiveURL()
      */
     public function parseArchiveURL($url)

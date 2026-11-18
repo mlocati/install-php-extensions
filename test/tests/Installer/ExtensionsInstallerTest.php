@@ -121,7 +121,7 @@ final class ExtensionsInstallerTest extends TestCase
             new Enabler($this->php, $fs, new \IPE\Logger(), new Enabler\Options()),
             $this->resolver,
             new PHPSystemPackage($this->php, $os),
-            new GitSubmodules($fs, new BuildOptions(), new \IPE\Logger()),
+            new GitSubmodules($fs, M::mock(\IPE\Filesystem\Downloader::class), new BuildOptions(), new \IPE\Logger()),
             new \IPE\Logger()
         );
     }
