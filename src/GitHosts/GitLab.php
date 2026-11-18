@@ -63,4 +63,38 @@ final class GitLab implements GitHost
         // Unlike the web pages, the API accepts the refs/tags/... and refs/heads/... references too
         return 'https://gitlab.com/api/v4/projects/' . rawurlencode($repository) . '/repository/archive.tar.gz?sha=' . rawurlencode($ref);
     }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\GitHost::getCloneURL()
+     */
+    public function getCloneURL($repository)
+    {
+        return "https://gitlab.com/{$repository}.git";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\GitHost::parseArchiveURL()
+     */
+    public function parseArchiveURL($url)
+    {
+        if (preg_match('_^https://gitlab\.com/api/v4/projects/(?<repository>[^/?]+)/repository/archive(?:\.[a-z0-9.]+)?(?:\?(?<query>.*))?$_D', $url, $match)) {
+            $repository = rawurldecode($match['repository']);
+            $query = [];
+            if (isset($match['query'])) {
+                parse_str($match['query'], $query);
+            }
+            $ref = isset($query['sha']) && is_string($query['sha']) ? $query['sha'] : '';
+        } elseif (preg_match('_^https://gitlab\.com/(?<repository>.+?)/-/archive/(?<ref>.+)/[^/]+\.(?:zip|tar\.gz|tar\.bz2|tar)(?:\?.*)?$_D', $url, $match)) {
+            $repository = $match['repository'];
+            $ref = $match['ref'];
+        } else {
+            return null;
+        }
+
+        return $this->isValidRepository($repository) ? [$repository, $ref] : null;
+    }
 }

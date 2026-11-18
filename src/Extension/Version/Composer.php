@@ -133,13 +133,33 @@ final class Composer extends Version
         if (preg_match('_^https://api\.github\.com/repos/([^/]+/[^/]+)/_', $this->getDownloadURL(), $match)) {
             return $match[1];
         }
-        $source = isset($this->composerJson['source']) && is_array($this->composerJson['source']) ? $this->composerJson['source'] : [];
+        $source = $this->getSource();
         $url = isset($source['url']) && is_string($source['url']) ? $source['url'] : '';
         if (preg_match('_^https://github\.com/([^/]+/[^/]+?)(?:\.git)?/?$_', $url, $match)) {
             return $match[1];
         }
 
         return '';
+    }
+
+    /**
+     * @return string the URL of the git repository, or an empty string if not available
+     */
+    public function getGitURL()
+    {
+        $source = $this->getSource();
+
+        return isset($source['type'], $source['url']) && $source['type'] === 'git' && is_string($source['url']) ? $source['url'] : '';
+    }
+
+    /**
+     * @return string the commit of the git repository, or an empty string if not available
+     */
+    public function getGitReference()
+    {
+        $source = $this->getSource();
+
+        return isset($source['type'], $source['reference']) && $source['type'] === 'git' && is_string($source['reference']) ? $source['reference'] : '';
     }
 
     /**
@@ -181,6 +201,14 @@ final class Composer extends Version
     private function getDist()
     {
         return isset($this->composerJson['dist']) && is_array($this->composerJson['dist']) ? $this->composerJson['dist'] : [];
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    private function getSource()
+    {
+        return isset($this->composerJson['source']) && is_array($this->composerJson['source']) ? $this->composerJson['source'] : [];
     }
 
     /**

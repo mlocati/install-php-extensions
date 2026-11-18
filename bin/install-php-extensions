@@ -262,6 +262,7 @@ try {
             return $buildOptions
                 ->withParallelJobs($options->getInt('cpus') ?: 0)
                 ->withType($options->getString('build-type'))
+                ->withFetchGitSubmodules($options->getFlag('git-submodules'))
             ;
         }
     );

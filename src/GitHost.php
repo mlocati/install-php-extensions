@@ -44,4 +44,22 @@ interface GitHost
      * @return non-empty-string
      */
     public function getArchiveURL($repository, $ref);
+
+    /**
+     * Get the URL to be used to clone a repository.
+     *
+     * @param non-empty-string $repository a valid repository
+     *
+     * @return non-empty-string
+     */
+    public function getCloneURL($repository);
+
+    /**
+     * Extract the repository and the ref from the URL of an archive with the source code.
+     *
+     * @param string $url
+     *
+     * @return array{non-empty-string, string}|null the repository and the ref (empty string for the default branch), or NULL if the URL is not an archive of this service
+     */
+    public function parseArchiveURL($url);
 }

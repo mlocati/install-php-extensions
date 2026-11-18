@@ -9,6 +9,7 @@ use IPE\Installer\Report\InstalledExtension;
 use IPE\OS;
 use IPE\PHPInfo;
 use IPE\Service\PHPSystemPackage;
+use IPE\SystemDependencies;
 use IPE\SystemDependency;
 use IPE\SystemPackager\Packages;
 
@@ -67,8 +68,25 @@ final class ExtensionsInstaller
      */
     private $phpSystemPackage;
 
-    public function __construct(OS\Posix $os, PHPInfo $php, SystemDependency\Registry $dependencyRegistry, Compiler $compiler, BinaryInstaller $binaryInstaller, VendorArchivePreparer $vendorArchivePreparer, Enabler $enabler, Extension\Asked\Resolver $resolver, PHPSystemPackage $phpSystemPackage, \IPE\Logger $logger)
-    {
+    /**
+     * @var \IPE\Installer\GitSubmodules
+     */
+    private $gitSubmodules;
+
+    public function __construct(
+        OS\Posix $os,
+        PHPInfo $php,
+        SystemDependency\Registry $dependencyRegistry,
+        Compiler $compiler,
+        BinaryInstaller $binaryInstaller,
+        VendorArchivePreparer $vendorArchivePreparer,
+        Enabler $enabler,
+        Extension\Asked\Resolver $resolver,
+        PHPSystemPackage $phpSystemPackage,
+        GitSubmodules $gitSubmodules,
+        \IPE\Logger $logger
+    ) {
+        $this->gitSubmodules = $gitSubmodules;
         $this->logger = $logger;
         $this->os = $os;
         $this->php = $php;
@@ -236,6 +254,9 @@ final class ExtensionsInstaller
                 }
             }
         }
+        if ($this->gitSubmodules->isGitNeeded($resolvedExtensions)) {
+            $result[] = SystemDependencies\git::HANDLE;
+        }
 
         return $result;
     }
@@ -312,6 +333,7 @@ final class ExtensionsInstaller
             if ($resolvedExtension->getOrigin() === Resolved::ORIGIN_VENDOR_ARCHIVE) {
                 $resolvedExtension = $this->vendorArchivePreparer->prepare($resolvedExtension, $state);
             }
+            $this->gitSubmodules->fetchMissing($resolvedExtension, $state);
             $this->logger->info("Compiling {$resolvedExtension}");
             $compiledExtension = $this->compiler->compile($resolvedExtension);
             $method = InstalledExtension::METHOD_COMPILED;

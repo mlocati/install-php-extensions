@@ -13,6 +13,7 @@ use IPE\Installer\BuildTools;
 use IPE\Installer\Compiler;
 use IPE\Installer\Enabler;
 use IPE\Installer\ExtensionsInstaller;
+use IPE\Installer\GitSubmodules;
 use IPE\Installer\Report\InstalledExtension;
 use IPE\Installer\State;
 use IPE\Installer\VendorArchivePreparer;
@@ -120,6 +121,7 @@ final class ExtensionsInstallerTest extends TestCase
             new Enabler($this->php, $fs, new \IPE\Logger(), new Enabler\Options()),
             $this->resolver,
             new PHPSystemPackage($this->php, $os),
+            new GitSubmodules($fs, new BuildOptions(), new \IPE\Logger()),
             new \IPE\Logger()
         );
     }

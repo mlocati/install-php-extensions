@@ -99,6 +99,11 @@ final class Resolved
     private $optionValues;
 
     /**
+     * @var \IPE\Extension\GitSource|null
+     */
+    private $gitSource;
+
+    /**
      * @var bool
      */
     private $asked = true;
@@ -163,6 +168,27 @@ final class Resolved
         $result->optionValues = $optionValues;
 
         return $result;
+    }
+
+    /**
+     * Create a copy of this instance, saying where its source code comes from.
+     *
+     * @return self
+     */
+    public function withGitSource(GitSource $value)
+    {
+        $result = clone $this;
+        $result->gitSource = $value;
+
+        return $result;
+    }
+
+    /**
+     * @return \IPE\Extension\GitSource|null NULL if the git submodules are not a concern (for example, the PECL archives include them)
+     */
+    public function getGitSource()
+    {
+        return $this->gitSource;
     }
 
     /**
