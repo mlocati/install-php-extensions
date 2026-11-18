@@ -14,18 +14,11 @@ use Mockery as M;
 final class SaxonTest extends TestCase
 {
     /**
-     * @param string $architecture
-     * @param string $rawArchitecture
-     *
      * @return \IPE\OS\Posix
      */
-    private static function createOS($architecture = OS\Architecture::X64, $rawArchitecture = 'x86_64')
+    private static function createOS()
     {
-        $os = M::mock(OS\Debian::class);
-        $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);
-        $os->shouldReceive('getRawMachineArchitecture')->andReturn($rawArchitecture);
-
-        return $os;
+        return M::mock(OS\Debian::class);
     }
 
     /**
@@ -53,27 +46,24 @@ final class SaxonTest extends TestCase
 
     /**
      * @param int $bits
+     * @param non-empty-string $rawMachineArchitecture
      *
      * @return \IPE\PHPInfo
      */
-    private static function createPHP($bits = 64)
+    private static function createPHP($bits = 64, $rawMachineArchitecture = 'x86_64')
     {
-        $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getBits')->andReturn($bits);
-        $php->shouldReceive('getBuildArchitecture')->andReturn('');
-
-        return $php;
+        return self::mockPHPInfoOnMachine($rawMachineArchitecture, $bits);
     }
 
     /**
-     * @param string $architecture
+     * @param non-empty-string $rawArchitecture
      * @param string $page
      *
      * @return \IPE\Extensions\saxon
      */
-    private static function createExtension($architecture = OS\Architecture::X64, $page = '')
+    private static function createExtension($rawArchitecture = 'x86_64', $page = '')
     {
-        return new Extensions\saxon(self::createPHP(), self::createOS($architecture), self::createDownloader($page));
+        return new Extensions\saxon(self::createPHP(64, $rawArchitecture), self::createOS(), self::createDownloader($page));
     }
 
     /**
@@ -99,11 +89,11 @@ final class SaxonTest extends TestCase
 <a href="https://downloads.saxonica.com/SaxonC/HE/13/SaxonCHE-linux-arm64-13-0-0.zip" />
 <a href="https://downloads.saxonica.com/SaxonC/EE/14/SaxonCEE-linux-x86_64-14-0-0.zip" />
 EOT;
-        self::assertSame('13.1.1', self::createExtension(OS\Architecture::X64, $page)->getVendorArchiveVersion('', self::createOptions('HE')));
-        self::assertSame('13.0.0', self::createExtension(OS\Architecture::ARM64, $page)->getVendorArchiveVersion('', self::createOptions('HE')));
-        self::assertSame('12.3', self::createExtension(OS\Architecture::X64, $page)->getVendorArchiveVersion('12.3', self::createOptions('HE')));
+        self::assertSame('13.1.1', self::createExtension('x86_64', $page)->getVendorArchiveVersion('', self::createOptions('HE')));
+        self::assertSame('13.0.0', self::createExtension('aarch64', $page)->getVendorArchiveVersion('', self::createOptions('HE')));
+        self::assertSame('12.3', self::createExtension('x86_64', $page)->getVendorArchiveVersion('12.3', self::createOptions('HE')));
         $this->expectException(Exception\IO::class);
-        self::createExtension(OS\Architecture::X64, $page)->getVendorArchiveVersion('', self::createOptions('PE'));
+        self::createExtension('x86_64', $page)->getVendorArchiveVersion('', self::createOptions('PE'));
     }
 
     /**
@@ -135,9 +125,9 @@ EOT;
         self::assertSame("{$base}EE/12/SaxonCEE-linux-x86_64-12-6-0.zip", self::createExtension()->getVendorArchiveURL('12.6.0', self::createOptions('EE')));
         self::assertSame("{$base}HE/12/libsaxon-HEC-linux-x86_64-v12.3.zip", self::createExtension()->getVendorArchiveURL('12.3', $options));
         self::assertSame("{$base}HE/11/libsaxon-HEC-setup64-v11.6.zip", self::createExtension()->getVendorArchiveURL('11.6', $options));
-        self::assertSame("{$base}HE/12/SaxonCHE-linux-aarch64-12-8-0.zip", self::createExtension(OS\Architecture::ARM64)->getVendorArchiveURL('12.8.0', $options));
-        self::assertSame("{$base}HE/12/SaxonCHE-linux-arm64-12-10-1.zip", self::createExtension(OS\Architecture::ARM64)->getVendorArchiveURL('12.10.1', $options));
-        self::assertSame("{$base}HE/12/libsaxon-HEC-linux-arm64-v12.3.zip", self::createExtension(OS\Architecture::ARM64)->getVendorArchiveURL('12.3', $options));
+        self::assertSame("{$base}HE/12/SaxonCHE-linux-aarch64-12-8-0.zip", self::createExtension('aarch64')->getVendorArchiveURL('12.8.0', $options));
+        self::assertSame("{$base}HE/12/SaxonCHE-linux-arm64-12-10-1.zip", self::createExtension('aarch64')->getVendorArchiveURL('12.10.1', $options));
+        self::assertSame("{$base}HE/12/libsaxon-HEC-linux-arm64-v12.3.zip", self::createExtension('aarch64')->getVendorArchiveURL('12.3', $options));
     }
 
     /**
@@ -147,7 +137,7 @@ EOT;
     {
         $base = 'https://downloads.saxonica.com/SaxonC/HE/';
         $options = self::createOptions('HE');
-        $riscv = new Extensions\saxon(self::createPHP(), self::createOS(OS\Architecture::OTHER, 'riscv64'), self::createDownloader());
+        $riscv = new Extensions\saxon(self::createPHP(64, 'riscv64'), self::createOS(), self::createDownloader());
         self::assertSame("{$base}13/SaxonCHE-linux-riscv64-13-1-1.zip", $riscv->getVendorArchiveURL('13.1.1', $options));
         self::assertSame("{$base}11/libsaxon-HEC-linux-riscv64-v11.6.zip", $riscv->getVendorArchiveURL('11.6', $options));
         $php32 = new Extensions\saxon(self::createPHP(32), self::createOS(), self::createDownloader());

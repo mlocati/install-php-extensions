@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\Filesystem\Command;
@@ -208,11 +209,12 @@ final class cassandra extends Extension implements
         // FindPHP only looks for a command named php, which may be missing or another version (for example, with the php83 package of Alpine)
         $arguments = ['-B', 'cmake-build', '-DCMAKE_BUILD_TYPE=' . self::getCMakeBuildType($buildType), '-DCUSTOM_PHP_CONFIG=' . $buildTools->getPhpConfig(), '-DPHP_BINARY=' . $this->php->getPHPBin(), '-DPHP_SCYLLADB_BACKEND=cassandra'];
         // The default CPU type is x86-64-v2, which generates code that may not run on older CPUs
-        $architecture = OS\Architecture::ofPHP($this->php, $this->os);
-        if ($architecture === OS\Architecture::X64) {
-            $arguments[] = '-DCPU_TYPE=x86-64';
-        } elseif ($architecture === OS\Architecture::X86) {
-            $arguments[] = '-DCPU_TYPE=i686';
+        $cpuTypeArgument = $this->php->getArchitecture()->map([
+            Architecture::X86 => '-DCPU_TYPE=i686',
+            Architecture::X64 => '-DCPU_TYPE=x86-64',
+        ]);
+        if ($cpuTypeArgument !== null) {
+            $arguments[] = $cpuTypeArgument;
         }
         $this->runStep('cmake', $arguments, $directory);
         // gen_stub.php downloads PHP-Parser on its first run: running it in parallel may fail

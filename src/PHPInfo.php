@@ -5,6 +5,11 @@ namespace IPE;
 class PHPInfo
 {
     /**
+     * @var \IPE\OS
+     */
+    private $os;
+
+    /**
      * @var non-empty-string
      *
      * @example '/usr/bin/php'
@@ -58,9 +63,18 @@ class PHPInfo
     private $threadSafe;
 
     /**
+     * The architecture reported by PHP (Unix builds report it only if configured with PHP_BUILD_ARCH).
+     *
      * @var string
+     *
+     * @example 'x64'
      */
     private $buildArchitecture;
+
+    /**
+     * @var \IPE\Architecture|null
+     */
+    private $architecture;
 
     /**
      * @var string
@@ -109,19 +123,21 @@ class PHPInfo
     /**
      * Describe the PHP that's running this code.
      *
-     * @param \IPE\Filesystem $fs the local filesystem
+     * @param \IPE\OS $os the local operating system
      *
-     * @throws \IPE\Exception\InvalidArgument if $fs is not local
+     * @throws \IPE\Exception\InvalidArgument if the filesystem of $os is not local
      * @throws \IPE\Exception\IO
      *
      * @return static
      */
-    public static function fromCurrentPHP(Filesystem $fs)
+    public static function fromCurrentPHP(OS $os)
     {
+        $fs = $os->getFilesystem();
         if (!$fs->isLocal()) {
             throw new Exception\InvalidArgument('The running PHP can only be described with a local filesystem');
         }
         $result = new static();
+        $result->os = $os;
         $result->phpBin = $fs->getRealPath(PHP_BINARY);
         $result->setVersion(PHP_VERSION);
         $result->majorVersion = PHP_MAJOR_VERSION;
@@ -158,12 +174,14 @@ class PHPInfo
      *
      * @return static
      *
-     * @example fromPHPBin('php8.4', $fs)
-     * @example fromPHPBin('/usr/local/bin/php', $fs)
+     * @example fromPHPBin('php8.4', $os)
+     * @example fromPHPBin('/usr/local/bin/php', $os)
      */
-    public static function fromPHPBin($phpBin, Filesystem $fs)
+    public static function fromPHPBin($phpBin, OS $os)
     {
+        $fs = $os->getFilesystem();
         $result = new static();
+        $result->os = $os;
         if (strpbrk($phpBin, '/\\') === false) {
             $path = $fs->resolveCommand($phpBin);
             if ($path === '') {
@@ -213,7 +231,7 @@ class PHPInfo
         }
         $result->parseGeneralInfo($info, $lines[6], $fs);
         $result->setInstalledExtensions(array_slice($lines, 7));
-        $result->detectSSLLibrary($fs);
+        $result->detectSSLLibrary();
 
         return $result;
     }
@@ -296,8 +314,9 @@ class PHPInfo
      *
      * @return $this
      */
-    public function detectSSLLibrary(Filesystem $fs)
+    public function detectSSLLibrary()
     {
+        $fs = $this->os->getFilesystem();
         list($rc, $output) = $fs->run(Filesystem\Command::create(
             $this->phpBin,
             array_merge(self::getSafeRunArguments($fs), ['-r', "echo defined('OPENSSL_VERSION_TEXT') ? OPENSSL_VERSION_TEXT : '';"])
@@ -385,17 +404,72 @@ class PHPInfo
     }
 
     /**
-     * Get the architecture PHP has been built for, as reported by PHP (use \IPE\OS\Architecture::ofPHP() to know the architecture of the binaries that PHP can load).
+     * Get the architecture that the binaries loaded by PHP must have.
+     * It may differ from the architecture of the machine: a 32-bit PHP can run on a 64-bit machine, and Windows on ARM64 can run x64 builds of PHP.
      *
-     * @return string empty string if PHP doesn't report it (Unix builds report it only if configured with PHP_BUILD_ARCH)
+     * @throws \IPE\Exception\IO
      *
-     * @example 'x86'
-     * @example 'x64'
-     * @example 'arm64'
+     * @return \IPE\Architecture
      */
-    public function getBuildArchitecture()
+    public function getArchitecture()
     {
-        return $this->buildArchitecture;
+        if ($this->architecture === null) {
+            $this->architecture = $this->detectArchitecture();
+        }
+
+        return $this->architecture;
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\Architecture
+     */
+    private function detectArchitecture()
+    {
+        if ($this->buildArchitecture !== '') {
+            $architecture = new Architecture($this->buildArchitecture);
+            if ($architecture->getName() !== '') {
+                return $architecture;
+            }
+        }
+        $machine = $this->os->getArchitecture();
+        if ($this->bits === 32) {
+            // The raw name of the machine is the 64-bit one
+            switch ($machine->getName()) {
+                case Architecture::X64:
+                    return new Architecture('i386');
+                case Architecture::ARM64:
+                    return new Architecture('armv7l');
+            }
+        }
+
+        return $machine;
+    }
+
+    /**
+     * Describe the architecture of PHP to the user.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string
+     *
+     * @example 'x86_64'
+     * @example '32-bit PHP on x86_64'
+     * @example 'x64 PHP on ARM64'
+     */
+    public function describeArchitecture()
+    {
+        $machine = $this->os->getArchitecture();
+        if ($this->bits === 32) {
+            return "32-bit PHP on {$machine->getRawName()}";
+        }
+        $architecture = $this->getArchitecture();
+        if ($architecture->getName() !== $machine->getName()) {
+            return "{$architecture->getRawName()} PHP on {$machine->getRawName()}";
+        }
+
+        return $machine->getRawName();
     }
 
     /**

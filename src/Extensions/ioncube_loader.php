@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\OS;
@@ -136,11 +137,11 @@ final class ioncube_loader extends Extension\PrecompiledExtension implements
      */
     private function getVendorArchitecture()
     {
-        return OS\Architecture::getVendorName($this->php, $this->os, [
-            OS\Architecture::X86 => 'x86',
-            OS\Architecture::X64 => 'x86-64',
-            OS\Architecture::ARM32 => 'armv7l',
-            OS\Architecture::ARM64 => 'aarch64',
-        ]);
+        return $this->php->getArchitecture()->map([
+            Architecture::X86 => 'x86',
+            Architecture::X64 => 'x86-64',
+            Architecture::ARM32 => 'armv7l',
+            Architecture::ARM64 => 'aarch64',
+        ], true);
     }
 }

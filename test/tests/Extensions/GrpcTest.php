@@ -2,6 +2,7 @@
 
 namespace IPE\Test\Extensions;
 
+use IPE\Architecture;
 use IPE\Extensions\grpc;
 use IPE\OS;
 use IPE\PHPInfo;
@@ -39,15 +40,15 @@ final class GrpcTest extends TestCase
     }
 
     /**
-     * @return array<array{int, string, string, string}> the AlmaLinux version, the architecture, the extension version, and the expected flags for C++
+     * @return array<array{int, non-empty-string, string, string}> the AlmaLinux version, the raw architecture, the extension version, and the expected flags for C++
      */
     public static function provideEnterpriseLinuxMakeEnvironment()
     {
         return [
-            [9, OS\Architecture::X64, '1.85.0', grpc::WARNING_FLAGS],
-            [10, OS\Architecture::X64, '1.84.0', grpc::WARNING_FLAGS],
-            [10, OS\Architecture::X64, '1.85.0', grpc::WARNING_FLAGS . ' -include x86gprintrin.h'],
-            [10, OS\Architecture::ARM64, '1.85.0', grpc::WARNING_FLAGS],
+            [9, 'x86_64', '1.85.0', grpc::WARNING_FLAGS],
+            [10, 'x86_64', '1.84.0', grpc::WARNING_FLAGS],
+            [10, 'x86_64', '1.85.0', grpc::WARNING_FLAGS . ' -include x86gprintrin.h'],
+            [10, 'aarch64', '1.85.0', grpc::WARNING_FLAGS],
         ];
     }
 
@@ -55,20 +56,18 @@ final class GrpcTest extends TestCase
      * @dataProvider provideEnterpriseLinuxMakeEnvironment
      *
      * @param int $osVersion
-     * @param string $architecture
+     * @param non-empty-string $rawArchitecture
      * @param string $version
      * @param string $expectedCXX
      *
      * @return void
      */
-    public function testEnterpriseLinuxMakeEnvironment($osVersion, $architecture, $version, $expectedCXX)
+    public function testEnterpriseLinuxMakeEnvironment($osVersion, $rawArchitecture, $version, $expectedCXX)
     {
-        $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getBits')->andReturn(64);
-        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $os = M::mock(OS\AlmaLinux::class);
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
-        $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);
+        $os->shouldReceive('getArchitecture')->andReturn(new Architecture($rawArchitecture));
+        $php = self::mockPHPInfo($os);
         $extension = new grpc($php, $os);
         self::assertSame(['EXTRA_CFLAGS' => grpc::WARNING_FLAGS, 'EXTRA_CXXFLAGS' => $expectedCXX], $extension->getMakeEnvironment(self::createBuildContext($version)));
     }

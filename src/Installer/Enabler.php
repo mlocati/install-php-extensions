@@ -550,7 +550,7 @@ class Enabler
     {
         $this->php->addInstalledExtensions($names);
         if ($this->php->getSSLLibrary() === null && in_array('openssl', array_map('strtolower', $names), true)) {
-            $this->php->detectSSLLibrary($this->fs);
+            $this->php->detectSSLLibrary();
         }
     }
 

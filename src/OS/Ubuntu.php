@@ -10,7 +10,7 @@ use IPE\Traits;
 
 class Ubuntu implements Posix\DebianLike
 {
-    use Traits\PosixMachineArchitecture;
+    use Traits\OSArchitecture\Posix;
 
     /**
      * Lucid Lynx.

@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\Option;
@@ -117,10 +118,10 @@ final class tideways extends Extension\PrecompiledExtension implements
         } else {
             throw new Exception\UnsupportedOS("Tideways can't be installed on {$this->os->getDisplayName()}");
         }
-        $architecture = OS\Architecture::getVendorName($this->php, $this->os, [
-            OS\Architecture::X64 => 'amd64',
-            OS\Architecture::ARM64 => 'arm64',
-        ]);
+        $architecture = $this->php->getArchitecture()->map([
+            Architecture::X64 => 'amd64',
+            Architecture::ARM64 => 'arm64',
+        ], true);
         try {
             $links = JSON::decode($this->downloader->getContent('https://app.tideways.io/api/current-versions'), true);
         } catch (Exception\JSON $x) {

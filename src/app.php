@@ -46,12 +46,12 @@ function createApp()
     });
     // PHP
     $app->singleton(PHPInfo::class, static function (Container $app) {
-        $fs = $app->make(Filesystem::class);
-        if ($fs->isLocal()) {
-            return PHPInfo::fromCurrentPHP($fs);
+        $os = $app->make(OS::class);
+        if ($os->getFilesystem()->isLocal()) {
+            return PHPInfo::fromCurrentPHP($os);
         }
 
-        return PHPInfo::fromPHPBin('php', $fs);
+        return PHPInfo::fromPHPBin('php', $os);
     });
     $app->singleton(Service\PHPSystemPackage::class);
     // OS

@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\OS;
@@ -151,10 +152,10 @@ final class blackfire extends Extension\PrecompiledExtension implements
      */
     private function getVendorArchitecture()
     {
-        return OS\Architecture::getVendorName($this->php, $this->os, [
-            OS\Architecture::X86 => 'i386',
-            OS\Architecture::X64 => 'amd64',
-            OS\Architecture::ARM64 => 'arm64',
-        ]);
+        return $this->php->getArchitecture()->map([
+            Architecture::X86 => 'i386',
+            Architecture::X64 => 'amd64',
+            Architecture::ARM64 => 'arm64',
+        ], true);
     }
 }

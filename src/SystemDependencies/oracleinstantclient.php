@@ -2,6 +2,7 @@
 
 namespace IPE\SystemDependencies;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Filesystem\ArchiveExtractor;
 use IPE\Filesystem\ArchiveFormat;
@@ -80,9 +81,9 @@ final class oracleinstantclient extends SystemDependency
      *
      * @return non-empty-string
      */
-    public static function getLibraryPath(PHPInfo $php, OS\Posix $os)
+    public static function getLibraryPath(PHPInfo $php)
     {
-        list($version, $client) = self::getRelease($php, $os);
+        list($version, $client) = self::getRelease($php);
 
         return "/usr/lib/oracle/{$version}/{$client}/lib";
     }
@@ -152,7 +153,7 @@ final class oracleinstantclient extends SystemDependency
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() >= OS\Ubuntu::NOBLE) {
             $this->linkDebianLibaio();
         }
-        $libraryPath = self::getLibraryPath($this->php, $this->os);
+        $libraryPath = self::getLibraryPath($this->php);
         if (!$fs->exists($libraryPath)) {
             $parent = dirname($libraryPath);
             if (!$fs->isDirectory($parent)) {
@@ -186,7 +187,7 @@ final class oracleinstantclient extends SystemDependency
     {
         if ($this->sdkLinked) {
             // The SDK is needed only to compile: it's in the volatile directory
-            $this->os->getFilesystem()->deleteFile(self::getLibraryPath($this->php, $this->os) . '/sdk');
+            $this->os->getFilesystem()->deleteFile(self::getLibraryPath($this->php) . '/sdk');
             $this->sdkLinked = false;
         }
     }
@@ -197,19 +198,19 @@ final class oracleinstantclient extends SystemDependency
      *
      * @return array{non-empty-string, non-empty-string, non-empty-string} the version, the name of its directory, and the template of the URLs of its packages
      */
-    private static function getRelease(PHPInfo $php, OS\Posix $os)
+    private static function getRelease(PHPInfo $php)
     {
         $base = 'https://download.oracle.com/otn_software/linux/instantclient/';
-        switch (OS\Architecture::ofPHP($php, $os)) {
-            case OS\Architecture::X86:
-                return ['19.9', 'client', "{$base}199000/instantclient-%s-linux-19.9.0.0.0dbru.zip"];
-            case OS\Architecture::X64:
-                return ['21.1', 'client64', "{$base}211000/instantclient-%s-linux.x64-21.1.0.0.0.zip"];
-            case OS\Architecture::ARM64:
-                return ['19.10', 'client64', "{$base}191000/instantclient-%s-linux.arm64-19.10.0.0.0dbru.zip"];
+        $release = $php->getArchitecture()->map([
+            Architecture::X86 => ['19.9', 'client', "{$base}199000/instantclient-%s-linux-19.9.0.0.0dbru.zip"],
+            Architecture::X64 => ['21.1', 'client64', "{$base}211000/instantclient-%s-linux.x64-21.1.0.0.0.zip"],
+            Architecture::ARM64 => ['19.10', 'client64', "{$base}191000/instantclient-%s-linux.arm64-19.10.0.0.0dbru.zip"],
+        ]);
+        if ($release === null) {
+            throw new Exception\UnsupportedOS('The Oracle Instant Client is not available for ' . $php->describeArchitecture());
         }
 
-        throw new Exception\UnsupportedOS('The Oracle Instant Client is not available for ' . OS\Architecture::describe($php, $os));
+        return $release;
     }
 
     /**
@@ -223,7 +224,7 @@ final class oracleinstantclient extends SystemDependency
      */
     private function download($package, State $state)
     {
-        list(, , $urlTemplate) = self::getRelease($this->php, $this->os);
+        list(, , $urlTemplate) = self::getRelease($this->php);
         $this->logger->info("Installing the package {$package} of the Oracle Instant Client");
         $archive = $state->getVolatileDir()->createSubdir() . '/instantclient.zip';
         $this->downloader->saveAs(sprintf($urlTemplate, $package), $archive);

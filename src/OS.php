@@ -54,24 +54,11 @@ interface OS
     public function getNumericVersion();
 
     /**
-     * Get the hardware type of the machine (it may differ from the architecture of PHP: see PHPInfo::getBits()).
+     * Get the architecture of the machine (it may differ from the architecture of PHP: see \IPE\PHPInfo::getArchitecture()).
      *
      * @throws \IPE\Exception\IO
      *
-     * @return non-empty-string one of the \IPE\OS\Architecture constants
+     * @return \IPE\Architecture
      */
-    public function getMachineArchitecture();
-
-    /**
-     * Get the hardware type of the machine, as reported by the operating system.
-     *
-     * @throws \IPE\Exception\IO
-     *
-     * @return non-empty-string
-     *
-     * @example 'x86_64'
-     * @example 'aarch64'
-     * @example 'AMD64'
-     */
-    public function getRawMachineArchitecture();
+    public function getArchitecture();
 }

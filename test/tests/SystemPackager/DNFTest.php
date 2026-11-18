@@ -2,6 +2,7 @@
 
 namespace IPE\Test\SystemPackager;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
@@ -48,7 +49,7 @@ final class DNFTest extends TestCase
             $os = M::mock(OS::class);
         }
         $os->shouldReceive('getFilesystem')->andReturn($fs);
-        $os->shouldReceive('getRawMachineArchitecture')->andReturn('x86_64');
+        $os->shouldReceive('getArchitecture')->andReturn(new Architecture('x86_64'));
 
         return $os;
     }

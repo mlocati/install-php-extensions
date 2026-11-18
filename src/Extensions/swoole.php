@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
@@ -269,7 +270,7 @@ final class swoole extends Extension implements
     {
         $version = $context->getVersion();
         $result = [];
-        if ($this->php->getBits() === 32 && $this->os->getMachineArchitecture() === OS\Architecture::X64) {
+        if ($this->php->getBits() === 32 && $this->os->getArchitecture()->getName() === Architecture::X64) {
             // Otherwise configure detects the machine architecture and swoole fails to compile its x86_64 assembly code
             $result[] = $this->os instanceof OS\Alpine ? '--build=i686-linux-musl' : '--build=i686-linux-gnu';
         }

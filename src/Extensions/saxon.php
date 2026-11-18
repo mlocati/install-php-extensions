@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\Filesystem;
@@ -152,8 +153,8 @@ final class saxon extends Extension implements
         }
         $edition = self::getEdition($options);
         $architecture = $this->getLinuxArchitectureName([
-            OS\Architecture::X64 => 'x86_64',
-            OS\Architecture::ARM64 => '(?:arm64|aarch64)',
+            Architecture::X64 => 'x86_64',
+            Architecture::ARM64 => '(?:arm64|aarch64)',
         ]);
         $page = $this->downloader->getContent(self::DOWNLOAD_PAGE);
         $matches = null;
@@ -184,8 +185,8 @@ final class saxon extends Extension implements
     {
         $edition = self::getEdition($options);
         $architecture = $this->getLinuxArchitectureName([
-            OS\Architecture::X64 => 'x86_64',
-            OS\Architecture::ARM64 => version_compare($version, '12.6') >= 0 && version_compare($version, '12.9') < 0 ? 'aarch64' : 'arm64',
+            Architecture::X64 => 'x86_64',
+            Architecture::ARM64 => version_compare($version, '12.6') >= 0 && version_compare($version, '12.9') < 0 ? 'aarch64' : 'arm64',
         ]);
         $base = 'https://downloads.saxonica.com/SaxonC/' . $edition . '/' . strtok($version, '.') . '/';
         if (version_compare($version, '12.6') >= 0) {
@@ -258,7 +259,7 @@ final class saxon extends Extension implements
     }
 
     /**
-     * @param array<string, non-empty-string> $names
+     * @param array<\IPE\Architecture::*, non-empty-string> $names
      *
      * @throws \IPE\Exception\UnsupportedOS
      * @throws \IPE\Exception\IO
@@ -271,7 +272,7 @@ final class saxon extends Extension implements
             throw new Exception\UnsupportedOS("SaxonC can't be installed on {$this->os->getDisplayName()}");
         }
 
-        return OS\Architecture::getVendorName($this->php, $this->os, $names);
+        return $this->php->getArchitecture()->map($names, true);
     }
 
     /**

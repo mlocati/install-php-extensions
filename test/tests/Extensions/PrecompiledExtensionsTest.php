@@ -28,21 +28,20 @@ final class PrecompiledExtensionsTest extends TestCase
      * @param bool $threadSafe
      * @param int $bits
      * @param string $fullVersion empty string for <major>.<minor>.27
+     * @param non-empty-string $rawMachineArchitecture
      *
      * @return \IPE\PHPInfo
      */
-    private static function createPHP($version = 804, $threadSafe = false, $bits = 64, $fullVersion = '')
+    private static function createPHP($version = 804, $threadSafe = false, $bits = 64, $fullVersion = '', $rawMachineArchitecture = 'aarch64')
     {
         if ($fullVersion === '') {
             $fullVersion = (int) floor($version / 100) . '.' . ($version % 100) . '.27';
         }
-        $php = M::mock(PHPInfo::class);
+        $php = self::mockPHPInfoOnMachine($rawMachineArchitecture, $bits);
         $php->shouldReceive('getMajorMinorVersion')->andReturn($version);
         $php->shouldReceive('getVersion')->andReturn($fullVersion);
         $php->shouldReceive('getBaseVersion')->andReturn($fullVersion);
         $php->shouldReceive('isThreadSafe')->andReturn($threadSafe);
-        $php->shouldReceive('getBits')->andReturn($bits);
-        $php->shouldReceive('getBuildArchitecture')->andReturn('');
         $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
 
         return $php;
@@ -52,19 +51,15 @@ final class PrecompiledExtensionsTest extends TestCase
      * @param class-string<\IPE\OS> $class
      * @param int $version
      * @param \IPE\Filesystem|null $fs
-     * @param string $architecture
-     * @param string $rawArchitecture
      *
      * @return \IPE\OS
      */
-    private static function createOS($class, $version, $fs = null, $architecture = OS\Architecture::ARM64, $rawArchitecture = 'aarch64')
+    private static function createOS($class, $version, $fs = null)
     {
         $os = M::mock($class);
         self::assertInstanceOf(OS::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn($version);
         $os->shouldReceive('getDisplayName')->andReturn('The OS');
-        $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);
-        $os->shouldReceive('getRawMachineArchitecture')->andReturn($rawArchitecture);
         if ($fs !== null) {
             $os->shouldReceive('getFilesystem')->andReturn($fs);
         }
@@ -127,29 +122,29 @@ final class PrecompiledExtensionsTest extends TestCase
     }
 
     /**
-     * @return array<array{string, string}>
+     * @return array<array{non-empty-string, string}>
      */
     public static function provideBlackfireArchitectures()
     {
         return [
-            [OS\Architecture::X86, 'i386'],
-            [OS\Architecture::X64, 'amd64'],
-            [OS\Architecture::ARM64, 'arm64'],
+            ['i686', 'i386'],
+            ['x86_64', 'amd64'],
+            ['aarch64', 'arm64'],
         ];
     }
 
     /**
      * @dataProvider provideBlackfireArchitectures
      *
-     * @param string $architecture
+     * @param non-empty-string $rawArchitecture
      * @param string $expected
      *
      * @return void
      */
-    public function testBlackfireArchitectures($architecture, $expected)
+    public function testBlackfireArchitectures($rawArchitecture, $expected)
     {
-        $os = self::createOS(OS\Alpine::class, 323, null, $architecture);
-        self::assertSame("https://blackfire.io/api/v1/releases/probe/php/alpine/{$expected}/84", (new Extensions\blackfire(self::createPHP(), $os, M::mock(Downloader::class)))->getBinaryArchiveURL(''));
+        $php = self::createPHP(804, false, 64, '', $rawArchitecture);
+        self::assertSame("https://blackfire.io/api/v1/releases/probe/php/alpine/{$expected}/84", (new Extensions\blackfire($php, self::createOS(OS\Alpine::class, 323), M::mock(Downloader::class)))->getBinaryArchiveURL(''));
     }
 
     /**
@@ -157,27 +152,27 @@ final class PrecompiledExtensionsTest extends TestCase
      */
     public function test32BitPHPOn64BitMachine()
     {
-        $php = self::createPHP(804, false, 32);
         $downloader = M::mock(Downloader::class);
-        $x64 = self::createOS(OS\Alpine::class, 323, null, OS\Architecture::X64, 'x86_64');
-        self::assertSame('https://blackfire.io/api/v1/releases/probe/php/alpine/i386/84', (new Extensions\blackfire($php, $x64, $downloader))->getBinaryArchiveURL(''));
-        self::assertStringContainsString('linux-i386', (new Extensions\sourceguardian($php, $x64, $downloader))->getBinaryArchiveURL(''));
-        $arm64 = self::createOS(OS\Alpine::class, 323, null, OS\Architecture::ARM64, 'aarch64');
-        self::assertSame('https://blackfire.io/api/v1/releases/probe/php/alpine/armv7l/84', (new Extensions\blackfire($php, $arm64, $downloader))->getBinaryArchiveURL(''));
+        $os = self::createOS(OS\Alpine::class, 323);
+        $php = self::createPHP(804, false, 32, '', 'x86_64');
+        self::assertSame('https://blackfire.io/api/v1/releases/probe/php/alpine/i386/84', (new Extensions\blackfire($php, $os, $downloader))->getBinaryArchiveURL(''));
+        self::assertStringContainsString('linux-i386', (new Extensions\sourceguardian($php, $os, $downloader))->getBinaryArchiveURL(''));
+        $php = self::createPHP(804, false, 32, '', 'aarch64');
+        self::assertSame('https://blackfire.io/api/v1/releases/probe/php/alpine/armv7l/84', (new Extensions\blackfire($php, $os, $downloader))->getBinaryArchiveURL(''));
     }
 
     /**
-     * @return array<array{class-string<\IPE\Extension\PrecompiledExtension>, string, string, string}>
+     * @return array<array{class-string<\IPE\Extension\PrecompiledExtension>, non-empty-string, string}>
      */
     public static function provideOtherArchitectures()
     {
         return [
-            [Extensions\blackfire::class, OS\Architecture::OTHER, 'riscv64', 'riscv64'],
-            [Extensions\blackfire::class, OS\Architecture::ARM32, 'armv7l', 'armv7l'],
-            [Extensions\relay::class, OS\Architecture::OTHER, 'riscv64', 'riscv64'],
-            [Extensions\relay::class, OS\Architecture::X86, 'i686', 'i386'],
-            [Extensions\sourceguardian::class, OS\Architecture::OTHER, 'riscv64', 'riscv64'],
-            [Extensions\sourceguardian::class, OS\Architecture::ARM32, 'armv7l', 'armv7l'],
+            [Extensions\blackfire::class, 'riscv64', 'riscv64'],
+            [Extensions\blackfire::class, 'armv7l', 'armv7l'],
+            [Extensions\relay::class, 'riscv64', 'riscv64'],
+            [Extensions\relay::class, 'i686', 'i686'],
+            [Extensions\sourceguardian::class, 'riscv64', 'riscv64'],
+            [Extensions\sourceguardian::class, 'armv7l', 'armv7l'],
         ];
     }
 
@@ -185,17 +180,16 @@ final class PrecompiledExtensionsTest extends TestCase
      * @dataProvider provideOtherArchitectures
      *
      * @param class-string<\IPE\Extension\PrecompiledExtension> $class
-     * @param string $architecture
-     * @param string $rawArchitecture
+     * @param non-empty-string $rawArchitecture
      * @param string $expected
      *
      * @return void
      */
-    public function testOtherArchitecturesAreLeftToTheVendor($class, $architecture, $rawArchitecture, $expected)
+    public function testOtherArchitecturesAreLeftToTheVendor($class, $rawArchitecture, $expected)
     {
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('getContent')->andReturn('1.2.3');
-        $extension = new $class(self::createPHP(), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM, null, $architecture, $rawArchitecture), $downloader);
+        $extension = new $class(self::createPHP(804, false, 64, '', $rawArchitecture), self::createOS(OS\Debian::class, OS\Debian::BOOKWORM), $downloader);
         self::assertStringContainsString($expected, $extension->getBinaryArchiveURL(''));
     }
 
@@ -206,9 +200,9 @@ final class PrecompiledExtensionsTest extends TestCase
     {
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('getContent')->andReturn(JSON::encode(['php' => ['links' => ['linux' => ['amd64' => 'https://example.com/tideways.tar.gz']]]]));
-        $os = self::createOS(OS\Debian::class, 12, null, OS\Architecture::OTHER, 'riscv64');
+        $php = self::createPHP(804, false, 64, '', 'riscv64');
         $this->expectException(Exception\IO\NotFound::class);
-        (new Extensions\tideways(self::createPHP(), $os, $downloader))->getBinaryArchiveURL('');
+        (new Extensions\tideways($php, self::createOS(OS\Debian::class, 12), $downloader))->getBinaryArchiveURL('');
     }
 
     /**
@@ -448,10 +442,11 @@ final class PrecompiledExtensionsTest extends TestCase
         $fs->shouldReceive('isDirectory')->with('/src/agent/x86')->andReturn(false);
         $fs->shouldReceive('isDirectory')->with('/src/agent/armv7l')->andReturn(false);
         $downloader = M::mock(Downloader::class);
-        self::assertTrue((new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs, OS\Architecture::X64, 'x86_64'), $downloader, new \IPE\Logger()))->canRunBinaryInstaller('/src'));
-        self::assertTrue((new Extensions\newrelic(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), $downloader, new \IPE\Logger()))->canRunBinaryInstaller('/src'));
-        self::assertFalse((new Extensions\newrelic(self::createPHP(804, false, 32), self::createOS(OS\Debian::class, 12, $fs, OS\Architecture::X64, 'x86_64'), $downloader, new \IPE\Logger()))->canRunBinaryInstaller('/src'));
-        self::assertFalse((new Extensions\newrelic(self::createPHP(804, false, 32), self::createOS(OS\Debian::class, 12, $fs), $downloader, new \IPE\Logger()))->canRunBinaryInstaller('/src'));
+        $os = self::createOS(OS\Debian::class, 12, $fs);
+        self::assertTrue((new Extensions\newrelic(self::createPHP(804, false, 64, '', 'x86_64'), $os, $downloader, new \IPE\Logger()))->canRunBinaryInstaller('/src'));
+        self::assertTrue((new Extensions\newrelic(self::createPHP(), $os, $downloader, new \IPE\Logger()))->canRunBinaryInstaller('/src'));
+        self::assertFalse((new Extensions\newrelic(self::createPHP(804, false, 32, '', 'x86_64'), $os, $downloader, new \IPE\Logger()))->canRunBinaryInstaller('/src'));
+        self::assertFalse((new Extensions\newrelic(self::createPHP(804, false, 32), $os, $downloader, new \IPE\Logger()))->canRunBinaryInstaller('/src'));
     }
 
     /**
