@@ -262,14 +262,17 @@ By default, IPE compiles the PHP extensions and the system libraries using all t
 To change that:
 
 ```php
-$ipe->singleton(\IPE\Installer\BuildOptions::class, static function () {
-    return (new \IPE\Installer\BuildOptions())
-        // 0: one job per available processor
-        ->withParallelJobs(2)
-        // TYPE_OPTIMIZED (default), TYPE_WITH_SYMBOLS or TYPE_DEBUG
-        ->withType(\IPE\Installer\BuildOptions::TYPE_WITH_SYMBOLS)
-    ;
-});
+$ipe->extend(
+    \IPE\Installer\BuildOptions::class,
+    static function (\IPE\Installer\BuildOptions $options, $app) {
+        return $options
+            // 0: one job per available processor
+            ->withParallelJobs(2)
+            // TYPE_OPTIMIZED (default), TYPE_WITH_SYMBOLS or TYPE_DEBUG
+            ->withType(\IPE\Installer\BuildOptions::TYPE_WITH_SYMBOLS)
+        ;
+    }
+);
 ```
 
 ## snuffleupagus

@@ -29,6 +29,10 @@ function createApp()
     $app->singleton(ComposerRepository\Registry::class, static function (Container $app) {
         return $app->build(ComposerRepository\Registry::class)->registerDefaultRepositories();
     });
+    // Options (customize them with $app->extend())
+    $app->singleton(Installer\BuildOptions::class);
+    $app->singleton(Installer\Enabler\Options::class);
+    $app->singleton(Extension\Asked\Resolver\Options::class);
     // Git hosts
     $app->singleton(GitHost\Registry::class, static function (Container $app) {
         return $app->build(GitHost\Registry::class)->registerDefaultHosts();
