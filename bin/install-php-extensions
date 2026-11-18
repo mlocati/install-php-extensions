@@ -256,12 +256,16 @@ try {
     ;
 
     // Configure the compilation
-    $app->singleton(Installer\BuildOptions::class, static function () use ($options) {
-        return (new Installer\BuildOptions())
-            ->withParallelJobs($options->getInt('cpus') ?: 0)
-            ->withType($options->getString('build-type'))
-        ;
-    });
+    $app->extend(
+        Installer\BuildOptions::class,
+        static function (Installer\BuildOptions $buildOptions) use ($options) {
+            return $buildOptions
+                ->withParallelJobs($options->getInt('cpus') ?: 0)
+                ->withType($options->getString('build-type'))
+                ->withFetchGitSubmodules($options->getFlag('git-submodules'))
+            ;
+        }
+    );
 
     // Configure resolvers
     $app->extend(

@@ -200,7 +200,7 @@ final class ModsAvailableTest extends TestCase
     {
         $fs = self::createPHP8Filesystem();
         $fs->shouldReceive('exists')->with('/etc/php/8.3/mods-available/apcu.ini')->andReturn(true);
-        $fs->shouldReceive('readFile')->with('/etc/php/8.3/mods-available/apcu.ini')->andReturn("; Created by install-php-extensions, with an older message\n; priority=20\nextension=apcu.so\n");
+        $fs->shouldReceive('readFile')->with('/etc/php/8.3/mods-available/apcu.ini', strlen(ModsAvailable::MARKER))->andReturn(substr("; Created by install-php-extensions, with an older message\n; priority=20\nextension=apcu.so\n", 0, strlen(ModsAvailable::MARKER)));
         $fs->shouldReceive('writeFile')->once()->with('/etc/php/8.3/mods-available/apcu.ini', M::type('string'));
         self::detectPHP8($fs)->writeIniFile('apcu', 80, "extension=apcu.so\n");
     }
@@ -229,7 +229,7 @@ final class ModsAvailableTest extends TestCase
     {
         $fs = self::createPHP8Filesystem();
         $fs->shouldReceive('exists')->with('/etc/php/8.3/mods-available/apcu.ini')->andReturn(true);
-        $fs->shouldReceive('readFile')->with('/etc/php/8.3/mods-available/apcu.ini')->andReturn($content);
+        $fs->shouldReceive('readFile')->with('/etc/php/8.3/mods-available/apcu.ini', strlen(ModsAvailable::MARKER))->andReturn(substr($content, 0, strlen(ModsAvailable::MARKER)));
         $fs->shouldNotReceive('writeFile');
         $this->expectException(Exception\IO::class);
         $this->expectExceptionMessage("The file /etc/php/8.3/mods-available/apcu.ini already exists, and it doesn't start with the line '; Created by install-php-extensions': remove or rename it to install the module apcu");

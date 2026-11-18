@@ -1,7 +1,7 @@
 # Using IPE as a library
 
 IPE can be installed with Composer and used from PHP code.
-At the moment, IPE can install extensions only on Debian and Alpine Linux.
+The supported operating systems are listed in the [README](README.md).
 
 All the services are available from the application container returned by `\IPE\createApp()`:
 
@@ -259,17 +259,37 @@ $ipe->make(\IPE\ComposerRepository\Registry::class)->unregister(\IPE\ComposerRep
 ### Compilation options
 
 By default, IPE compiles the PHP extensions and the system libraries using all the available processors, and strips the debug symbols from the PHP extensions.
+The archives with the source code of the extensions may lack their git submodules: IPE can fetch them (it needs git, which is installed temporarily if missing).
 To change that:
 
 ```php
-$ipe->singleton(\IPE\Installer\BuildOptions::class, static function () {
-    return (new \IPE\Installer\BuildOptions())
-        // 0: one job per available processor
-        ->withParallelJobs(2)
-        // TYPE_OPTIMIZED (default), TYPE_WITH_SYMBOLS or TYPE_DEBUG
-        ->withType(\IPE\Installer\BuildOptions::TYPE_WITH_SYMBOLS)
-    ;
-});
+$ipe->extend(
+    \IPE\Installer\BuildOptions::class,
+    static function (\IPE\Installer\BuildOptions $options, $app) {
+        return $options
+            // 0: one job per available processor
+            ->withParallelJobs(2)
+            // TYPE_OPTIMIZED (default), TYPE_WITH_SYMBOLS or TYPE_DEBUG
+            ->withType(\IPE\Installer\BuildOptions::TYPE_WITH_SYMBOLS)
+            // Fetch the git submodules missing from the source code of the extensions
+            ->withFetchGitSubmodules(true)
+        ;
+    }
+);
+```
+
+### Git hosts
+
+IPE recognizes the archives of the repositories hosted on GitHub, GitLab, Codeberg and Bitbucket (for example, to fetch their git submodules), and the shortcuts like `gh:organization/repository@ref` when running as a program.
+To support other services, implement `\IPE\GitHost` and register it:
+
+```php
+$ipe->extend(
+    \IPE\GitHost\Registry::class,
+    static function (\IPE\GitHost\Registry $registry, $app) {
+        return $registry->register(new YourGitHost());
+    }
+);
 ```
 
 ## snuffleupagus

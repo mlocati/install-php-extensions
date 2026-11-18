@@ -350,6 +350,48 @@ final class ArchiveExtractorTest extends TestCase
     }
 
     /**
+     * @return list<array{non-empty-string}>
+     */
+    public static function providePharFormats()
+    {
+        return [
+            [ArchiveFormat::ZIP],
+            [ArchiveFormat::TAR],
+        ];
+    }
+
+    /**
+     * The downloaded archives may be saved without extension, which PharData needs.
+     *
+     * @dataProvider providePharFormats
+     *
+     * @param non-empty-string $format
+     *
+     * @return void
+     */
+    public function testPharExtensionWithoutFileExtension($format)
+    {
+        if ($format === ArchiveFormat::ZIP) {
+            $extractor = self::getPharZipExtractor();
+            $contents = self::createDeflatedZip(['rootDir/file' => "zip\n"]);
+        } else {
+            if (!self::isExtractorAvailable(FormatExtractor\WithPharExtension::class, ArchiveFormat::TAR)) {
+                self::markTestSkipped('The Phar extension is not available');
+            }
+            $extractor = self::requireExtractor(FormatExtractor\WithPharExtension::createIfAvailable(ArchiveFormat::TAR, self::$fs, new \IPE\Logger()));
+            $contents = self::createTarEntry('rootDir/file', "tar\n", 1000000001, '0', "ustar\x0000") . str_repeat("\0", 1024);
+        }
+        $vol = self::$fs->createVolatileDirectory();
+        $archive = $vol->getPath() . '/extension-source';
+        self::$fs->writeFile($archive, $contents);
+        $destination = $vol->getPath() . '/out';
+        self::$fs->createDirectory($destination);
+        $extractedDir = $extractor->extractTo($archive, $destination);
+        self::assertSame("{$format}\n", self::$fs->readFile("{$extractedDir}/file"));
+        self::assertTrue(self::$fs->isFile($archive));
+    }
+
+    /**
      * @param string $name
      * @param string $content
      * @param int $mtime

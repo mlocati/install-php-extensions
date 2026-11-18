@@ -14,6 +14,7 @@ use IPE\Extension\Source;
 use IPE\Extension\Version;
 use IPE\Extensions;
 use IPE\Filesystem;
+use IPE\GitHost;
 use IPE\Installer\CACertificatesInstaller;
 use IPE\Installer\Enabler;
 use IPE\Installer\PHPSourceProvider;
@@ -198,6 +199,7 @@ final class ResolverTest extends TestCase
             $phpSystemPackage === null ? new PHPSystemPackage($php, $os) : $phpSystemPackage,
             // Not a POSIX system, so it never installs anything
             new CACertificatesInstaller(self::createOS(), new \IPE\Logger()),
+            (new GitHost\Registry())->registerDefaultHosts(),
             new \IPE\Logger()
         );
     }
@@ -1071,6 +1073,24 @@ final class ResolverTest extends TestCase
         self::assertSame('', $resolved->getVersion());
         self::assertSame('apcu (installed but disabled)', (string) $resolved);
         self::assertSame([], $state->getSkippedExtensions());
+    }
+
+    /**
+     * The disabled extensions are not compiled, so we don't need to fetch their git submodules.
+     *
+     * @return void
+     */
+    public function testGitSourceOfDisabledExtension()
+    {
+        $php = self::createPHP('8.3.0');
+        $asked = new Asked\FromDirectory(self::getAssetPath('directories/known-pecl'));
+        $resolved = self::resolveOne(self::createResolver($php), $asked, new State($php, self::$fs));
+        self::assertSame(Resolved::ORIGIN_DIRECTORY, $resolved->getOrigin());
+        self::assertNotNull($resolved->getGitSource());
+        $resolver = self::createResolver($php, null, [], null, self::createEnablerWithDisabled(['lzf' => '/etc/php/8.3/mods-available/lzf.ini']));
+        $resolved = self::resolveOne($resolver, $asked, new State($php, self::$fs));
+        self::assertSame(Resolved::ORIGIN_DISABLED, $resolved->getOrigin());
+        self::assertNull($resolved->getGitSource());
     }
 
     /**

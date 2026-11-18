@@ -13,9 +13,12 @@ It works on:
 - the official [Docker PHP images](https://hub.docker.com/_/php), both the Debian and the Alpine variants;
 - Debian 9 (Stretch) or later, with PHP installed from the Debian packages or from the [repository of Ondřej Surý](https://packages.sury.org/php/);
 - Ubuntu 16.04 or later, with PHP installed from the Ubuntu packages or from the packages of Ondřej Surý (his [PPA](https://launchpad.net/~ondrej/+archive/ubuntu/php) or his [repository](https://packages.sury.org/php/));
-- Alpine Linux 3.15 or later, with PHP installed from the Alpine packages.
+- Alpine Linux 3.15 or later, with PHP installed from the Alpine packages;
+- Enterprise Linux 8 or later (AlmaLinux, CentOS Stream, Oracle Linux, Red Hat Enterprise Linux, Rocky Linux), with PHP installed from the system packages (including their module streams) or from the [packages of Remi](https://rpms.remirepo.net/) (see [Optional repositories on Enterprise Linux](#optional-repositories-on-enterprise-linux));
+- Fedora, with PHP installed from the Fedora packages;
+- Amazon Linux 2023, with PHP installed from the Amazon Linux packages.
 
-When PHP has been installed by the system packager (APT or APK), IPE may install the extensions from its packages whenever they are available (see the `--system-packages` option).
+When PHP has been installed by the system packager (APT, APK or DNF), IPE may install the extensions from its packages whenever they are available (see the `--system-packages` option).
 
     install-php-extensions gd xdebug
 

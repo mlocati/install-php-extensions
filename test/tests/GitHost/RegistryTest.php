@@ -27,6 +27,22 @@ final class RegistryTest extends TestCase
     }
 
     /**
+     * The archives of the shortcuts must be recognized, so that we can fetch their git submodules.
+     *
+     * @return void
+     */
+    public function testArchiveURLsAreRecognized()
+    {
+        foreach ((new Registry())->registerDefaultHosts()->getHosts() as $host) {
+            $repository = $host->getRepositoryExample();
+            foreach (['main', 'refs/tags/v1.0', 'cafebabecafe'] as $ref) {
+                $url = $host->getArchiveURL($repository, $ref);
+                self::assertSame([$repository, $ref], $host->parseArchiveURL($url), "{$host->getName()}: {$url}");
+            }
+        }
+    }
+
+    /**
      * The arguments like xdebug:^3.3 are parsed as handle:version after the shortcuts.
      *
      * @return void

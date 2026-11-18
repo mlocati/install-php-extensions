@@ -61,4 +61,48 @@ final class Bitbucket implements GitHost
     {
         return "https://bitbucket.org/{$repository}/get/{$ref}.tar.gz";
     }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\GitHost::getCloneURL()
+     */
+    public function getCloneURL($repository)
+    {
+        return "https://bitbucket.org/{$repository}.git";
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\GitHost::getRawFileURL()
+     */
+    public function getRawFileURL($repository, $ref, $path)
+    {
+        return "https://bitbucket.org/{$repository}/raw/" . self::encodePath($ref === '' ? 'HEAD' : $ref) . '/' . self::encodePath($path);
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return string
+     */
+    private static function encodePath($path)
+    {
+        return implode('/', array_map('rawurlencode', explode('/', $path)));
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\GitHost::parseArchiveURL()
+     */
+    public function parseArchiveURL($url)
+    {
+        if (preg_match('_^https://bitbucket\.org/(?<repository>[^/]+/[^/]+)/get/(?<ref>.+?)\.(?:zip|tar\.gz|tar\.bz2)$_D', $url, $match) && $this->isValidRepository($match['repository'])) {
+            return [$match['repository'], $match['ref']];
+        }
+
+        return null;
+    }
 }

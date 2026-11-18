@@ -16,6 +16,7 @@ use IPE\Filesystem\ArchiveExtractor;
 use IPE\Filesystem\ArchiveFetcher;
 use IPE\Filesystem\ArchiveFormat;
 use IPE\Filesystem\Downloader;
+use IPE\GitHost;
 use IPE\Installer\CACertificatesInstaller;
 use IPE\Installer\Enabler;
 use IPE\Installer\State;
@@ -115,6 +116,11 @@ abstract class Resolver
      */
     protected $caCertificatesInstaller;
 
+    /**
+     * @var \IPE\GitHost\Registry
+     */
+    protected $gitHosts;
+
     public function __construct(
         PHPInfo $php,
         OS $os,
@@ -132,8 +138,10 @@ abstract class Resolver
         Enabler $enabler,
         PHPSystemPackage $phpSystemPackage,
         CACertificatesInstaller $caCertificatesInstaller,
+        GitHost\Registry $gitHosts,
         \IPE\Logger $logger
     ) {
+        $this->gitHosts = $gitHosts;
         $this->logger = $logger;
         $this->php = $php;
         $this->os = $os;
@@ -610,7 +618,10 @@ abstract class Resolver
             }
         }
         if ($asked instanceof Asked\FromDirectory) {
-            return $this->resolveAskedExtensionFromDirectory($asked, $state, Resolved::ORIGIN_DIRECTORY);
+            return self::withGitSource(
+                $this->resolveAskedExtensionFromDirectory($asked, $state, Resolved::ORIGIN_DIRECTORY),
+                new Extension\GitSource($asked->getPath())
+            );
         }
         if ($asked instanceof Asked\FromHandle) {
             return $this->resolveAskedExtensionFromHandle($asked, $state);
@@ -782,7 +793,10 @@ abstract class Resolver
             }
         }
 
-        return $this->createResolved($known, $path, $version->getVersion(), Resolved::ORIGIN_COMPOSER, $manifest, $asked->getOptions(), $state, $forcedVersion);
+        return self::withGitSource(
+            $this->createResolved($known, $path, $version->getVersion(), Resolved::ORIGIN_COMPOSER, $manifest, $asked->getOptions(), $state, $forcedVersion),
+            self::createComposerGitSource($path, $version)
+        );
     }
 
     /**
@@ -803,13 +817,17 @@ abstract class Resolver
         $extractTo = $state->getVolatileDir()->createSubdir();
         $this->logger->info("Extracting downloaded tarball to {$extractTo}");
         $sourceDir = $this->archiveExtractor->extractTo($tarballFile, $extractTo);
+        $gitSource = (new Extension\GitSource($sourceDir))->withArchiveURL($asked->getURL(), $this->gitHosts);
         if ($asked->getSubdir() !== '') {
             $sourceDir .= str_replace('/', $fs->getDirectorySeparator(), '/' . $asked->getSubdir());
         }
         $fs->deleteDirectory($tarballDir);
         $extensionFromDir = new Asked\FromDirectory($sourceDir, $asked->getOptions());
 
-        return $this->resolveAskedExtensionFromDirectory($extensionFromDir, $state, Resolved::ORIGIN_URL);
+        return self::withGitSource(
+            $this->resolveAskedExtensionFromDirectory($extensionFromDir, $state, Resolved::ORIGIN_URL),
+            $gitSource
+        );
     }
 
     /**
@@ -899,7 +917,10 @@ abstract class Resolver
                     $this->logger->info("Using version {$version} of {$handle} from the Composer repositories");
                     $path = $this->composerSource->fetch($version, $state);
 
-                    return $this->createResolvedFromFetched($extension, $path, $version->getVersion(), $origin, $userOptions, $state, $forcedVersion);
+                    return self::withGitSource(
+                        $this->createResolvedFromFetched($extension, $path, $version->getVersion(), $origin, $userOptions, $state, $forcedVersion),
+                        self::createComposerGitSource($path, $version)
+                    );
                 case Resolved::ORIGIN_PECL:
                     if (!($extension instanceof Extension\AvailableOnPECL)) {
                         break;
@@ -1167,6 +1188,34 @@ abstract class Resolver
         $manifest = $this->manifestReader->readFromDirectory($path, $state->getFilesystem());
 
         return $this->createResolved($extension, $path, $version, $origin, $manifest, $userOptions, $state, $forcedVersion);
+    }
+
+    /**
+     * @param non-empty-string $path the root of the package archive
+     *
+     * @return \IPE\Extension\GitSource
+     */
+    private static function createComposerGitSource($path, Extension\Version\Composer $version)
+    {
+        $gitSource = new Extension\GitSource($path);
+        $url = $version->getGitURL();
+
+        return $url === '' ? $gitSource : $gitSource->withRemoteRepository($url, $version->getGitReference());
+    }
+
+    /**
+     * @param \IPE\Extension\Resolved|null $resolved
+     *
+     * @return \IPE\Extension\Resolved|null
+     */
+    private static function withGitSource($resolved, Extension\GitSource $gitSource)
+    {
+        // The disabled extensions are only enabled, not compiled
+        if ($resolved === null || $resolved->getOrigin() === Resolved::ORIGIN_DISABLED) {
+            return $resolved;
+        }
+
+        return $resolved->withGitSource($gitSource);
     }
 
     /**

@@ -46,6 +46,11 @@ final class BuildOptions
     private $type = self::TYPE_OPTIMIZED;
 
     /**
+     * @var bool
+     */
+    private $fetchGitSubmodules = false;
+
+    /**
      * @return non-empty-list<non-empty-string>
      */
     public static function getTypes()
@@ -105,6 +110,29 @@ final class BuildOptions
         }
         $result = clone $this;
         $result->type = $value;
+
+        return $result;
+    }
+
+    /**
+     * Should we fetch the git submodules that are missing from the source code of the extensions?
+     *
+     * @return bool
+     */
+    public function isFetchGitSubmodules()
+    {
+        return $this->fetchGitSubmodules;
+    }
+
+    /**
+     * @param bool $value
+     *
+     * @return self
+     */
+    public function withFetchGitSubmodules($value)
+    {
+        $result = clone $this;
+        $result->fetchGitSubmodules = $value;
 
         return $result;
     }

@@ -119,7 +119,7 @@ final class ModsAvailable
         if (!$this->fs->exists($iniFile)) {
             return;
         }
-        if (strpos($this->fs->readFile($iniFile), self::MARKER) !== 0) {
+        if ($this->fs->readFile($iniFile, strlen(self::MARKER)) !== self::MARKER) {
             throw new Exception\IO("The file {$iniFile} already exists, and it doesn't start with the line '" . self::MARKER . "': remove or rename it to install the module {$moduleName}");
         }
     }
