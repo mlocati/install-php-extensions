@@ -65,7 +65,9 @@ final class PHPInfoTest extends TestCase
             ['x64', 'API20170718,TS,VC15', 'VC15'],
             ['x64', 'API20240924,NTS,VS17', 'VS17'],
             ['arm64', 'API20240924,TS,debug,VS17', 'VS17'],
+            ['x64', 'API20240924,NTS,VS19,extra', 'VS19'],
             ['x64', 'API20240924,NTS,debug', ''],
+            ['x64', 'API20240924,NTS,clang', ''],
             ['x64', '', ''],
         ];
     }

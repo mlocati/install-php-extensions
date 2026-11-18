@@ -401,7 +401,7 @@ class PHPInfo
     /**
      * Get the ID of the compiler PHP has been built with: the extensions must be built with a compiler with the same ID.
      *
-     * @return string empty string if it's not part of the build ID of the extensions (that is, on Unix)
+     * @return string empty string if PHP hasn't been built with Visual C++ (for example, on Unix)
      *
      * @example 'VC15' (Visual C++ 2017)
      * @example 'VS17' (Visual C++ 2022)
@@ -518,7 +518,7 @@ class PHPInfo
     /**
      * @param string $buildID the build ID of the extensions (ZEND_MODULE_BUILD_ID)
      *
-     * @return string
+     * @return string empty string if PHP hasn't been built with Visual C++
      *
      * @example parseCompilerID('API20240924,NTS,VS17') returns 'VS17'
      * @example parseCompilerID('API20240924,TS,debug,VS17') returns 'VS17'
@@ -526,10 +526,13 @@ class PHPInfo
      */
     private static function parseCompilerID($buildID)
     {
-        $parts = array_slice(explode(',', $buildID), 1);
-        $parts = array_values(array_diff($parts, ['TS', 'NTS', 'debug']));
+        foreach (explode(',', $buildID) as $part) {
+            if (preg_match('/^V[CS]\d+$/D', $part)) {
+                return $part;
+            }
+        }
 
-        return isset($parts[0]) ? $parts[0] : '';
+        return '';
     }
 
     /**
