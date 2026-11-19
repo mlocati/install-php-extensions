@@ -2,6 +2,7 @@
 
 namespace IPE\Test\Extensions;
 
+use IPE\Architecture;
 use IPE\Extensions\cassandra;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
@@ -48,16 +49,15 @@ final class CassandraTest extends TestCase
 
             return [0, ''];
         });
-        $php = M::mock(PHPInfo::class);
+        $os = M::mock(OS\Debian::class);
+        $os->shouldReceive('getNumericVersion')->andReturn(OS\Debian::TRIXIE);
+        $os->shouldReceive('getArchitecture')->andReturn(new Architecture('aarch64'));
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $php = self::mockPHPInfo($os);
         $php->shouldReceive('getPHPBin')->andReturn('/usr/local/bin/php');
         $php->shouldReceive('getVersion')->andReturn('8.3.20');
         $php->shouldReceive('getMajorMinorVersion')->andReturn(803);
-        $php->shouldReceive('getBits')->andReturn(64);
         $php->shouldReceive('getExtensionDir')->andReturn('/ext');
-        $os = M::mock(OS\Debian::class);
-        $os->shouldReceive('getNumericVersion')->andReturn(OS\Debian::TRIXIE);
-        $os->shouldReceive('getMachineArchitecture')->andReturn(OS\Architecture::ARM64);
-        $os->shouldReceive('getFilesystem')->andReturn($fs);
         $buildOptions = (new BuildOptions())->withType($buildType)->withParallelJobs(2);
         $extension = new cassandra($php, $os);
         self::assertSame('/ext/cassandra.so', $extension->buildModule(self::createBuildContext('', null, '/src', $buildOptions), new BuildTools($php, $fs, new \IPE\Logger())));

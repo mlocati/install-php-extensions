@@ -2,8 +2,8 @@
 
 namespace IPE\Test\Support\OSFactoryTest;
 
+use IPE\Architecture;
 use IPE\Exception;
-use IPE\OS\Architecture;
 use IPE\OS\Posix;
 use IPE\Service\Container;
 
@@ -95,20 +95,10 @@ final class FakeOS implements Posix
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\OS\Posix::getMachineArchitecture()
+     * @see \IPE\OS::getArchitecture()
      */
-    public function getMachineArchitecture()
+    public function getArchitecture()
     {
-        return Architecture::X64;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\OS\Posix::getRawMachineArchitecture()
-     */
-    public function getRawMachineArchitecture()
-    {
-        return 'x86_64';
+        return new Architecture('x86_64');
     }
 }

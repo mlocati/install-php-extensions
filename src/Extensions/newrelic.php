@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\Filesystem;
@@ -180,11 +181,11 @@ final class newrelic extends Extension implements
     public function canRunBinaryInstaller($rootDir)
     {
         // The available architectures change from version to version
-        $architecture = OS\Architecture::getVendorName($this->php, $this->os, [
-            OS\Architecture::X86 => 'x86',
-            OS\Architecture::X64 => 'x64',
-            OS\Architecture::ARM64 => 'aarch64',
-        ]);
+        $architecture = $this->php->getArchitecture()->map([
+            Architecture::X86 => 'x86',
+            Architecture::X64 => 'x64',
+            Architecture::ARM64 => 'aarch64',
+        ], true);
 
         return $this->os->getFilesystem()->isDirectory("{$rootDir}/agent/{$architecture}");
     }

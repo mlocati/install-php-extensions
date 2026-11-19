@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\Option;
@@ -72,11 +73,11 @@ final class sourceguardian extends Extension\PrecompiledExtension implements Ext
         if (!$this->os instanceof OS\Posix) {
             throw new Exception\UnsupportedOS("SourceGuardian can't be installed on {$this->os->getDisplayName()}");
         }
-        $architecture = OS\Architecture::getVendorName($this->php, $this->os, [
-            OS\Architecture::X86 => 'i386',
-            OS\Architecture::X64 => 'x86_64',
-            OS\Architecture::ARM64 => 'aarch64',
-        ]);
+        $architecture = $this->php->getArchitecture()->map([
+            Architecture::X86 => 'i386',
+            Architecture::X64 => 'x86_64',
+            Architecture::ARM64 => 'aarch64',
+        ], true);
 
         return "https://www.sourceguardian.com/loaders/download/loaders.linux-{$architecture}.tar.gz";
     }

@@ -2,6 +2,7 @@
 
 namespace IPE\Test\Extensions;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension\UnsupportedEnvironment;
 use IPE\Extensions\swoole;
@@ -99,17 +100,17 @@ final class SwooleTest extends TestCase
     }
 
     /**
-     * @return array<array{class-string<\IPE\OS>, int, string, string, list<string>}>
+     * @return array<array{class-string<\IPE\OS>, int, non-empty-string, string, list<string>}>
      */
     public static function provideBuildArguments()
     {
         return [
-            [OS\Debian::class, 32, OS\Architecture::X64, '5.0.3', ['--build=i686-linux-gnu']],
-            [OS\Alpine::class, 32, OS\Architecture::X64, '5.0.3', ['--build=i686-linux-musl']],
-            [OS\Debian::class, 32, OS\Architecture::X64, '2.0.10', ['--build=i686-linux-gnu']],
-            [OS\Debian::class, 32, OS\Architecture::X86, '5.0.3', []],
-            [OS\Debian::class, 32, OS\Architecture::ARM64, '5.0.3', []],
-            [OS\Debian::class, 64, OS\Architecture::X64, '5.0.3', []],
+            [OS\Debian::class, 32, 'x86_64', '5.0.3', ['--build=i686-linux-gnu']],
+            [OS\Alpine::class, 32, 'x86_64', '5.0.3', ['--build=i686-linux-musl']],
+            [OS\Debian::class, 32, 'x86_64', '2.0.10', ['--build=i686-linux-gnu']],
+            [OS\Debian::class, 32, 'i686', '5.0.3', []],
+            [OS\Debian::class, 32, 'aarch64', '5.0.3', []],
+            [OS\Debian::class, 64, 'x86_64', '5.0.3', []],
         ];
     }
 
@@ -118,13 +119,13 @@ final class SwooleTest extends TestCase
      *
      * @param class-string<\IPE\OS> $osClass
      * @param int $bits
-     * @param string $architecture
+     * @param non-empty-string $rawArchitecture
      * @param string $version
      * @param list<string> $expected
      *
      * @return void
      */
-    public function testBuildArguments($osClass, $bits, $architecture, $version, array $expected)
+    public function testBuildArguments($osClass, $bits, $rawArchitecture, $version, array $expected)
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getBits')->andReturn($bits);
@@ -134,7 +135,7 @@ final class SwooleTest extends TestCase
         $os = M::mock($osClass);
         self::assertInstanceOf(OS::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn(320);
-        $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);
+        $os->shouldReceive('getArchitecture')->andReturn(new Architecture($rawArchitecture));
         $arguments = (new swoole($php, $os))->getConfigureArguments(self::createBuildContext($version));
         self::assertSame($expected, array_values(array_filter($arguments, static function ($argument) {
             return strpos($argument, '--build=') === 0;

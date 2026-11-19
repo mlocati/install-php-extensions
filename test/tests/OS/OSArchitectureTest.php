@@ -2,6 +2,7 @@
 
 namespace IPE\Test\OS;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
@@ -10,7 +11,7 @@ use IPE\Service\Container;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
-final class MachineArchitectureTest extends TestCase
+final class OSArchitectureTest extends TestCase
 {
     /**
      * @return array<array{string, string}>
@@ -18,24 +19,27 @@ final class MachineArchitectureTest extends TestCase
     public static function provideArchitectures()
     {
         return [
-            ['i386', OS\Architecture::X86],
-            ['i486', OS\Architecture::X86],
-            ['i586', OS\Architecture::X86],
-            ['i686', OS\Architecture::X86],
-            ['x86', OS\Architecture::X86],
-            ['x86_64', OS\Architecture::X64],
-            ['amd64', OS\Architecture::X64],
-            ['aarch64', OS\Architecture::ARM64],
-            ['arm64', OS\Architecture::ARM64],
-            ['armv8', OS\Architecture::ARM64],
-            ['arm', OS\Architecture::ARM32],
-            ['armv5l', OS\Architecture::ARM32],
-            ['armv6l', OS\Architecture::ARM32],
-            ['armv7l', OS\Architecture::ARM32],
-            ['armv8l', OS\Architecture::ARM32],
-            ['riscv64', OS\Architecture::OTHER],
-            ['ppc64le', OS\Architecture::OTHER],
-            ['s390x', OS\Architecture::OTHER],
+            ['i386', Architecture::X86],
+            ['i486', Architecture::X86],
+            ['i586', Architecture::X86],
+            ['i686', Architecture::X86],
+            ['x86', Architecture::X86],
+            ['x86_64', Architecture::X64],
+            ['amd64', Architecture::X64],
+            ['AMD64', Architecture::X64],
+            ['x64', Architecture::X64],
+            ['ARM64', Architecture::ARM64],
+            ['aarch64', Architecture::ARM64],
+            ['arm64', Architecture::ARM64],
+            ['armv8', Architecture::ARM64],
+            ['arm', Architecture::ARM32],
+            ['armv5l', Architecture::ARM32],
+            ['armv6l', Architecture::ARM32],
+            ['armv7l', Architecture::ARM32],
+            ['armv8l', Architecture::ARM32],
+            ['riscv64', ''],
+            ['ppc64le', ''],
+            ['s390x', ''],
         ];
     }
 
@@ -52,9 +56,10 @@ final class MachineArchitectureTest extends TestCase
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('uname', ['-m'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "{$raw}\n"]);
         $os = new OS\Alpine('3.23.0', $fs, new Container());
-        self::assertSame($expected, $os->getMachineArchitecture());
-        self::assertSame($expected, $os->getMachineArchitecture(), 'The command should be executed only once');
-        self::assertSame($raw, $os->getRawMachineArchitecture());
+        $architecture = $os->getArchitecture();
+        self::assertSame($architecture, $os->getArchitecture(), 'The command should be executed only once');
+        self::assertSame($expected, $architecture->getName());
+        self::assertSame($raw, $architecture->getRawName());
     }
 
     /**
@@ -63,12 +68,12 @@ final class MachineArchitectureTest extends TestCase
     public static function provideWindowsArchitectures()
     {
         return [
-            [['PROCESSOR_ARCHITECTURE' => 'AMD64'], 'AMD64', OS\Architecture::X64],
-            [['PROCESSOR_ARCHITECTURE' => 'x86'], 'x86', OS\Architecture::X86],
-            [['PROCESSOR_ARCHITECTURE' => 'ARM64'], 'ARM64', OS\Architecture::ARM64],
-            [['PROCESSOR_ARCHITECTURE' => 'ARM'], 'ARM', OS\Architecture::ARM32],
-            [['PROCESSOR_ARCHITECTURE' => 'x86', 'PROCESSOR_ARCHITEW6432' => 'AMD64'], 'AMD64', OS\Architecture::X64],
-            [['PROCESSOR_ARCHITECTURE' => 'IA64'], 'IA64', OS\Architecture::OTHER],
+            [['PROCESSOR_ARCHITECTURE' => 'AMD64'], 'AMD64', Architecture::X64],
+            [['PROCESSOR_ARCHITECTURE' => 'x86'], 'x86', Architecture::X86],
+            [['PROCESSOR_ARCHITECTURE' => 'ARM64'], 'ARM64', Architecture::ARM64],
+            [['PROCESSOR_ARCHITECTURE' => 'ARM'], 'ARM', Architecture::ARM32],
+            [['PROCESSOR_ARCHITECTURE' => 'x86', 'PROCESSOR_ARCHITEW6432' => 'AMD64'], 'AMD64', Architecture::X64],
+            [['PROCESSOR_ARCHITECTURE' => 'IA64'], 'IA64', ''],
         ];
     }
 
@@ -90,8 +95,8 @@ final class MachineArchitectureTest extends TestCase
         }
         try {
             $os = new OS\Windows('Microsoft Windows 11 Pro', 64, '10.0.26200', M::mock(Filesystem::class));
-            self::assertSame($raw, $os->getRawMachineArchitecture());
-            self::assertSame($expected, $os->getMachineArchitecture());
+            self::assertSame($raw, $os->getArchitecture()->getRawName());
+            self::assertSame($expected, $os->getArchitecture()->getName());
         } finally {
             foreach ($originals as $name => $original) {
                 putenv($original === false ? $name : "{$name}={$original}");
@@ -107,6 +112,6 @@ final class MachineArchitectureTest extends TestCase
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('run')->andReturn([1, '']);
         $this->expectException(Exception\IO::class);
-        (new OS\Alpine('3.23.0', $fs, new Container()))->getMachineArchitecture();
+        (new OS\Alpine('3.23.0', $fs, new Container()))->getArchitecture();
     }
 }

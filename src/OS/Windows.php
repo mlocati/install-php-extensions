@@ -12,7 +12,7 @@ use IPE\Traits;
  */
 class Windows implements OS
 {
-    use Traits\MachineArchitecture;
+    use Traits\OSArchitecture;
 
     /**
      * @var \IPE\Filesystem
@@ -153,7 +153,7 @@ class Windows implements OS
      *
      * @see https://learn.microsoft.com/en-us/windows/win32/winprog64/wow64-implementation-details#environment-variables
      */
-    protected function detectMachineArchitecture()
+    protected function detectRawArchitecture()
     {
         // A 32-bit process on a 64-bit system sees x86 in PROCESSOR_ARCHITECTURE
         foreach (['PROCESSOR_ARCHITEW6432', 'PROCESSOR_ARCHITECTURE'] as $name) {

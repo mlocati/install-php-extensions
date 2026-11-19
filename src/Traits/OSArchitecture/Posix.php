@@ -1,12 +1,13 @@
 <?php
 
-namespace IPE\Traits;
+namespace IPE\Traits\OSArchitecture;
 
 use IPE\Filesystem\Command;
+use IPE\Traits\OSArchitecture;
 
-trait PosixMachineArchitecture
+trait Posix
 {
-    use MachineArchitecture;
+    use OSArchitecture;
 
     /**
      * @return \IPE\Filesystem
@@ -18,7 +19,7 @@ trait PosixMachineArchitecture
      *
      * @return string empty string if it can't be detected
      */
-    protected function detectMachineArchitecture()
+    protected function detectRawArchitecture()
     {
         list($rc, $output) = $this->getFilesystem()->run(Command::create('uname', ['-m'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
 

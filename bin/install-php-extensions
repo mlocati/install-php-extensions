@@ -193,9 +193,9 @@ try {
     // Configure the PHP to be used
     if (($phpOption = $options->getString('php')) !== '') {
         $app->singleton(IPE\PHPInfo::class, static function (Service\Container $app) use ($phpOption) {
-            $fs = $app->make(Filesystem::class);
+            $os = $app->make(OS::class);
             try {
-                return IPE\PHPInfo::fromPHPBin($phpOption, $fs);
+                return IPE\PHPInfo::fromPHPBin($phpOption, $os);
             } catch (IPEException\InvalidArgument $x) {
                 throw new IPEException\InvalidOption("Invalid value of the --php option: {$x->getMessage()}");
             }
@@ -281,7 +281,7 @@ try {
 
     // Detect OS
     $os = $app->make(OS::class);
-    $fs = $app->make(Filesystem::class);
+    $fs = $os->getFilesystem();
 
     // Collect the extensions we want to install
     $askedExtensions = $app->build(CLI\ArgumentsParser::class)->parseArguments($options->getArguments(), $options->getOptionsByExtension());

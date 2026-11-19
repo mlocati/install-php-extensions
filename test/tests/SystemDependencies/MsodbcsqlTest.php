@@ -2,6 +2,7 @@
 
 namespace IPE\Test\SystemDependencies;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extensions\pdo_sqlsrv;
 use IPE\Extensions\sqlsrv;
@@ -40,13 +41,12 @@ final class MsodbcsqlTest extends TestCase
      * @param int $osVersion
      * @param int $phpVersion
      * @param string $odbcinst the content of /etc/odbcinst.ini (empty string if it doesn't exist)
-     * @param string $architecture
-     * @param string $rawArchitecture
+     * @param non-empty-string $rawArchitecture
      * @param int $bits
      *
      * @return \IPE\SystemDependencies\msodbcsql
      */
-    private function createDependency($osClass, $osVersion, $phpVersion, $odbcinst = '', $architecture = OS\Architecture::X64, $rawArchitecture = 'x86_64', $bits = 64)
+    private function createDependency($osClass, $osVersion, $phpVersion, $odbcinst = '', $rawArchitecture = 'x86_64', $bits = 64)
     {
         $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
         $fs->shouldReceive('isFile')->with('/etc/odbcinst.ini')->andReturn($odbcinst !== '');
@@ -61,17 +61,15 @@ final class MsodbcsqlTest extends TestCase
 
             return [0, ''];
         });
-        $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
-        $php->shouldReceive('getBits')->andReturn($bits);
         $os = M::mock($osClass);
         self::assertInstanceOf(OS\Posix::class, $os);
-        $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);
-        $os->shouldReceive('getRawMachineArchitecture')->andReturn($rawArchitecture);
+        $os->shouldReceive('getArchitecture')->andReturn(new Architecture($rawArchitecture));
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
         $os->shouldReceive('getFilesystem')->andReturn($fs);
         $os->shouldReceive('getDisplayName')->andReturn('The OS');
         $os->shouldReceive('getCodename')->andReturn('thecodename');
+        $php = self::mockPHPInfo($os, $bits);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $packager = M::mock(SystemPackager::class);
         $packager->shouldReceive('refresh');
         $os->shouldReceive('getSystemPackager')->andReturn($packager);
@@ -342,13 +340,12 @@ final class MsodbcsqlTest extends TestCase
     {
         $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
         $fs->shouldReceive('run')->andReturn([1, '']);
-        $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(804);
-        $php->shouldReceive('getBits')->andReturn(64);
         $os = M::mock(OS\Alpine::class);
-        $os->shouldReceive('getMachineArchitecture')->andReturn(OS\Architecture::X64);
+        $os->shouldReceive('getArchitecture')->andReturn(new Architecture('x86_64'));
         $os->shouldReceive('getNumericVersion')->andReturn(323);
         $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $php = self::mockPHPInfo($os);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(804);
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('saveAs');
         $this->expectException(Exception\SystemPackager::class);
@@ -362,20 +359,20 @@ final class MsodbcsqlTest extends TestCase
     {
         $this->createDependency(OS\Alpine::class, 323, 804)->install(self::createState());
         self::assertStringEndsWith('_amd64.apk', $this->downloads[0]);
-        $this->createDependency(OS\Alpine::class, 323, 804, '', OS\Architecture::ARM64, 'aarch64')->install(self::createState());
+        $this->createDependency(OS\Alpine::class, 323, 804, '', 'aarch64')->install(self::createState());
         self::assertStringEndsWith('_arm64.apk', $this->downloads[1]);
     }
 
     /**
-     * @return array<array{int, int, string, string, string, string}>
+     * @return array<array{int, int, non-empty-string, string, string}>
      */
     public static function provideUnavailableAlpineArchitectures()
     {
         return [
-            [703, 64, OS\Architecture::ARM64, 'aarch64', 'arm64', 'aarch64'],
-            [804, 32, OS\Architecture::ARM32, 'armv7l', 'armv7l', '32-bit PHP on armv7l'],
-            [804, 32, OS\Architecture::X64, 'x86_64', 'i386', '32-bit PHP on x86_64'],
-            [804, 64, OS\Architecture::OTHER, 'riscv64', 'riscv64', 'riscv64'],
+            [703, 64, 'aarch64', 'arm64', 'aarch64'],
+            [804, 32, 'armv7l', 'armv7l', '32-bit PHP on armv7l'],
+            [804, 32, 'x86_64', 'i386', '32-bit PHP on x86_64'],
+            [804, 64, 'riscv64', 'riscv64', 'riscv64'],
         ];
     }
 
@@ -384,16 +381,15 @@ final class MsodbcsqlTest extends TestCase
      *
      * @param int $phpVersion
      * @param int $bits
-     * @param string $architecture
-     * @param string $rawArchitecture
+     * @param non-empty-string $rawArchitecture
      * @param string $vendorName
      * @param string $description
      *
      * @return void
      */
-    public function testUnavailableAlpineArchitectures($phpVersion, $bits, $architecture, $rawArchitecture, $vendorName, $description)
+    public function testUnavailableAlpineArchitectures($phpVersion, $bits, $rawArchitecture, $vendorName, $description)
     {
-        $dependency = $this->createDependency(OS\Alpine::class, 323, $phpVersion, '', $architecture, $rawArchitecture, $bits);
+        $dependency = $this->createDependency(OS\Alpine::class, 323, $phpVersion, '', $rawArchitecture, $bits);
         try {
             $dependency->install(self::createState());
             self::fail('Expected exception not thrown');

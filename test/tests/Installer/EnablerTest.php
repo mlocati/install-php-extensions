@@ -206,7 +206,7 @@ final class EnablerTest extends TestCase
         $php = self::createPHPInfo();
         $php->shouldReceive('addInstalledExtensions')->once()->with(['openssl']);
         $php->shouldReceive('getSSLLibrary')->andReturn($knownLibrary);
-        $php->shouldReceive('detectSSLLibrary')->times($detect ? 1 : 0)->with($fs)->andReturnSelf();
+        $php->shouldReceive('detectSSLLibrary')->times($detect ? 1 : 0)->withNoArgs()->andReturnSelf();
 
         self::assertSame(['openssl'], (new Enabler($php, $fs, new \IPE\Logger(), new Options()))->enable(self::createCompiledExtension('openssl')));
     }

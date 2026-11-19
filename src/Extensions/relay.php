@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension;
 use IPE\Option;
@@ -153,10 +154,10 @@ final class relay extends Extension\PrecompiledExtension implements
             throw new Exception\UnsupportedOS("Relay can't be installed on {$this->os->getDisplayName()}");
         }
         $version = $versionRequirements === '' ? ltrim(trim($this->downloader->getContent('https://builds.r2.relay.so/meta/latest')), 'v') : $versionRequirements;
-        $architecture = OS\Architecture::getVendorName($this->php, $this->os, [
-            OS\Architecture::X64 => 'x86-64',
-            OS\Architecture::ARM64 => 'aarch64',
-        ]);
+        $architecture = $this->php->getArchitecture()->map([
+            Architecture::X64 => 'x86-64',
+            Architecture::ARM64 => 'aarch64',
+        ], true);
         list($distro, $flags) = explode('+', "{$build}+");
         $flags = $flags === '' ? '' : "+{$flags}";
 

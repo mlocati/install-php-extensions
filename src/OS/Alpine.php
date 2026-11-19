@@ -10,7 +10,7 @@ use IPE\Traits;
 
 class Alpine implements Posix
 {
-    use Traits\PosixMachineArchitecture;
+    use Traits\OSArchitecture\Posix;
 
     /**
      * @var \IPE\Filesystem

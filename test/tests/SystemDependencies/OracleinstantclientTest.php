@@ -13,7 +13,6 @@ use IPE\Installer\State;
 use IPE\Option\ConfigureOption;
 use IPE\Option\Values;
 use IPE\OS;
-use IPE\PHPInfo;
 use IPE\SystemDependencies\dtrace;
 use IPE\SystemDependencies\oracleinstantclient;
 use IPE\SystemDependencies\unzip;
@@ -57,13 +56,13 @@ final class OracleinstantclientTest extends TestCase
     /**
      * @param int $bits
      * @param int $majorMinorVersion
+     * @param non-empty-string $rawMachineArchitecture
      *
      * @return \IPE\PHPInfo
      */
-    private static function createPHP($bits = 64, $majorMinorVersion = 804)
+    private static function createPHP($bits = 64, $majorMinorVersion = 804, $rawMachineArchitecture = 'x86_64')
     {
-        $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getBits')->andReturn($bits);
+        $php = self::mockPHPInfoOnMachine($rawMachineArchitecture, $bits);
         $php->shouldReceive('getMajorMinorVersion')->andReturn($majorMinorVersion);
 
         return $php;
@@ -72,17 +71,15 @@ final class OracleinstantclientTest extends TestCase
     /**
      * @param class-string<\IPE\OS\Posix> $class
      * @param int $version
-     * @param string $architecture
      * @param \IPE\Filesystem|null $fs
      *
      * @return \IPE\OS\Posix&\Mockery\MockInterface
      */
-    private static function createOS($class, $version = 0, $architecture = OS\Architecture::X64, $fs = null)
+    private static function createOS($class, $version = 0, $fs = null)
     {
         $os = M::mock($class);
         self::assertInstanceOf(OS\Posix::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn($version);
-        $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);
         $os->shouldReceive('getDisplayName')->andReturn('The OS');
         if ($fs !== null) {
             $os->shouldReceive('getFilesystem')->andReturn($fs);
@@ -199,9 +196,9 @@ final class OracleinstantclientTest extends TestCase
      */
     public function testLibraryPath()
     {
-        self::assertSame(self::LIBRARY_PATH, oracleinstantclient::getLibraryPath(self::createPHP(), self::createOS(OS\Debian::class)));
-        self::assertSame('/usr/lib/oracle/19.10/client64/lib', oracleinstantclient::getLibraryPath(self::createPHP(), self::createOS(OS\Debian::class, 0, OS\Architecture::ARM64)));
-        self::assertSame('/usr/lib/oracle/19.9/client/lib', oracleinstantclient::getLibraryPath(self::createPHP(32), self::createOS(OS\Debian::class)));
+        self::assertSame(self::LIBRARY_PATH, oracleinstantclient::getLibraryPath(self::createPHP()));
+        self::assertSame('/usr/lib/oracle/19.10/client64/lib', oracleinstantclient::getLibraryPath(self::createPHP(64, 804, 'aarch64')));
+        self::assertSame('/usr/lib/oracle/19.9/client/lib', oracleinstantclient::getLibraryPath(self::createPHP(32)));
     }
 
     /**
@@ -209,12 +206,10 @@ final class OracleinstantclientTest extends TestCase
      */
     public function testUnsupportedArchitecture()
     {
-        $os = self::createOS(OS\Debian::class, 0, OS\Architecture::OTHER);
-        $os->shouldReceive('getRawMachineArchitecture')->andReturn('riscv64');
-        self::assertSame('/usr/lib/oracle/19.9/client/lib', oracleinstantclient::getLibraryPath(self::createPHP(32), self::createOS(OS\Debian::class, 0, OS\Architecture::X64)));
+        self::assertSame('/usr/lib/oracle/19.9/client/lib', oracleinstantclient::getLibraryPath(self::createPHP(32)));
         $this->expectException(Exception\UnsupportedOS::class);
         $this->expectExceptionMessage('not available for riscv64');
-        oracleinstantclient::getLibraryPath(self::createPHP(), $os);
+        oracleinstantclient::getLibraryPath(self::createPHP(64, 804, 'riscv64'));
     }
 
     /**
@@ -223,7 +218,7 @@ final class OracleinstantclientTest extends TestCase
     public function testInstallOnDebian()
     {
         $directory = '/usr/lib/x86_64-linux-gnu';
-        $os = self::createOS(OS\Debian::class, OS\Debian::TRIXIE, OS\Architecture::X64, $this->createFilesystem(["{$directory}/libaio.so.1t64"]));
+        $os = self::createOS(OS\Debian::class, OS\Debian::TRIXIE, $this->createFilesystem(["{$directory}/libaio.so.1t64"]));
         $dependency = $this->createDependency($os);
         $state = self::createState();
         $dependency->install($state);
@@ -248,7 +243,7 @@ final class OracleinstantclientTest extends TestCase
      */
     public function testBasicPackage()
     {
-        $os = self::createOS(OS\Debian::class, OS\Debian::TRIXIE - 1, OS\Architecture::X64, $this->createFilesystem());
+        $os = self::createOS(OS\Debian::class, OS\Debian::TRIXIE - 1, $this->createFilesystem());
         $this->createDependency($os, true)->install(self::createState());
         self::assertStringContainsString('/instantclient-basic-linux.x64-', $this->downloads[0]);
         self::assertNotContains('gcc', $this->commands);
@@ -260,7 +255,7 @@ final class OracleinstantclientTest extends TestCase
     public function testAlreadyInstalled()
     {
         $configuration = '/etc/ld.so.conf.d/oracle-instantclient.conf';
-        $os = self::createOS(OS\Debian::class, 0, OS\Architecture::X64, $this->createFilesystem([self::LIBRARY_PATH, self::LIBRARY_PATH . '/sdk', $configuration]));
+        $os = self::createOS(OS\Debian::class, 0, $this->createFilesystem([self::LIBRARY_PATH, self::LIBRARY_PATH . '/sdk', $configuration]));
         $dependency = $this->createDependency($os);
         $state = self::createState();
         $dependency->install($state);
@@ -276,7 +271,7 @@ final class OracleinstantclientTest extends TestCase
      */
     public function testAlpineLoaderWithoutPathFile()
     {
-        $os = self::createOS(OS\Alpine::class, 322, OS\Architecture::X64, $this->createFilesystem(['/lib/libc.so.6']));
+        $os = self::createOS(OS\Alpine::class, 322, $this->createFilesystem(['/lib/libc.so.6']));
         $this->createDependency($os)->install(self::createState());
         self::assertSame(['/etc/ld-musl-x86_64.path' => '/lib64:/lib:/usr/local/lib:/usr/lib:' . self::LIBRARY_PATH . "\n"], $this->writtenFiles);
         self::assertSame('/lib/libc.so.6', $this->symlinks['/usr/lib/libresolv.so.2']);
@@ -288,11 +283,11 @@ final class OracleinstantclientTest extends TestCase
     public function testAlpineLoaderWithPathFile()
     {
         $file = '/etc/ld-musl-x86_64.path';
-        $os = self::createOS(OS\Alpine::class, 322, OS\Architecture::X64, $this->createFilesystem([$file], [$file => "/lib:/usr/lib\n"]));
+        $os = self::createOS(OS\Alpine::class, 322, $this->createFilesystem([$file], [$file => "/lib:/usr/lib\n"]));
         $this->createDependency($os)->install(self::createState());
         self::assertSame([$file => '/lib:/usr/lib:' . self::LIBRARY_PATH . "\n"], $this->writtenFiles);
         $this->writtenFiles = [];
-        $os = self::createOS(OS\Alpine::class, 322, OS\Architecture::X64, $this->createFilesystem([$file], [$file => '/lib:' . self::LIBRARY_PATH . "\n"]));
+        $os = self::createOS(OS\Alpine::class, 322, $this->createFilesystem([$file], [$file => '/lib:' . self::LIBRARY_PATH . "\n"]));
         $this->createDependency($os)->install(self::createState());
         self::assertSame([], $this->writtenFiles);
     }

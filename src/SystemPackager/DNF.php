@@ -216,7 +216,7 @@ abstract class DNF extends SystemPackager
         }
         $preferred = [];
         $others = [];
-        $architecture = $this->os->getRawMachineArchitecture();
+        $architecture = $this->os->getArchitecture()->getRawName();
         $match = null;
         foreach (Regex::split('/[\r\n]+/', $output, -1, true) as $line) {
             if (!preg_match('/^(?<name>[^|\s]+)\|(?<epoch>\d*)\|(?<version>[^|\s]+)\|(?<release>[^|\s]+)\|(?<arch>[^|\s]+)\|(?<sourcerpm>[^|\s]+)$/D', trim($line), $match)) {

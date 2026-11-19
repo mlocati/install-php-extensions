@@ -5,6 +5,11 @@ namespace IPE;
 class PHPInfo
 {
     /**
+     * @var \IPE\OS
+     */
+    private $os;
+
+    /**
      * @var non-empty-string
      *
      * @example '/usr/bin/php'
@@ -58,6 +63,25 @@ class PHPInfo
     private $threadSafe;
 
     /**
+     * The architecture reported by PHP (Unix builds report it only if configured with PHP_BUILD_ARCH).
+     *
+     * @var string
+     *
+     * @example 'x64'
+     */
+    private $buildArchitecture;
+
+    /**
+     * @var \IPE\Architecture|null
+     */
+    private $architecture;
+
+    /**
+     * @var string
+     */
+    private $compilerID;
+
+    /**
      * @var non-empty-string
      */
     private $extensionDir;
@@ -99,23 +123,23 @@ class PHPInfo
     /**
      * Describe the PHP that's running this code.
      *
-     * @param \IPE\Filesystem $fs the local filesystem
+     * @param \IPE\OS $os the local operating system
      *
-     * @throws \IPE\Exception\InvalidArgument if $fs is not local
+     * @throws \IPE\Exception\InvalidArgument if the filesystem of $os is not local
      * @throws \IPE\Exception\IO
      *
      * @return static
      */
-    public static function fromCurrentPHP(Filesystem $fs)
+    public static function fromCurrentPHP(OS $os)
     {
+        $fs = $os->getFilesystem();
         if (!$fs->isLocal()) {
             throw new Exception\InvalidArgument('The running PHP can only be described with a local filesystem');
         }
         $result = new static();
+        $result->os = $os;
         $result->phpBin = $fs->getRealPath(PHP_BINARY);
         $result->setVersion(PHP_VERSION);
-        $result->majorVersion = PHP_MAJOR_VERSION;
-        $result->majorMinorVersion = PHP_MAJOR_VERSION * 100 + PHP_MINOR_VERSION;
         $result->bits = 8 * PHP_INT_SIZE;
         $result->threadSafe = ZEND_THREAD_SAFE;
         $extensionDir = ini_get('extension_dir');
@@ -148,12 +172,14 @@ class PHPInfo
      *
      * @return static
      *
-     * @example fromPHPBin('php8.4', $fs)
-     * @example fromPHPBin('/usr/local/bin/php', $fs)
+     * @example fromPHPBin('php8.4', $os)
+     * @example fromPHPBin('/usr/local/bin/php', $os)
      */
-    public static function fromPHPBin($phpBin, Filesystem $fs)
+    public static function fromPHPBin($phpBin, OS $os)
     {
+        $fs = $os->getFilesystem();
         $result = new static();
+        $result->os = $os;
         if (strpbrk($phpBin, '/\\') === false) {
             $path = $fs->resolveCommand($phpBin);
             if ($path === '') {
@@ -172,8 +198,6 @@ class PHPInfo
             array_merge($safeArguments, [
                 '-r', 'echo ' . implode(',PHP_EOL,', [
                     'PHP_VERSION',
-                    'PHP_MAJOR_VERSION',
-                    'PHP_MINOR_VERSION',
                     'PHP_INT_SIZE',
                     'ZEND_THREAD_SAFE ? 1 : 0',
                     "ini_get('extension_dir')",
@@ -188,22 +212,37 @@ class PHPInfo
         }
         // Empty lines are kept: PHP_CONFIG_FILE_SCAN_DIR may be empty
         $lines = Service\Regex::split('/\r?\n/', $output);
-        if (count($lines) < 7 || $lines[0] === '' || $lines[5] === '') {
-            throw new Exception\IO("Failed to inspect the specified php: unexpected output\n{$output}");
+        $unexpectedOutput = static function () use ($output) {
+            return new Exception\IO("Failed to inspect the specified php: unexpected output\n{$output}");
+        };
+        $shift = static function () use ($unexpectedOutput, &$lines) {
+            $line = array_shift($lines);
+            if ($line === null) {
+                throw $unexpectedOutput();
+            }
+
+            return $line;
+        };
+        $version = $shift();
+        if ($version === '') {
+            throw $unexpectedOutput();
         }
-        $result->setVersion($lines[0]);
-        $result->majorVersion = (int) $lines[1];
-        $result->majorMinorVersion = $result->majorVersion * 100 + (int) $lines[2];
-        $result->bits = 8 * (int) $lines[3];
-        $result->threadSafe = (bool) $lines[4];
-        $result->extensionDir = $fs->getRealPath($lines[5]);
+        $result->setVersion($version);
+        $result->bits = 8 * (int) $shift();
+        $result->threadSafe = (bool) $shift();
+        $extensionDir = $shift();
+        if ($extensionDir === '') {
+            throw $unexpectedOutput();
+        }
+        $result->extensionDir = $fs->getRealPath($extensionDir);
+        $defaultIniScanDir = $shift();
+        $result->setInstalledExtensions($lines);
         list($rc, $info) = $fs->run(Filesystem\Command::create($result->phpBin, array_merge($safeArguments, ['-i']))->withOutput(Filesystem\Command::OUTPUT_CAPTURE_STDOUT));
         if ($rc !== 0) {
             throw new Exception\IO('Failed to collect the general info of the specified php.');
         }
-        $result->parseGeneralInfo($info, $lines[6], $fs);
-        $result->setInstalledExtensions(array_slice($lines, 7));
-        $result->detectSSLLibrary($fs);
+        $result->parseGeneralInfo($info, $defaultIniScanDir, $fs);
+        $result->detectSSLLibrary();
 
         return $result;
     }
@@ -286,8 +325,9 @@ class PHPInfo
      *
      * @return $this
      */
-    public function detectSSLLibrary(Filesystem $fs)
+    public function detectSSLLibrary()
     {
+        $fs = $this->os->getFilesystem();
         list($rc, $output) = $fs->run(Filesystem\Command::create(
             $this->phpBin,
             array_merge(self::getSafeRunArguments($fs), ['-r', "echo defined('OPENSSL_VERSION_TEXT') ? OPENSSL_VERSION_TEXT : '';"])
@@ -375,6 +415,88 @@ class PHPInfo
     }
 
     /**
+     * Get the architecture that the binaries loaded by PHP must have.
+     * It may differ from the architecture of the machine: a 32-bit PHP can run on a 64-bit machine, and Windows on ARM64 can run x64 builds of PHP.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\Architecture
+     */
+    public function getArchitecture()
+    {
+        if ($this->architecture === null) {
+            $this->architecture = $this->detectArchitecture();
+        }
+
+        return $this->architecture;
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\Architecture
+     */
+    private function detectArchitecture()
+    {
+        if ($this->buildArchitecture !== '') {
+            $architecture = new Architecture($this->buildArchitecture);
+            if ($architecture->getName() !== '') {
+                return $architecture;
+            }
+        }
+        $machine = $this->os->getArchitecture();
+        if ($this->bits === 32) {
+            // The raw name of the machine is the 64-bit one
+            switch ($machine->getName()) {
+                case Architecture::X64:
+                    return new Architecture('i386');
+                case Architecture::ARM64:
+                    return new Architecture('armv7l');
+            }
+        }
+
+        return $machine;
+    }
+
+    /**
+     * Describe the architecture of PHP to the user.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string
+     *
+     * @example 'x86_64'
+     * @example '32-bit PHP on x86_64'
+     * @example 'x64 PHP on ARM64'
+     */
+    public function describeArchitecture()
+    {
+        $machine = $this->os->getArchitecture();
+        if ($this->bits === 32) {
+            return "32-bit PHP on {$machine->getRawName()}";
+        }
+        $architecture = $this->getArchitecture();
+        if ($architecture->getName() !== $machine->getName()) {
+            return "{$architecture->getRawName()} PHP on {$machine->getRawName()}";
+        }
+
+        return $machine->getRawName();
+    }
+
+    /**
+     * Get the ID of the compiler PHP has been built with: the extensions must be built with a compiler with the same ID.
+     *
+     * @return string empty string if PHP hasn't been built with Visual C++ (for example, on Unix)
+     *
+     * @example 'VC15' (Visual C++ 2017)
+     * @example 'VS17' (Visual C++ 2022)
+     */
+    public function getCompilerID()
+    {
+        return $this->compilerID;
+    }
+
+    /**
      * @return string[]
      */
     public function getInstalledExtensions()
@@ -446,11 +568,13 @@ class PHPInfo
     {
         // The distributions add their suffixes (for example 8.1.2-1ubuntu2.14), which composer/semver doesn't accept
         $matches = null;
-        if (!preg_match('/^\d+\.\d+\.\d+/', $version, $matches)) {
+        if (!preg_match('/^(?<major>\d+)\.(?<minor>\d+)\.\d+/', $version, $matches)) {
             throw new Exception\IO("Unrecognized PHP version: '{$version}'");
         }
         $this->version = $version;
         $this->baseVersion = $matches[0];
+        $this->majorVersion = (int) $matches['major'];
+        $this->majorMinorVersion = $this->majorVersion * 100 + (int) $matches['minor'];
     }
 
     /**
@@ -470,10 +594,32 @@ class PHPInfo
             throw new Exception\IO("Failed to determine the PHP API version from the general PHP info\n{$info}");
         }
         $this->apiVersion = (int) $api;
+        $this->buildArchitecture = self::readInfoValue($info, 'Architecture');
+        $this->compilerID = self::parseCompilerID(self::readInfoValue($info, 'PHP Extension Build'));
         $this->configureCommand = self::readInfoValue($info, 'Configure Command');
         list($this->iniScanDir, $this->iniScanDirs) = self::parseIniScanDirs(self::readInfoValue($info, 'Scan this dir for additional .ini files'), $defaultIniScanDir, $fs);
         $loadedIniFile = self::readInfoValue($info, 'Loaded Configuration File');
         $this->loadedIniFile = $loadedIniFile === '' ? '' : $fs->getRealPath($loadedIniFile);
+    }
+
+    /**
+     * @param string $buildID the build ID of the extensions (ZEND_MODULE_BUILD_ID)
+     *
+     * @return string empty string if PHP hasn't been built with Visual C++
+     *
+     * @example parseCompilerID('API20240924,NTS,VS17') returns 'VS17'
+     * @example parseCompilerID('API20240924,TS,debug,VS17') returns 'VS17'
+     * @example parseCompilerID('API20240924,NTS') returns ''
+     */
+    private static function parseCompilerID($buildID)
+    {
+        foreach (explode(',', $buildID) as $part) {
+            if (preg_match('/^V[CS]\d+$/D', $part)) {
+                return $part;
+            }
+        }
+
+        return '';
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace IPE\Extensions;
 
+use IPE\Architecture;
 use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
@@ -163,7 +164,7 @@ final class grpc extends Extension implements
             // The bundled abseil uses uint8_t and std::numeric_limits without including their headers, and GCC 13+ doesn't include them implicitly anymore
             $cxxFlags .= ' -include cstdint -include limits';
         }
-        if (self::isVersionAtLeast($context->getVersion(), '1.85.0') && $this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() >= 10 && OS\Architecture::ofPHP($this->php, $this->os) === OS\Architecture::X64) {
+        if (self::isVersionAtLeast($context->getVersion(), '1.85.0') && $this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() >= 10 && $this->php->getArchitecture()->getName() === Architecture::X64) {
             // EL 10 targets x86-64-v3, so __BMI2__ is defined and the bundled abseil includes <bmi2intrin.h>, which can't be included directly
             $cxxFlags .= ' -include x86gprintrin.h';
         }

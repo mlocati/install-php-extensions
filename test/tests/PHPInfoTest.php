@@ -2,6 +2,7 @@
 
 namespace IPE\Test;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Filesystem;
 use IPE\OS;
@@ -14,14 +15,27 @@ use Mockery as M;
 final class PHPInfoTest extends TestCase
 {
     /**
+     * @return \IPE\OS
+     */
+    private static function createOS(Filesystem $fs)
+    {
+        $os = M::mock(OS::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        // A machine architecture that PHP must not use when it reports its own
+        $os->shouldReceive('getArchitecture')->andReturn(new Architecture('unknown'));
+
+        return $os;
+    }
+
+    /**
      * @return void
      */
     public function testPHPInfo()
     {
-        $fs = self::createLocalFilesystem();
+        $os = self::createOS(self::createLocalFilesystem());
 
-        $current = PHPInfo::fromCurrentPHP($fs);
-        $fromPHP = PHPInfo::fromPHPBin(PHP_BINARY, $fs);
+        $current = PHPInfo::fromCurrentPHP($os);
+        $fromPHP = PHPInfo::fromPHPBin(PHP_BINARY, $os);
         self::assertNotSame($current, $fromPHP);
         self::assertEquals($current, $fromPHP);
         self::assertMatchesRegularExpression('/^[1-9]\d*\.\d+\.\d+/', $current->getVersion());
@@ -45,8 +59,79 @@ final class PHPInfoTest extends TestCase
         $current->addInstalledExtensions(['Another One']);
         self::assertContains('Another One', $current->getInstalledExtensions());
         $sslLibrary = $current->getSSLLibrary();
-        self::assertSame($current, $current->detectSSLLibrary($fs));
+        self::assertSame($current, $current->detectSSLLibrary());
         self::assertEquals($sslLibrary, $current->getSSLLibrary());
+        if (DIRECTORY_SEPARATOR === '\\') {
+            self::assertContains($current->getArchitecture()->getName(), [Architecture::X86, Architecture::X64, Architecture::ARM64]);
+            self::assertMatchesRegularExpression('/^V[CS]\d+$/', $current->getCompilerID());
+        } else {
+            self::assertSame('', $current->getCompilerID());
+        }
+    }
+
+    /**
+     * @return list<array{string, string, string, string}>
+     */
+    public static function provideWindowsBuildCases()
+    {
+        return [
+            ['x86', Architecture::X86, 'API20121212,NTS,VC11', 'VC11'],
+            ['x64', Architecture::X64, 'API20170718,TS,VC15', 'VC15'],
+            ['x64', Architecture::X64, 'API20240924,NTS,VS17', 'VS17'],
+            ['arm64', Architecture::ARM64, 'API20240924,TS,debug,VS17', 'VS17'],
+            ['x64', Architecture::X64, 'API20240924,NTS,VS19,extra', 'VS19'],
+            ['x64', Architecture::X64, 'API20240924,NTS,debug', ''],
+            ['x64', Architecture::X64, 'API20240924,NTS,clang', ''],
+            ['x64', Architecture::X64, '', ''],
+        ];
+    }
+
+    /**
+     * @dataProvider provideWindowsBuildCases
+     *
+     * @param string $buildArchitecture
+     * @param string $expectedArchitecture
+     * @param string $extensionBuild
+     * @param string $expectedCompilerID
+     *
+     * @return void
+     */
+    public function testWindowsBuild($buildArchitecture, $expectedArchitecture, $extensionBuild, $expectedCompilerID)
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('\\');
+        $fs->shouldReceive('isFile')->andReturn(true);
+        $fs->shouldReceive('getRealPath')->andReturnUsing(static function ($path) {
+            return $path;
+        });
+        $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
+            [0, implode("\r\n", ['8.4.14', '8', '0', 'C:\\php\\ext', '', 'Core', ''])],
+            [0, implode("\r\n", [
+                'phpinfo()',
+                'PHP Version => 8.4.14',
+                '',
+                'System => Windows NT MACHINE 10.0 build 26100 (Windows 11) AMD64',
+                'Build Date => Oct 21 2025 18:51:05',
+                'Build System => Microsoft Windows Server 2022 Datacenter [10.0.20348]',
+                'Compiler => Visual C++ 2022',
+                "Architecture => {$buildArchitecture}",
+                'Configure Command => cscript /nologo /e:jscript configure.js  "--enable-snapshot-build"',
+                'Loaded Configuration File => (none)',
+                'Scan this dir for additional .ini files => (none)',
+                'PHP API => 20240924',
+                'PHP Extension => 20240924',
+                'Zend Extension Build => ' . ($extensionBuild === '' ? '' : 'API4' . substr($extensionBuild, 3)),
+                'PHP Extension Build => ' . $extensionBuild,
+                '',
+            ])],
+            [0, '']
+        );
+        $php = PHPInfo::fromPHPBin('C:\\php\\php.exe', self::createOS($fs));
+        // The architecture reported by PHP wins over the one of the machine
+        self::assertSame($expectedArchitecture, $php->getArchitecture()->getName());
+        self::assertSame($expectedCompilerID, $php->getCompilerID());
+        self::assertSame('', $php->getLoadedIniFile());
+        self::assertSame('', $php->getIniScanDir());
     }
 
     /**
@@ -63,7 +148,7 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '/usr/local/etc/php/conf.d', 'Core', 'json', ''])],
+            [0, implode("\n", ['8.4.14', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '/usr/local/etc/php/conf.d', 'Core', 'json', ''])],
             [0, implode("\n", [
                 'phpinfo()',
                 'PHP Version => 8.4.14',
@@ -74,11 +159,13 @@ final class PHPInfoTest extends TestCase
                 'Scan this dir for additional .ini files => /usr/local/etc/php/conf.d',
                 'PHP API => 20240924',
                 'PHP Extension => 20240924',
+                'PHP Extension Build => API20240924,NTS',
                 '',
             ])],
             [0, 'OpenSSL 3.0.15 3 Sep 2024']
         );
-        $php = PHPInfo::fromPHPBin('/usr/local/bin/php', $fs);
+        $php = PHPInfo::fromPHPBin('/usr/local/bin/php', self::createOS($fs));
+        self::assertSame('', $php->getCompilerID());
         self::assertSame('8.4.14', $php->getVersion());
         self::assertSame(804, $php->getMajorMinorVersion());
         self::assertSame(64, $php->getBits());
@@ -139,7 +226,7 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', $defaultScanDir, ''])],
+            [0, implode("\n", ['8.4.14', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', $defaultScanDir, ''])],
             [0, implode("\n", [
                 'Loaded Configuration File => (none)',
                 'Scan this dir for additional .ini files => ' . ($scanDirs === '' ? '(none)' : $scanDirs),
@@ -148,7 +235,7 @@ final class PHPInfoTest extends TestCase
             ])],
             [0, '']
         );
-        $php = PHPInfo::fromPHPBin('/usr/local/bin/php', $fs);
+        $php = PHPInfo::fromPHPBin('/usr/local/bin/php', self::createOS($fs));
         self::assertSame($expectedDir, $php->getIniScanDir());
         self::assertSame($expectedDirs, $php->getIniScanDirs());
     }
@@ -167,11 +254,11 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/lib/php/20240924', '', 'Core', ''])],
+            [0, implode("\n", ['8.4.14', '8', '0', '/usr/lib/php/20240924', '', 'Core', ''])],
             [0, "PHP API => 20240924\n"],
             [0, '']
         );
-        $php = PHPInfo::fromPHPBin('php8.4', $fs);
+        $php = PHPInfo::fromPHPBin('php8.4', self::createOS($fs));
         self::assertSame('/usr/bin/php8.4', $php->getPHPBin());
         self::assertNull($php->getSSLLibrary());
         self::assertSame(['Core'], $php->getInstalledExtensions());
@@ -205,7 +292,7 @@ final class PHPInfoTest extends TestCase
         $fs->shouldReceive('run')->never();
         $this->expectException(Exception\InvalidArgument::class);
         $this->expectExceptionMessage($expectedMessage);
-        PHPInfo::fromPHPBin($phpBin, $fs);
+        PHPInfo::fromPHPBin($phpBin, self::createOS($fs));
     }
 
     /**
@@ -243,12 +330,12 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", [$version, '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '', ''])],
+            [0, implode("\n", [$version, '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '', ''])],
             [0, "PHP API => 20240924\n"],
             [0, '']
         );
         try {
-            $php = PHPInfo::fromPHPBin('/usr/bin/php', $fs);
+            $php = PHPInfo::fromPHPBin('/usr/bin/php', self::createOS($fs));
         } catch (Exception\IO $x) {
             self::assertSame('', $expectedBaseVersion, $x->getMessage());
             self::assertStringContainsString($version, $x->getMessage());

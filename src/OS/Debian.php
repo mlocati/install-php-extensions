@@ -10,7 +10,7 @@ use IPE\Traits;
 
 class Debian implements Posix\DebianLike
 {
-    use Traits\PosixMachineArchitecture;
+    use Traits\OSArchitecture\Posix;
 
     /**
      * @public

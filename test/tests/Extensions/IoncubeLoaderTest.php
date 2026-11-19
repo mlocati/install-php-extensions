@@ -17,15 +17,15 @@ final class IoncubeLoaderTest extends TestCase
      * @param int $version
      * @param bool $threadSafe
      * @param int $bits
+     * @param non-empty-string $rawMachineArchitecture
      *
      * @return \IPE\PHPInfo
      */
-    private static function createPHP($version = 804, $threadSafe = false, $bits = 64)
+    private static function createPHP($version = 804, $threadSafe = false, $bits = 64, $rawMachineArchitecture = 'x86_64')
     {
-        $php = M::mock(PHPInfo::class);
+        $php = self::mockPHPInfoOnMachine($rawMachineArchitecture, $bits);
         $php->shouldReceive('getMajorMinorVersion')->andReturn($version);
         $php->shouldReceive('isThreadSafe')->andReturn($threadSafe);
-        $php->shouldReceive('getBits')->andReturn($bits);
 
         return $php;
     }
@@ -39,7 +39,6 @@ final class IoncubeLoaderTest extends TestCase
     {
         $os = M::mock(OS\Alpine::class);
         $os->shouldReceive('getNumericVersion')->andReturn($version);
-        $os->shouldReceive('getMachineArchitecture')->andReturn(OS\Architecture::X64);
 
         return $os;
     }
@@ -83,31 +82,27 @@ final class IoncubeLoaderTest extends TestCase
      */
     public function testArchiveURL()
     {
+        self::assertStringEndsWith('/ioncube_loaders_lin_aarch64.tar.gz', self::createExtension(self::createPHP(804, false, 64, 'aarch64'), M::mock(OS\Debian::class))->getBinaryArchiveURL(''));
         $php = self::createPHP();
-        $debian = M::mock(OS\Debian::class);
-        $debian->shouldReceive('getMachineArchitecture')->andReturn(OS\Architecture::ARM64);
-        self::assertStringEndsWith('/ioncube_loaders_lin_aarch64.tar.gz', self::createExtension($php, $debian)->getBinaryArchiveURL(''));
         $alpine = self::createAlpine(323);
         self::assertStringEndsWith('/ioncube_loaders_lin-musl_x86-64.tar.gz', self::createExtension($php, $alpine)->getBinaryArchiveURL(''));
         self::assertStringEndsWith('/ioncube_loaders_lin_x86-64_14.0.0.tar.gz', self::createExtension($php, $alpine)->getBinaryArchiveURL('14.0.0'));
         self::assertStringEndsWith('/ioncube_loaders_lin-musl_x86-64_14.4.0.tar.gz', self::createExtension($php, $alpine)->getBinaryArchiveURL('14.4.0'));
-        $almaLinux = M::mock(OS\AlmaLinux::class);
-        $almaLinux->shouldReceive('getMachineArchitecture')->andReturn(OS\Architecture::X64);
-        self::assertStringEndsWith('/ioncube_loaders_lin_x86-64.tar.gz', self::createExtension($php, $almaLinux)->getBinaryArchiveURL(''));
+        self::assertStringEndsWith('/ioncube_loaders_lin_x86-64.tar.gz', self::createExtension($php, M::mock(OS\AlmaLinux::class))->getBinaryArchiveURL(''));
     }
 
     /**
-     * @return array<array{int, string, string}>
+     * @return array<array{int, non-empty-string, string}>
      */
     public static function provideVendorArchitectures()
     {
         return [
-            [32, OS\Architecture::X86, 'x86'],
-            [32, OS\Architecture::X64, 'x86'],
-            [32, OS\Architecture::ARM32, 'armv7l'],
-            [32, OS\Architecture::ARM64, 'armv7l'],
-            [64, OS\Architecture::X64, 'x86-64'],
-            [64, OS\Architecture::ARM64, 'aarch64'],
+            [32, 'i686', 'x86'],
+            [32, 'x86_64', 'x86'],
+            [32, 'armv7l', 'armv7l'],
+            [32, 'aarch64', 'armv7l'],
+            [64, 'x86_64', 'x86-64'],
+            [64, 'aarch64', 'aarch64'],
         ];
     }
 
@@ -115,16 +110,14 @@ final class IoncubeLoaderTest extends TestCase
      * @dataProvider provideVendorArchitectures
      *
      * @param int $bits
-     * @param string $architecture
+     * @param non-empty-string $rawArchitecture
      * @param string $expected
      *
      * @return void
      */
-    public function testVendorArchitectures($bits, $architecture, $expected)
+    public function testVendorArchitectures($bits, $rawArchitecture, $expected)
     {
-        $os = M::mock(OS\Debian::class);
-        $os->shouldReceive('getMachineArchitecture')->andReturn($architecture);
-        self::assertStringEndsWith("/ioncube_loaders_lin_{$expected}.tar.gz", self::createExtension(self::createPHP(804, false, $bits), $os)->getBinaryArchiveURL(''));
+        self::assertStringEndsWith("/ioncube_loaders_lin_{$expected}.tar.gz", self::createExtension(self::createPHP(804, false, $bits, $rawArchitecture), M::mock(OS\Debian::class))->getBinaryArchiveURL(''));
     }
 
     /**
@@ -132,10 +125,7 @@ final class IoncubeLoaderTest extends TestCase
      */
     public function testOtherArchitecturesAreLeftToTheVendor()
     {
-        $os = M::mock(OS\Debian::class);
-        $os->shouldReceive('getMachineArchitecture')->andReturn(OS\Architecture::OTHER);
-        $os->shouldReceive('getRawMachineArchitecture')->andReturn('riscv64');
-        self::assertStringEndsWith('_lin_riscv64.tar.gz', self::createExtension(self::createPHP(), $os)->getBinaryArchiveURL(''));
+        self::assertStringEndsWith('_lin_riscv64.tar.gz', self::createExtension(self::createPHP(804, false, 64, 'riscv64'), M::mock(OS\Debian::class))->getBinaryArchiveURL(''));
     }
 
     /**

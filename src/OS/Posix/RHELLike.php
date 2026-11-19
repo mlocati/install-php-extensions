@@ -14,7 +14,7 @@ use IPE\Traits;
  */
 abstract class RHELLike implements Posix
 {
-    use Traits\PosixMachineArchitecture;
+    use Traits\OSArchitecture\Posix;
 
     /**
      * The oldest supported major version.

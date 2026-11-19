@@ -2,6 +2,7 @@
 
 namespace IPE\SystemDependencies;
 
+use IPE\Architecture;
 use IPE\Exception;
 use IPE\Filesystem\Command;
 use IPE\Filesystem\Downloader;
@@ -227,16 +228,16 @@ final class msodbcsql extends SystemDependency
     private function installOnAlpine(State $state)
     {
         list($version, $path) = explode('@', $this->getAlpinePackage());
-        $architecture = OS\Architecture::getVendorName($this->php, $this->os, [
-            OS\Architecture::X64 => 'amd64',
-            OS\Architecture::ARM64 => 'arm64',
-        ]);
+        $architecture = $this->php->getArchitecture()->map([
+            Architecture::X64 => 'amd64',
+            Architecture::ARM64 => 'arm64',
+        ], true);
         $major = strtok($version, '.');
         $file = $state->getVolatileDir()->createSubdir() . '/msodbcsql.apk';
         try {
             $this->downloader->saveAs("https://download.microsoft.com/download/{$path}/msodbcsql{$major}_{$version}_{$architecture}.apk", $file);
         } catch (Exception\IO\NotFound $_) {
-            throw new Exception\UnsupportedOS("The Microsoft ODBC Driver {$major} for SQL Server is not available for " . OS\Architecture::describe($this->php, $this->os));
+            throw new Exception\UnsupportedOS("The Microsoft ODBC Driver {$major} for SQL Server is not available for " . $this->php->describeArchitecture());
         }
         list($rc) = $this->os->getFilesystem()->run(Command::create('apk', ['add', '--allow-untrusted', $file])->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
