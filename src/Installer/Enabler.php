@@ -502,14 +502,8 @@ class Enabler
      */
     private function buildIniContent(CompiledExtension $compiled)
     {
-        if ($compiled->isZendExtension()) {
-            // zend_extension accepts paths relative to extension_dir only since PHP 7.2
-            $value = $this->php->getMajorMinorVersion() < 702 ? $compiled->getModulePath() : basename($compiled->getModulePath());
-
-            return "zend_extension={$value}\n{$compiled->getIniSettings()}";
-        }
-
-        return 'extension=' . basename($compiled->getModulePath()) . "\n{$compiled->getIniSettings()}";
+        // Since PHP 5.5 zend_extension accepts paths relative to extension_dir too
+        return ($compiled->isZendExtension() ? 'zend_extension=' : 'extension=') . basename($compiled->getModulePath()) . "\n{$compiled->getIniSettings()}";
     }
 
     /**
