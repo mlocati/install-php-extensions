@@ -293,11 +293,11 @@ final class EnablerTest extends TestCase
     /**
      * @return void
      */
-    public function testZendExtensionOnOldPHPUsesTheFullPath()
+    public function testZendExtensionOnOldPHPUsesTheFileName()
     {
         $fs = self::createFilesystem();
         self::expectModuleListings($fs, "[PHP Modules]\nCore\njson\n\n[Zend Modules]\nXdebug\n");
-        $fs->shouldReceive('writeFile')->with(M::type('string'), "zend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20240924/xdebug.so\n")->twice();
+        $fs->shouldReceive('writeFile')->with(M::type('string'), "zend_extension=xdebug.so\n")->twice();
         $fs->shouldReceive('deleteFile')->once();
         $php = self::createPHPInfo(701);
         $php->shouldReceive('addInstalledExtensions')->once();
