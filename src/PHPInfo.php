@@ -140,8 +140,6 @@ class PHPInfo
         $result->os = $os;
         $result->phpBin = $fs->getRealPath(PHP_BINARY);
         $result->setVersion(PHP_VERSION);
-        $result->majorVersion = PHP_MAJOR_VERSION;
-        $result->majorMinorVersion = PHP_MAJOR_VERSION * 100 + PHP_MINOR_VERSION;
         $result->bits = 8 * PHP_INT_SIZE;
         $result->threadSafe = ZEND_THREAD_SAFE;
         $extensionDir = ini_get('extension_dir');
@@ -200,8 +198,6 @@ class PHPInfo
             array_merge($safeArguments, [
                 '-r', 'echo ' . implode(',PHP_EOL,', [
                     'PHP_VERSION',
-                    'PHP_MAJOR_VERSION',
-                    'PHP_MINOR_VERSION',
                     'PHP_INT_SIZE',
                     'ZEND_THREAD_SAFE ? 1 : 0',
                     "ini_get('extension_dir')",
@@ -216,21 +212,36 @@ class PHPInfo
         }
         // Empty lines are kept: PHP_CONFIG_FILE_SCAN_DIR may be empty
         $lines = Service\Regex::split('/\r?\n/', $output);
-        if (count($lines) < 7 || $lines[0] === '' || $lines[5] === '') {
-            throw new Exception\IO("Failed to inspect the specified php: unexpected output\n{$output}");
+        $unexpectedOutput = static function () use ($output) {
+            return new Exception\IO("Failed to inspect the specified php: unexpected output\n{$output}");
+        };
+        $shift = static function () use ($unexpectedOutput, &$lines) {
+            $line = array_shift($lines);
+            if ($line === null) {
+                throw $unexpectedOutput();
+            }
+
+            return $line;
+        };
+        $version = $shift();
+        if ($version === '') {
+            throw $unexpectedOutput();
         }
-        $result->setVersion($lines[0]);
-        $result->majorVersion = (int) $lines[1];
-        $result->majorMinorVersion = $result->majorVersion * 100 + (int) $lines[2];
-        $result->bits = 8 * (int) $lines[3];
-        $result->threadSafe = (bool) $lines[4];
-        $result->extensionDir = $fs->getRealPath($lines[5]);
+        $result->setVersion($version);
+        $result->bits = 8 * (int) $shift();
+        $result->threadSafe = (bool) $shift();
+        $extensionDir = $shift();
+        if ($extensionDir === '') {
+            throw $unexpectedOutput();
+        }
+        $result->extensionDir = $fs->getRealPath($extensionDir);
+        $defaultIniScanDir = $shift();
+        $result->setInstalledExtensions($lines);
         list($rc, $info) = $fs->run(Filesystem\Command::create($result->phpBin, array_merge($safeArguments, ['-i']))->withOutput(Filesystem\Command::OUTPUT_CAPTURE_STDOUT));
         if ($rc !== 0) {
             throw new Exception\IO('Failed to collect the general info of the specified php.');
         }
-        $result->parseGeneralInfo($info, $lines[6], $fs);
-        $result->setInstalledExtensions(array_slice($lines, 7));
+        $result->parseGeneralInfo($info, $defaultIniScanDir, $fs);
         $result->detectSSLLibrary();
 
         return $result;
@@ -557,11 +568,13 @@ class PHPInfo
     {
         // The distributions add their suffixes (for example 8.1.2-1ubuntu2.14), which composer/semver doesn't accept
         $matches = null;
-        if (!preg_match('/^\d+\.\d+\.\d+/', $version, $matches)) {
+        if (!preg_match('/^(?<major>\d+)\.(?<minor>\d+)\.\d+/', $version, $matches)) {
             throw new Exception\IO("Unrecognized PHP version: '{$version}'");
         }
         $this->version = $version;
         $this->baseVersion = $matches[0];
+        $this->majorVersion = (int) $matches['major'];
+        $this->majorMinorVersion = $this->majorVersion * 100 + (int) $matches['minor'];
     }
 
     /**

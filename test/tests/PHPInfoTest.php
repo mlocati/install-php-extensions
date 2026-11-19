@@ -105,7 +105,7 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\r\n", ['8.4.14', '8', '4', '8', '0', 'C:\\php\\ext', '', 'Core', ''])],
+            [0, implode("\r\n", ['8.4.14', '8', '0', 'C:\\php\\ext', '', 'Core', ''])],
             [0, implode("\r\n", [
                 'phpinfo()',
                 'PHP Version => 8.4.14',
@@ -148,7 +148,7 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '/usr/local/etc/php/conf.d', 'Core', 'json', ''])],
+            [0, implode("\n", ['8.4.14', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '/usr/local/etc/php/conf.d', 'Core', 'json', ''])],
             [0, implode("\n", [
                 'phpinfo()',
                 'PHP Version => 8.4.14',
@@ -226,7 +226,7 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', $defaultScanDir, ''])],
+            [0, implode("\n", ['8.4.14', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', $defaultScanDir, ''])],
             [0, implode("\n", [
                 'Loaded Configuration File => (none)',
                 'Scan this dir for additional .ini files => ' . ($scanDirs === '' ? '(none)' : $scanDirs),
@@ -254,7 +254,7 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", ['8.4.14', '8', '4', '8', '0', '/usr/lib/php/20240924', '', 'Core', ''])],
+            [0, implode("\n", ['8.4.14', '8', '0', '/usr/lib/php/20240924', '', 'Core', ''])],
             [0, "PHP API => 20240924\n"],
             [0, '']
         );
@@ -330,7 +330,7 @@ final class PHPInfoTest extends TestCase
             return $path;
         });
         $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
-            [0, implode("\n", [$version, '8', '4', '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '', ''])],
+            [0, implode("\n", [$version, '8', '0', '/usr/local/lib/php/extensions/no-debug-non-zts-20240924', '', ''])],
             [0, "PHP API => 20240924\n"],
             [0, '']
         );

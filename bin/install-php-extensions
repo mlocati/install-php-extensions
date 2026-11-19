@@ -281,7 +281,7 @@ try {
 
     // Detect OS
     $os = $app->make(OS::class);
-    $fs = $app->make(Filesystem::class);
+    $fs = $os->getFilesystem();
 
     // Collect the extensions we want to install
     $askedExtensions = $app->build(CLI\ArgumentsParser::class)->parseArguments($options->getArguments(), $options->getOptionsByExtension());
