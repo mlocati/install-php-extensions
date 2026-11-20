@@ -265,7 +265,7 @@ Below the handles there are the Composer package names that can be used to speci
 | pdo_odbc<br><sub>php/pdo_odbc</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_pgsql<br><sub>php/pdo_pgsql</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_snowflake[&#x24D8;](#pdo_snowflake) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| pdo_sqlsrv[&#x24D8;](#pdo_sqlsrv) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
+| pdo_sqlsrv[&#x24D8;](#pdo_sqlsrv)<br><sub>microsoft/pdo_sqlsrv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | pgsql<br><sub>php/pgsql</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | phalcon<br><sub>phalcon/cphalcon</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | php_trie |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
@@ -299,7 +299,7 @@ Below the handles there are the Composer package names that can be used to speci
 | solr<br><sub>pecl/solr</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | sourceguardian |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | spx |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| sqlsrv[&#x24D8;](#sqlsrv) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
+| sqlsrv[&#x24D8;](#sqlsrv)<br><sub>microsoft/sqlsrv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | ssh2 |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | statgrab[&#x24D8;](#statgrab)<br><sub>iliaal/statgrab</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | stomp |  |  | &check; | &check; | &check; |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
