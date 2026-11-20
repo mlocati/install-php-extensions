@@ -12,6 +12,7 @@ use IPE\SystemPackager\Package;
  * What sqlsrv and pdo_sqlsrv have in common: they are released together.
  */
 abstract class MicrosoftSQLServer extends Extension implements
+    AvailableAsComposerPackage,
     AvailableOnPECL,
     DeclaresDefaultVersion,
     DeclaresUnsupportedEnvironments,
@@ -57,6 +58,16 @@ abstract class MicrosoftSQLServer extends Extension implements
     public static function getInstalledNames()
     {
         return [static::getHandle()];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'microsoft/' . static::getHandle();
     }
 
     /**
@@ -110,6 +121,8 @@ abstract class MicrosoftSQLServer extends Extension implements
             704 => '5.10.1',
             800 => '5.11.1',
             802 => '5.12.0',
+            // The Composer package of 5.14.0 accepts PHP 8.3, but the build rejects it
+            803 => '5.13.3',
         ] as $maxPHPVersion => $version) {
             if ($phpVersion <= $maxPHPVersion) {
                 return $version;
