@@ -48,6 +48,12 @@ final class ValidatorTest extends TestCase
                 ['--enable-debug=shared', '--enable-compression'],
                 ['variant' => 'std'],
             ],
+            [
+                // The opposite forms of the configure options are accepted too
+                ['disable-debug' => true, 'without-dir' => true, 'disable-compression' => true],
+                ['--disable-debug', '--without-dir', '--disable-compression'],
+                ['variant' => 'std'],
+            ],
         ];
     }
 
@@ -85,6 +91,8 @@ final class ValidatorTest extends TestCase
             [['nope' => true], "\n- enable-compression: Compression (default: no)\n"],
             [['with-dir' => true], 'requires a value'],
             [['variant' => true], 'requires a value'],
+            [['without-dir' => '/usr'], "doesn't accept a value"],
+            [['disable-debug' => 'yes'], "doesn't accept a value"],
             [['' => true], 'Invalid option name'],
             [['bad name' => true], 'Invalid option name'],
         ];
@@ -130,6 +138,23 @@ final class ValidatorTest extends TestCase
             self::fail('Expected exception not thrown');
         } catch (Exception\InvalidOptionValues $x) {
             self::assertStringContainsString('no options are accepted', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
+    public function testOppositeForms()
+    {
+        $validator = new Validator(new \IPE\Logger());
+        $options = [new ConfigureOption('disable-foo', 'Foo', false), new CustomOption('without-bar', 'Bar', false)];
+        // The opposite of a disable/without option accepts values
+        self::assertSame(['--enable-foo=no'], $validator->validate(['enable-foo' => 'no'], $options, false, 'the extension foo')->getConfigureArguments());
+        try {
+            $validator->validate(['with-bar' => true], $options, false, 'the extension foo');
+            self::fail('Expected exception not thrown');
+        } catch (Exception\InvalidOptionValues $x) {
+            self::assertStringContainsString("does not accept the option 'with-bar'", $x->getMessage());
         }
     }
 

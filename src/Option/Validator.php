@@ -47,6 +47,16 @@ final class Validator
             if (!preg_match(Option::RX_VALID_NAME, $name)) {
                 throw new Exception\InvalidOptionValues("Invalid option name for {$ownerDescription}: '{$name}'");
             }
+            $opposite = self::getOppositeName($name);
+            if (!isset($declared[$name]) && $opposite !== '' && isset($declared[$opposite]) && $declared[$opposite] instanceof ConfigureOption) {
+                // configure scripts reject values for --disable-... and --without-...
+                if ($value !== true && preg_match('/^(disable|without)-/', $name)) {
+                    throw new Exception\InvalidOptionValues("The option '{$name}' of {$ownerDescription} doesn't accept a value");
+                }
+                $seen[$opposite] = true;
+                $configureArguments[] = self::buildConfigureArgument($name, $value);
+                continue;
+            }
             if (!isset($declared[$name])) {
                 if (!$allowUndeclared) {
                     throw new Exception\InvalidOptionValues(
@@ -101,6 +111,24 @@ final class Validator
         }
 
         return $result;
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return string empty string if $name is not an enable/disable/with/without option
+     *
+     * @example 'without-foo' for 'with-foo'
+     */
+    private static function getOppositeName($name)
+    {
+        $match = null;
+        if (!preg_match('/^(enable|disable|with|without)(-.+)$/', $name, $match)) {
+            return '';
+        }
+        $opposites = ['enable' => 'disable', 'disable' => 'enable', 'with' => 'without', 'without' => 'with'];
+
+        return $opposites[$match[1]] . $match[2];
     }
 
     /**
