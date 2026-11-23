@@ -183,7 +183,7 @@ Below the handles there are the Composer package names that can be used to speci
 | calendar<br><sub>php/calendar</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | cassandra[&#x24D8;](#cassandra) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | cmark |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; |  |  |
-| csv | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
+| csv<br><sub>girgias/csv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
 | curl<br><sub>php/curl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | dba<br><sub>php/dba</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ddtrace[&#x24D8;](#ddtrace) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
@@ -192,8 +192,8 @@ Below the handles there are the Composer package names that can be used to speci
 | ds<br><sub>php-ds/ext-ds</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | ecma_intl[&#x24D8;](#ecma_intl) |  |  |  | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | enchant<br><sub>php/enchant</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| ev |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| event | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| ev<br><sub>osmanov/pecl-ev</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| event<br><sub>osmanov/pecl-event</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | excimer<br><sub>wikimedia/excimer</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | exif<br><sub>php/exif</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ffi<br><sub>php/ffi</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
@@ -219,11 +219,11 @@ Below the handles there are the Composer package names that can be used to speci
 | ioncube_loader |  | &check; | &check; | &check; | &check; | &check; |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ip2location<br><sub>ip2location/ip2location-pie</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | jsmin |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| json_post |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| json_post<br><sub>m6w6/ext-json_post</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | jsonpath<br><sub>supermetrics/jsonpath</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
 | judy[&#x24D8;](#judy)<br><sub>orieg/judy</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | ldap<br><sub>php/ldap</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| luasandbox[&#x24D8;](#luasandbox) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| luasandbox[&#x24D8;](#luasandbox)<br><sub>wikimedia/luasandbox</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | lz4[&#x24D8;](#lz4) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |
 | lzf<br><sub>pecl/lzf</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | mailparse<br><sub>pecl/mailparse</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -250,7 +250,7 @@ Below the handles there are the Composer package names that can be used to speci
 | opcache<br><sub>php/opcache</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | opencensus |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | openssl<br><sub>php/openssl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| openswoole |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
+| openswoole<br><sub>openswoole/ext-openswoole</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | opentelemetry<br><sub>open-telemetry/ext-opentelemetry</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | operator[&#x24D8;](#operator) |  | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | parallel[&#x24D8;](#parallel)<br><sub>pecl/parallel</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
@@ -271,7 +271,7 @@ Below the handles there are the Composer package names that can be used to speci
 | php_trie |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
 | phpy[&#x24D8;](#phpy) |  | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |
 | pkcs11<br><sub>gamringer/pkcs11</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
-| pq |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
+| pq<br><sub>m6w6/ext-pq</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | propro |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | protobuf |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pspell<br><sub>php/pspell</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -280,7 +280,7 @@ Below the handles there are the Composer package names that can be used to speci
 | raphf<br><sub>m6w6/ext-raphf</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | rdkafka[&#x24D8;](#rdkafka)<br><sub>rdkafka/rdkafka</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | recode[&#x24D8;](#recode)<br><sub>php/recode</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
-| redis |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| redis<br><sub>phpredis/phpredis</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | relay[&#x24D8;](#relay) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
 | rrd |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | saxon[&#x24D8;](#saxon) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
@@ -300,7 +300,7 @@ Below the handles there are the Composer package names that can be used to speci
 | sourceguardian |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | spx |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | sqlsrv[&#x24D8;](#sqlsrv)<br><sub>microsoft/sqlsrv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| ssh2 |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| ssh2<br><sub>pecl/ssh2</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | statgrab[&#x24D8;](#statgrab)<br><sub>iliaal/statgrab</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | stomp |  |  | &check; | &check; | &check; |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | swoole[&#x24D8;](#swoole)<br><sub>swoole/swoole</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -315,7 +315,7 @@ Below the handles there are the Composer package names that can be used to speci
 | timezonedb<br><sub>pecl/timezonedb</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | tokenizer<br><sub>php/tokenizer</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | translit<br><sub>derickr/translit</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| uopz |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| uopz<br><sub>krakjoe/uopz</sub> |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | uploadprogress |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | uuid<br><sub>pecl/uuid</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | uv<br><sub>amphp/uv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
@@ -337,7 +337,7 @@ Below the handles there are the Composer package names that can be used to speci
 | yac<br><sub>laruence/yac</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | yajl_stream[&#x24D8;](#yajl_stream) |  | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | yaml<br><sub>pecl/yaml</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| yar |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| yar<br><sub>laruence/yar</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zephir_parser | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | zip<br><sub>pecl/zip<br>php/zip</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zmq |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -363,6 +363,7 @@ These options apply to all the extensions (the options of specific extensions ar
 | `--from-composer-json[=value]` | Also install the extensions listed in the require and require-dev sections of a composer.json file | composer.json in the current directory |
 | `--from-composer-lock[=value]` | Also install the extensions required by the project and by its dependencies, as listed in a composer.lock file | composer.lock in the current directory |
 | `--no-dev` | Ignore the development requirements of the project in --from-composer-json and --from-composer-lock |  |
+| `--show-options` | Show the options that can be specified for the extensions (including the ones declared by their source code), without installing them |  |
 | `--ignore-unknown-extensions` | Ignore unknown extensions instead of aborting |  |
 | `--unsupported-extensions[=]<abort\|force\|skip>` | What to do with extensions that are known not to work in the current environment. | `abort` |
 | `--system-packages[=]<auto\|never\|only>` | When PHP has been installed by the system packager (APT, APK), install the extensions from its packages: when available (auto), never, or only from them (only). | `auto` |
@@ -707,13 +708,6 @@ Not available on:
 - POSIX systems with 32-bit PHP 8.3 (swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+)
 - POSIX systems with 32-bit PHP 8.4 (swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+)
 - POSIX systems with 32-bit PHP 8.5 (swoole 5.1+ does not support 32-bit systems, and older versions do not support PHP 8.3+)
-
-Command line options:
-
-| Option | Description | Default |
-|---|---|---|
-| `--swoole:without-iouring` | Don't enable the io_uring support |  |
-| `--swoole:without-ssh2` | Don't enable the SSH2 client, which conflicts with the ssh2 extension |  |
 
 ### tideways
 
