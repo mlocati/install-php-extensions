@@ -129,6 +129,9 @@ final class redis extends Extension implements
     {
         $phpVersion = $this->php->getMajorMinorVersion();
         $result = [];
+        if ($this->usesSystemLZF($version)) {
+            $result[] = SystemDependencies\liblzf::HANDLE;
+        }
         if ($phpVersion >= 700 && $this->systemProvidesZstd()) {
             $result[] = SystemDependencies\libzstd::HANDLE;
         }
@@ -149,8 +152,11 @@ final class redis extends Extension implements
         $version = $context->getVersion();
         $installed = $this->php->getInstalledExtensions();
         $result = [];
-        // liblzf is a git submodule: the PECL archives include it, the GitHub archives (used by Packagist) don't
-        if ($this->os->getFilesystem()->isFile($context->getSourceDirectory() . '/liblzf/lzf.h')) {
+        if ($this->usesSystemLZF($version)) {
+            $result[] = '--enable-redis-lzf';
+            $result[] = '--with-liblzf';
+        } elseif ($this->os->getFilesystem()->isFile($context->getSourceDirectory() . '/liblzf/lzf.h')) {
+            // liblzf is a git submodule: the PECL archives include it, the GitHub archives (used by Packagist) don't
             $result[] = '--enable-redis-lzf';
         }
         if (in_array(igbinary::HANDLE, $installed, true)) {
@@ -174,6 +180,18 @@ final class redis extends Extension implements
         }
 
         return $result;
+    }
+
+    /**
+     * Before 5.3.0 the configure script doesn't use pkg-config, so it doesn't find the headers of Debian (in /usr/include/liblzf).
+     *
+     * @param string $version
+     *
+     * @return bool
+     */
+    private function usesSystemLZF($version)
+    {
+        return self::isVersionAtLeast($version, '5.3.0') && SystemDependencies\liblzf::isProvidedByOS($this->os);
     }
 
     /**
