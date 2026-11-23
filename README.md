@@ -402,6 +402,7 @@ These options apply to all the extensions (the options of specific extensions ar
 
 The options of the extensions are specified with `--<handle>:<option>[=<value>]` (or `--<vendor>/<name>:<option>[=<value>]` for the extensions specified with their Composer package).
 Besides the options declared by IPE (listed in the [extension notes](#extension-notes)), the extensions accept the configure options declared by their source code (in `package.xml` or `composer.json`), which may change from one version to another.
+The configure options are accepted in their opposite form too: for example `--swoole:without-swoole-ssh2` is the same as `--swoole:with-swoole-ssh2=no`.
 
 `--show-options` lists all of them, without installing anything:
 
