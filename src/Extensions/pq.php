@@ -7,6 +7,7 @@ use IPE\Option;
 use IPE\SystemDependencies;
 
 final class pq extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresPriority,
     Extension\DependsOnExtensions,
@@ -46,6 +47,16 @@ final class pq extends Extension implements
     public static function getInstalledNames()
     {
         return ['pq'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'm6w6/ext-pq';
     }
 
     /**

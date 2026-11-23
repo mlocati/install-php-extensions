@@ -7,6 +7,7 @@ use IPE\Option;
 use IPE\SystemDependencies;
 
 final class openswoole extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresConflicts,
     Extension\DeclaresDefaultVersion,
@@ -50,6 +51,16 @@ final class openswoole extends Extension implements
     public static function getInstalledNames()
     {
         return ['openswoole'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'openswoole/ext-openswoole';
     }
 
     /**

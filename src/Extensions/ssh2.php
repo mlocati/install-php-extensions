@@ -8,6 +8,7 @@ use IPE\OS;
 use IPE\SystemDependencies;
 
 final class ssh2 extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\RequiresSystemDependencies
@@ -46,6 +47,16 @@ final class ssh2 extends Extension implements
     public static function getInstalledNames()
     {
         return ['ssh2'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'pecl/ssh2';
     }
 
     /**

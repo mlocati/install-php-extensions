@@ -5,6 +5,7 @@ namespace IPE\Extensions;
 use IPE\Extension;
 
 final class ev extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion
 {
@@ -42,6 +43,16 @@ final class ev extends Extension implements
     public static function getInstalledNames()
     {
         return ['ev'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'osmanov/pecl-ev';
     }
 
     /**

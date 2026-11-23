@@ -9,6 +9,7 @@ use IPE\PHPInfo\SSLLibrary;
 use IPE\SystemDependencies;
 
 final class event extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresPriority,
     Extension\DependsOnExtensions,
@@ -49,6 +50,16 @@ final class event extends Extension implements
     public static function getInstalledNames()
     {
         return ['event'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'osmanov/pecl-event';
     }
 
     /**

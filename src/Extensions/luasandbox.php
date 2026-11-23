@@ -7,6 +7,7 @@ use IPE\Option;
 use IPE\SystemDependencies;
 
 final class luasandbox extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresUnsupportedEnvironments,
@@ -58,6 +59,16 @@ final class luasandbox extends Extension implements
     public static function getInstalledNames()
     {
         return ['luasandbox'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'wikimedia/luasandbox';
     }
 
     /**

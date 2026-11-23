@@ -6,7 +6,7 @@ use IPE\Exception;
 use IPE\Extension\Registry;
 use IPE\Extensions\apcu;
 use IPE\Extensions\bcmath;
-use IPE\Extensions\ev;
+use IPE\Extensions\memcache;
 use IPE\Extensions\zip;
 use IPE\Filesystem\Downloader;
 use IPE\OS;
@@ -70,7 +70,7 @@ final class RegistryTest extends TestCase
         self::assertSame(['apcu/apcu'], Registry::getComposerPackageNames(apcu::class));
         self::assertSame(['php/bcmath'], Registry::getComposerPackageNames(bcmath::class));
         self::assertSame(['pecl/zip', 'php/zip'], Registry::getComposerPackageNames(zip::class));
-        self::assertSame([], Registry::getComposerPackageNames(ev::class));
+        self::assertSame([], Registry::getComposerPackageNames(memcache::class));
     }
 
     /**
