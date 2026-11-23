@@ -149,7 +149,7 @@ final class DockerImages
             'apt-get update',
         ];
         foreach (['trixie-sury' => 'debian:trixie', 'ubuntu24.04-sury' => 'ubuntu:24.04'] as $os => $baseImage) {
-            foreach (['5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'] as $phpVersion) {
+            foreach (['5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'] as $phpVersion) {
                 $result[] = self::createSystemImage($os, $phpVersion, $baseImage, self::getAPTCommands($surySetup, $phpVersion));
             }
         }
@@ -181,7 +181,7 @@ final class DockerImages
             if ($elVersion <= 9) {
                 $remiSetup[] = $nodejsSetup;
             }
-            foreach (['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'] as $phpVersion) {
+            foreach (['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'] as $phpVersion) {
                 // Software Collections, like php85-php-cli, installed in /opt/remi/php85
                 $collection = 'php' . str_replace('.', '', $phpVersion);
                 $result[] = self::createSystemImage($os, $phpVersion, "almalinux:{$elVersion}", self::getDNFCommands($remiSetup, "{$collection}-php-cli"), $collection);
@@ -304,7 +304,6 @@ final class DockerImages
                 'abandoned' => ['alpine3.21'],
             ],
             '8.6' => [
-                'rc' => true,
                 'os' => ['alpine3.23', 'alpine3.24', 'bookworm', 'trixie'],
             ],
         ];
