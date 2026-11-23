@@ -7,7 +7,9 @@ use IPE\Extension;
 final class ev extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
-    Extension\DeclaresDefaultVersion
+    Extension\DeclaresDefaultVersion,
+    Extension\DeclaresPriority,
+    Extension\DependsOnExtensions
 {
     /**
      * @public
@@ -83,5 +85,37 @@ final class ev extends Extension implements
     public function getDefaultVersionRequirements()
     {
         return $this->php->getMajorMinorVersion() <= 704 ? '1.1.5' : '';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresPriority::getPriority()
+     */
+    public static function getPriority()
+    {
+        // Load it after sockets
+        return 90;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getRequiredExtensions()
+     */
+    public function getRequiredExtensions($version)
+    {
+        // When PHP is configured with sockets (like the packages of Alpine), php_config.h defines HAVE_SOCKETS, and ev uses the sockets extension
+        return preg_match('/[\s\'"]--enable-sockets(?:=(?!no[\s\'"])[^\s\'"]*)?[\s\'"]/', " {$this->php->getConfigureCommand()} ") ? [sockets::HANDLE] : [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DependsOnExtensions::getOptionalExtensions()
+     */
+    public function getOptionalExtensions($version)
+    {
+        return [];
     }
 }
