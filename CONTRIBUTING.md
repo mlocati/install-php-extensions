@@ -94,16 +94,16 @@ The distros whose names end with `-apk`, `-apt` or `-dnf` use the PHP packages o
 | `alpine3.24-apk` | 8.3, 8.4, 8.5 |
 | `bookworm-apt` | 8.2 |
 | `trixie-apt` | 8.4 |
-| `trixie-sury` | 5.6, 7.0, 7.1, 7.2, 7.3, 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5 |
+| `trixie-sury` | 5.6, 7.0, 7.1, 7.2, 7.3, 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6 |
 | `ubuntu22.04-apt` | 8.1 |
 | `ubuntu24.04-apt` | 8.3 |
-| `ubuntu24.04-sury` | 5.6, 7.0, 7.1, 7.2, 7.3, 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5 |
+| `ubuntu24.04-sury` | 5.6, 7.0, 7.1, 7.2, 7.3, 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6 |
 | `ubuntu26.04-apt` | 8.5 |
 | `almalinux8-dnf` | 8.2 |
 | `almalinux9-dnf` | 8.0, 8.3 |
 | `almalinux10-dnf` | 8.3, 8.4 |
-| `almalinux9-remi` | 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5 |
-| `almalinux10-remi` | 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5 |
+| `almalinux9-remi` | 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6 |
+| `almalinux10-remi` | 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6 |
 | `amazonlinux2023-dnf` | 8.1, 8.5 |
 | `fedora44-dnf` | 8.5 |
 | `fedora45-dnf` | 8.5 |
