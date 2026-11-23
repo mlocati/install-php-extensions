@@ -8,6 +8,7 @@ use IPE\OS;
 use IPE\SystemDependencies;
 
 final class redis extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\DependsOnExtensions,
@@ -48,6 +49,16 @@ final class redis extends Extension implements
     public static function getInstalledNames()
     {
         return ['redis'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'phpredis/phpredis';
     }
 
     /**

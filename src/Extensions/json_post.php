@@ -5,6 +5,7 @@ namespace IPE\Extensions;
 use IPE\Extension;
 
 final class json_post extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL
 {
     /**
@@ -41,6 +42,16 @@ final class json_post extends Extension implements
     public static function getInstalledNames()
     {
         return ['json_post'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'm6w6/ext-json_post';
     }
 
     /**

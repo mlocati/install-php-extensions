@@ -5,6 +5,7 @@ namespace IPE\Extensions;
 use IPE\Extension;
 
 final class csv extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion
 {
@@ -42,6 +43,16 @@ final class csv extends Extension implements
     public static function getInstalledNames()
     {
         return ['csv'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'girgias/csv';
     }
 
     /**

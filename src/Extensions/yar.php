@@ -7,6 +7,7 @@ use IPE\Option;
 use IPE\SystemDependencies;
 
 final class yar extends Extension implements
+    Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\DependsOnExtensions,
@@ -47,6 +48,16 @@ final class yar extends Extension implements
     public static function getInstalledNames()
     {
         return ['yar'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\AvailableAsComposerPackage::getComposerPackageName()
+     */
+    public static function getComposerPackageName()
+    {
+        return 'laruence/yar';
     }
 
     /**
