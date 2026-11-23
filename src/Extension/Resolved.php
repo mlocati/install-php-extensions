@@ -300,6 +300,34 @@ final class Resolved
     }
 
     /**
+     * Get the options that users can specify: the ones declared by IPE, then the ones declared by the manifest.
+     *
+     * @return list<\IPE\Option> without duplicated names (the options declared by IPE win)
+     */
+    public function getDeclaredOptions()
+    {
+        $options = [];
+        $known = $this->knownExtension;
+        if ($known instanceof DeclaresOptions) {
+            $options = $known::getOptions();
+        }
+        if ($this->manifest !== null) {
+            foreach ($this->manifest->getConfigureOptions() as $option) {
+                // The default values of the manifests of the bundled extensions are sometimes wrong (for example --with-mysql=autodetect): the configure scripts know better
+                $options[] = $this->origin === self::ORIGIN_BUNDLED ? new Option\ConfigureOption($option->getName(), $option->getDescription(), $option->needsValue()) : $option;
+            }
+        }
+        $result = [];
+        foreach ($options as $option) {
+            if (!isset($result[$option->getName()])) {
+                $result[$option->getName()] = $option;
+            }
+        }
+
+        return array_values($result);
+    }
+
+    /**
      * Is this extension known with the specified handle or name?
      *
      * @param string $name

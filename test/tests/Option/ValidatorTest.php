@@ -81,7 +81,8 @@ final class ValidatorTest extends TestCase
     {
         return [
             [['nope' => true], "does not accept the option 'nope'"],
-            [['nope' => true], 'enable-debug'],
+            [['nope' => true], "\n- enable-debug: Debug\n"],
+            [['nope' => true], "\n- enable-compression: Compression (default: no)\n"],
             [['with-dir' => true], 'requires a value'],
             [['variant' => true], 'requires a value'],
             [['' => true], 'Invalid option name'],

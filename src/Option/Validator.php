@@ -51,7 +51,7 @@ final class Validator
                 if (!$allowUndeclared) {
                     throw new Exception\InvalidOptionValues(
                         "{$ownerDescription} does not accept the option '{$name}'"
-                        . ($declared === [] ? ' (no options are accepted)' : ":\naccepted options are\n- " . implode("\n- ", array_keys($declared)))
+                        . ($declared === [] ? ' (no options are accepted)' : ":\naccepted options are\n- " . implode("\n- ", array_map([self::class, 'describeOption'], $declared)))
                     );
                 }
                 $this->logger->warning("Passing the undeclared option '{$name}' to the configure script of {$ownerDescription}");
@@ -83,6 +83,24 @@ final class Validator
         }
 
         return new Values($configureArguments, $customValues, $defaultConfigureArguments);
+    }
+
+    /**
+     * @return non-empty-string
+     *
+     * @example 'enable-redis-lz4: enable lz4 compression? (default: no)'
+     */
+    private static function describeOption(\IPE\Option $option)
+    {
+        $result = $option->getName();
+        if ($option->getDescription() !== '') {
+            $result .= ": {$option->getDescription()}";
+        }
+        if ($option->hasDefault() && $option->getDefault() !== '') {
+            $result .= " (default: {$option->getDefault()})";
+        }
+
+        return $result;
     }
 
     /**

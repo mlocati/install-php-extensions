@@ -1243,20 +1243,6 @@ abstract class Resolver
     }
 
     /**
-     * The default values of the manifests of the bundled extensions are sometimes wrong (for example --with-mysql=autodetect): the configure scripts know better.
-     *
-     * @param \IPE\Option\ConfigureOption[] $options
-     *
-     * @return \IPE\Option\ConfigureOption[]
-     */
-    private static function withoutDefaults(array $options)
-    {
-        return array_map(static function (Option\ConfigureOption $option) {
-            return new Option\ConfigureOption($option->getName(), $option->getDescription(), $option->needsValue());
-        }, $options);
-    }
-
-    /**
      * @param string $name
      * @param string $version
      *
@@ -1410,17 +1396,11 @@ abstract class Resolver
         }
         // The versions of the Composer packages may be prefixed by v: the extensions compare them with version_compare()
         $version = (string) preg_replace('/^v(?=\d)/i', '', $version);
-        $declaredOptions = [];
-        if ($known instanceof Extension\DeclaresOptions) {
-            $declaredOptions = $known::getOptions();
-        }
-        if ($manifest !== null) {
-            $declaredOptions = array_merge($declaredOptions, $origin === Resolved::ORIGIN_BUNDLED ? self::withoutDefaults($manifest->getConfigureOptions()) : $manifest->getConfigureOptions());
-        }
+        $resolved = new Resolved($known, $path, $version, $origin, $manifest);
         $description = $known === null ? "the unknown extension in {$path}" : 'the extension ' . $known::getHandle();
-        $optionValues = $this->optionValidator->validate($userOptions, $declaredOptions, $known === null && $manifest === null, $description);
+        $optionValues = $this->optionValidator->validate($userOptions, $resolved->getDeclaredOptions(), $known === null && $manifest === null, $description);
 
-        return new Resolved($known, $path, $version, $origin, $manifest, $optionValues);
+        return $resolved->withSource($path, $optionValues);
     }
 
     /**

@@ -35,6 +35,7 @@ final class InstallPHPExtensions extends Argv
             (new Option\Definition\OptionalValue('from-composer-json', 'Also install the extensions listed in the require and require-dev sections of a composer.json file'))->setDefaultDescription('composer.json in the current directory'),
             (new Option\Definition\OptionalValue('from-composer-lock', 'Also install the extensions required by the project and by its dependencies, as listed in a composer.lock file'))->setDefaultDescription('composer.lock in the current directory'),
             new Option\Definition\Flag('no-dev', 'Ignore the development requirements of the project in --from-composer-json and --from-composer-lock'),
+            new Option\Definition\Flag('show-options', 'Show the options that can be specified for the extensions (including the ones declared by their source code), without installing them'),
             new Option\Definition\Flag('ignore-unknown-extensions', 'Ignore unknown extensions instead of aborting'),
             new Option\Definition\ValueInList('unsupported-extensions', 'What to do with extensions that are known not to work in the current environment.', [Resolver\Options::ONUNSUPPORTED_ABORT, Resolver\Options::ONUNSUPPORTED_FORCE, Resolver\Options::ONUNSUPPORTED_SKIP], Resolver\Options::ONUNSUPPORTED_ABORT),
             new Option\Definition\ValueInList('system-packages', 'When PHP has been installed by the system packager (APT, APK), install the extensions from its packages: when available (auto), never, or only from them (only).', [Resolver\Options::SYSTEMPACKAGES_AUTO, Resolver\Options::SYSTEMPACKAGES_NEVER, Resolver\Options::SYSTEMPACKAGES_ONLY], Resolver\Options::SYSTEMPACKAGES_AUTO),
@@ -95,10 +96,45 @@ final class InstallPHPExtensions extends Argv
         $systemDependencies = array_intersect_key($this->getDefinitions(), $this->systemDependencyDefinitionNames);
 
         return $this->formatDefinitions($general)
-            . "\n\nOptions of the extensions (the ones declared by the source code of the extensions are not listed here):\n"
+            . "\n\nOptions of the extensions (use --show-options to list also the ones declared by the source code of the extensions):\n"
             . $this->formatDefinitions($this->extensionDefinitions)
             . "\n\nOptions of the system dependencies:\n"
             . $this->formatDefinitions($systemDependencies);
+    }
+
+    /**
+     * Describe the options that can be specified for an extension.
+     *
+     * @throws \IPE\Exception\JSON
+     *
+     * @return non-empty-string
+     */
+    public function describeExtensionOptions(Extension\Asked $asked, Extension\Resolved $resolved)
+    {
+        if ($asked instanceof Extension\Asked\FromHandle) {
+            $prefix = $asked->getHandle();
+        } elseif ($asked instanceof Extension\Asked\FromComposer) {
+            $prefix = $asked->getFullName();
+        } else {
+            $prefix = '';
+        }
+        $result = "{$resolved}:\n";
+        $origin = $resolved->getOrigin();
+        if ($origin === Extension\Resolved::ORIGIN_DISABLED) {
+            return "{$result}It will be enabled, so no options can be specified";
+        }
+        if ($origin === Extension\Resolved::ORIGIN_SYSTEM_PACKAGE) {
+            return "{$result}The system package doesn't accept options (use --system-packages=never to compile the extension)";
+        }
+        if ($prefix === '') {
+            return "{$result}Options can be specified only for the extensions specified with their handle or with their Composer package";
+        }
+        $definitions = [];
+        foreach ($resolved->getDeclaredOptions() as $option) {
+            $definitions[] = self::createDefinition($prefix, $option, true);
+        }
+
+        return $result . ($definitions === [] ? 'No options are available' : $this->formatDefinitions($definitions));
     }
 
     /**
@@ -137,7 +173,7 @@ final class InstallPHPExtensions extends Argv
             return new Option\Definition\Flag($name, $description);
         }
         if ($option->needsValue() === null && $allowOptionalValue) {
-            return new Option\Definition\OptionalValue($name, $description);
+            return (new Option\Definition\OptionalValue($name, $description))->setDefaultDescription((string) $option->getDefault());
         }
 
         return new Option\Definition\StringValue($name, $description, (string) $option->getDefault());
