@@ -107,7 +107,9 @@ abstract class TestCaseBase extends MockeryTestCase
         $php = M::mock(PHPInfo::class)->makePartial();
         foreach (['os' => $os, 'bits' => $bits, 'buildArchitecture' => $buildArchitecture] as $name => $value) {
             $property = new \ReflectionProperty(PHPInfo::class, $name);
-            $property->setAccessible(true);
+            if (PHP_VERSION_ID < 80100) {
+                $property->setAccessible(true);
+            }
             $property->setValue($php, $value);
         }
 
