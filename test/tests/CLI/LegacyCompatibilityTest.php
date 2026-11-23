@@ -245,7 +245,7 @@ final class LegacyCompatibilityTest extends TestCase
                     self::assertContains($optionName, $declared, "{$handle}:{$optionName}");
                 }
             } else {
-                self::assertContains($handle, ['event', 'lzf'], 'The options of these extensions are declared in their package.xml');
+                self::assertContains($handle, ['event', 'lzf', 'swoole'], 'The options of these extensions are declared in their package.xml');
             }
         }
     }

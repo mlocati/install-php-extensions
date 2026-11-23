@@ -29,7 +29,7 @@ final class LegacyCompatibility
         'IPE_ICU_EN_ONLY' => ['lib-icu:en-only' => null],
         'IPE_INSTANTCLIENT_BASIC' => ['oracle-instantclient:basic' => null],
         'IPE_GD_WITHOUTAVIF' => ['gd:without-avif' => null],
-        'IPE_SWOOLE_WITHOUT_IOURING' => ['swoole:without-iouring' => null],
+        'IPE_SWOOLE_WITHOUT_IOURING' => ['swoole:enable-iouring' => 'no'],
         'IPE_NEWRELIC_DAEMON' => ['newrelic:install-daemon' => null],
         'IPE_NEWRELIC_KEEPLOG' => ['newrelic:keep-log' => null],
         'IPE_DD_APPSEC' => ['ddtrace:enable-appsec' => null],
