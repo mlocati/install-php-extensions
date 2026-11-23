@@ -300,6 +300,24 @@ try {
     $state = $app->make(Installer\State::class)
         ->withSystemDependencyOptions($options->getSystemDependencyOptions())
     ;
+    if ($options->getFlag('show-options')) {
+        if ($askedExtensions === []) {
+            throw new IPEException\InvalidOption('The --show-options option requires the extensions to be described');
+        }
+        try {
+            $resolver = $app->make(Extension\Asked\Resolver::class);
+            foreach ($askedExtensions as $askedExtension) {
+                // The resolver has already logged why an extension is skipped
+                $resolved = $resolver->resolveAskedExtension($askedExtension, $state);
+                if ($resolved !== null) {
+                    echo "\n", $options->describeExtensionOptions($askedExtension, $resolved), "\n";
+                }
+            }
+        } finally {
+            $state->shutdown($logger);
+        }
+        exit(0);
+    }
     try {
         if ($options->getBool('fix-letsencrypt', $inDockerPHPImage)) {
             $app->make(Service\LetsEncryptFixer::class)->fix($os);

@@ -4,7 +4,11 @@ namespace IPE\Test\CLI\Argv;
 
 use IPE\CLI\Argv\InstallPHPExtensions;
 use IPE\Exception;
+use IPE\Extension\Asked;
+use IPE\Extension\Manifest;
 use IPE\Extension\Registry;
+use IPE\Extension\Resolved;
+use IPE\Option\ConfigureOption;
 use IPE\Option\Validator;
 use IPE\SystemDependency;
 use IPE\Test\Support\TestCase;
@@ -36,6 +40,29 @@ final class InstallPHPExtensionsTest extends TestCase
         self::assertStringContainsString("--fix-letsencrypt[=]<yes|no>\n  Fix the root CA certificate of Let's Encrypt on old systems\n  Default: yes in the official Docker PHP images, no otherwise\n", $help);
         self::assertStringContainsString("--from-composer-json[=value]\n  Also install the extensions listed in the require and require-dev sections of a composer.json file\n  Default: composer.json in the current directory\n", $help);
         self::assertStringNotContainsString('(default', $help);
+    }
+
+    /**
+     * @return void
+     */
+    public function testDescribeExtensionOptions()
+    {
+        $argv = self::createArgv();
+        $manifest = new Manifest(Manifest::TYPE_PECL, 'fakeext', 'fakeext');
+        $manifest->addConfigureOption(new ConfigureOption('enable-fake-lz4', 'enable lz4 compression?', null, 'no'));
+        $manifest->addConfigureOption(new ConfigureOption('with-fake-lib', 'Use the system library', true));
+        $resolved = new Resolved(null, '/src', '1.2.3', Resolved::ORIGIN_PECL, $manifest);
+
+        self::assertSame(
+            "fakeext 1.2.3 (from pecl):\n--fakeext:enable-fake-lz4[=value]\n  enable lz4 compression?\n  Default: no\n--fakeext:with-fake-lib[=]value\n  Use the system library",
+            $argv->describeExtensionOptions(new Asked\FromHandle('fakeext', ''), $resolved)
+        );
+        self::assertStringContainsString("--vendor/fakeext:enable-fake-lz4[=value]\n", $argv->describeExtensionOptions(new Asked\FromComposer('vendor/fakeext'), $resolved));
+        self::assertSame("fakeext 1.2.3 (from pecl):\nNo options are available", $argv->describeExtensionOptions(new Asked\FromHandle('fakeext', ''), new Resolved(null, '/src', '1.2.3', Resolved::ORIGIN_PECL, new Manifest(Manifest::TYPE_PECL, 'fakeext', 'fakeext'))));
+        self::assertStringContainsString('Options can be specified only for', $argv->describeExtensionOptions(new Asked\FromDirectory('/src'), $resolved));
+        self::assertStringContainsString('no options can be specified', $argv->describeExtensionOptions(new Asked\FromHandle('fakeext', ''), new Resolved(null, '/etc/fakeext.ini', '', Resolved::ORIGIN_DISABLED)));
+        self::assertStringContainsString('--system-packages=never', $argv->describeExtensionOptions(new Asked\FromHandle('fakeext', ''), new Resolved(null, 'php-fakeext', '', Resolved::ORIGIN_SYSTEM_PACKAGE)));
+        self::assertStringContainsString("--show-options\n", $argv->buildCLIHelpString());
     }
 
     /**
