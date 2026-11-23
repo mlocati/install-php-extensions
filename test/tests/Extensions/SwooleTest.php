@@ -216,7 +216,7 @@ final class SwooleTest extends TestCase
         $extension = self::createExtension(804, $osClass, $osVersion);
         self::assertSame($expected, in_array('--enable-iouring', $extension->getConfigureArguments(self::createBuildContext($version)), true));
         self::assertSame($expected, in_array(SystemDependencies\liburing::HANDLE, $extension->getRequiredSystemDependencies($version, new Values()), true));
-        $without = new Values([], [swoole::OPTION_WITHOUT_IOURING => true]);
+        $without = new Values(['--enable-iouring=no']);
         self::assertNotContains('--enable-iouring', $extension->getConfigureArguments(self::createBuildContext($version, $without)));
         self::assertNotContains(SystemDependencies\liburing::HANDLE, $extension->getRequiredSystemDependencies($version, $without));
     }
@@ -228,7 +228,7 @@ final class SwooleTest extends TestCase
     {
         $extension = self::createExtension(804, OS\Debian::class, OS\Debian::TRIXIE);
         $with = new Values();
-        $without = new Values([], [swoole::OPTION_WITHOUT_SSH2 => true]);
+        $without = new Values(['--without-swoole-ssh2']);
         self::assertNotContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.1.7', $with)));
         self::assertNotContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.1.7', $with));
         self::assertSame(['openswoole'], array_keys($extension->getConflictingExtensions('6.1.7', $with)));
@@ -236,7 +236,10 @@ final class SwooleTest extends TestCase
         self::assertContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.2.0', $with));
         $conflicts = $extension->getConflictingExtensions('6.2.0', $with);
         self::assertSame(['openswoole', 'ssh2'], array_keys($conflicts));
-        self::assertStringContainsString("'without-ssh2'", $conflicts['ssh2']);
+        self::assertStringContainsString("'without-swoole-ssh2'", $conflicts['ssh2']);
+        $custom = new Values(['--with-swoole-ssh2=/opt/libssh2']);
+        self::assertContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.2.0', $custom));
+        self::assertSame(['openswoole', 'ssh2'], array_keys($extension->getConflictingExtensions('6.2.0', $custom)));
         self::assertNotContains('--with-swoole-ssh2', $extension->getConfigureArguments(self::createBuildContext('6.2.0', $without)));
         self::assertNotContains(SystemDependencies\libssh2::HANDLE, $extension->getRequiredSystemDependencies('6.2.0', $without));
         self::assertSame(['openswoole'], array_keys($extension->getConflictingExtensions('6.2.0', $without)));

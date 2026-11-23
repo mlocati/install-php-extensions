@@ -16,7 +16,6 @@ final class swoole extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresConflicts,
     Extension\DeclaresDefaultVersion,
-    Extension\DeclaresOptions,
     Extension\DeclaresUnsupportedEnvironments,
     Extension\DependsOnExtensions,
     Extension\ProvidesConfigureArguments,
@@ -32,13 +31,13 @@ final class swoole extends Extension implements
      * @public
      * @var string
      */
-    const OPTION_WITHOUT_IOURING = 'without-iouring';
+    const OPTION_IOURING = 'enable-iouring';
 
     /**
      * @public
      * @var string
      */
-    const OPTION_WITHOUT_SSH2 = 'without-ssh2';
+    const OPTION_SSH2 = 'with-swoole-ssh2';
 
     /**
      * {@inheritdoc}
@@ -111,7 +110,7 @@ final class swoole extends Extension implements
     {
         $result = [openswoole::HANDLE => 'openswoole is a fork of swoole, and they define the same symbols'];
         if ($options !== null && $this->usesSSH2($version, $options)) {
-            $result[ssh2::HANDLE] = "swoole is built with its own SSH2 client: use the option '" . self::OPTION_WITHOUT_SSH2 . "' of swoole to build it without";
+            $result[ssh2::HANDLE] = "swoole is built with its own SSH2 client: use the option 'without-swoole-ssh2' of swoole to build it without";
         }
 
         return $result;
@@ -172,19 +171,6 @@ final class swoole extends Extension implements
             'posix-php8.3-32bit' => $reason,
             'posix-php8.4-32bit' => $reason,
             'posix-php8.5-32bit' => $reason,
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\Extension\DeclaresOptions::getOptions()
-     */
-    public static function getOptions()
-    {
-        return [
-            new Option\CustomOption(self::OPTION_WITHOUT_IOURING, "Don't enable the io_uring support", false),
-            new Option\CustomOption(self::OPTION_WITHOUT_SSH2, "Don't enable the SSH2 client, which conflicts with the ssh2 extension", false),
         ];
     }
 
@@ -389,7 +375,7 @@ final class swoole extends Extension implements
      */
     private function usesSSH2($version, Option\Values $options)
     {
-        return self::isVersionAtLeast($version, '6.2.0') && !$options->hasCustomValue(self::OPTION_WITHOUT_SSH2);
+        return self::isVersionAtLeast($version, '6.2.0') && $options->getConfigureValue(self::OPTION_SSH2) !== 'no';
     }
 
     /**
@@ -401,7 +387,7 @@ final class swoole extends Extension implements
      */
     private function usesIOUring($version, Option\Values $options)
     {
-        if (!self::isVersionAtLeast($version, '6.0.0') || $options->hasCustomValue(self::OPTION_WITHOUT_IOURING)) {
+        if (!self::isVersionAtLeast($version, '6.0.0') || $options->getConfigureValue(self::OPTION_IOURING) === 'no') {
             return false;
         }
         if ($this->os instanceof OS\Alpine) {
