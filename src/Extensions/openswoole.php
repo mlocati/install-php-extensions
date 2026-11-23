@@ -132,8 +132,13 @@ final class openswoole extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
+        $result = [SystemDependencies\libcurl::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libpq::HANDLE, SystemDependencies\libstdcxx::HANDLE, SystemDependencies\linuxheaders::HANDLE];
         // The configure script always uses brotli when it finds it (for example, libcurl-devel depends on brotli-devel on EL 10)
-        return [SystemDependencies\libbrotli::HANDLE, SystemDependencies\libcurl::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libpq::HANDLE, SystemDependencies\libstdcxx::HANDLE, SystemDependencies\linuxheaders::HANDLE];
+        if (SystemDependencies\libbrotli::isProvidedByOS($this->os)) {
+            $result[] = SystemDependencies\libbrotli::HANDLE;
+        }
+
+        return $result;
     }
 
     /**

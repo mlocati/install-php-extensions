@@ -3,8 +3,10 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Extensions\openswoole;
+use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\SystemDependencies;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -34,5 +36,36 @@ final class OpenswooleTest extends TestCase
     public function testConfigureEnvironment($version, array $expected)
     {
         self::assertSame($expected, (new openswoole(M::mock(PHPInfo::class), M::mock(OS::class)))->getConfigureEnvironment(self::createBuildContext($version)));
+    }
+
+    /**
+     * @return array<array{class-string<\IPE\OS>, int, bool}>
+     */
+    public static function provideBrotli()
+    {
+        return [
+            [OS\Alpine::class, 311, false],
+            [OS\Alpine::class, 312, true],
+            [OS\Debian::class, OS\Debian::STRETCH, false],
+            [OS\Debian::class, OS\Debian::BUSTER, true],
+        ];
+    }
+
+    /**
+     * @dataProvider provideBrotli
+     *
+     * @param class-string<\IPE\OS> $osClass
+     * @param int $osVersion
+     * @param bool $expected
+     *
+     * @return void
+     */
+    public function testBrotliOnlyWhenProvided($osClass, $osVersion, $expected)
+    {
+        $os = M::mock($osClass);
+        self::assertInstanceOf(OS::class, $os);
+        $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
+        $dependencies = (new openswoole(M::mock(PHPInfo::class), $os))->getRequiredSystemDependencies('4.10.0', new Values());
+        self::assertSame($expected, in_array(SystemDependencies\libbrotli::HANDLE, $dependencies, true));
     }
 }
