@@ -38,6 +38,8 @@ use IPE\Test\Support\ResolverTest\FakeDependentExtensionB;
 use IPE\Test\Support\ResolverTest\FakeExtension;
 use IPE\Test\Support\ResolverTest\FakeForbiddingBinaryExtension;
 use IPE\Test\Support\ResolverTest\FakeForcedVersionExtension;
+use IPE\Test\Support\ResolverTest\FakeIdentifiedBinaryExtension;
+use IPE\Test\Support\ResolverTest\FakeIdentifiedVendorArchiveExtension;
 use IPE\Test\Support\ResolverTest\FakeRestrictedVersionsExtension;
 use IPE\Test\Support\ResolverTest\FakeThreadSafetyExtension;
 use IPE\Test\Support\ResolverTest\FakeVendorArchiveExtension;
@@ -103,6 +105,8 @@ final class ResolverTest extends TestCase
             'https://repo.packagist.org/p2/foo/nomanifest.json' => 'packagist/foo-nomanifest.json',
             'https://github.com/foo/nomanifest/releases/download/1.0.0/php_apcu-1.0.0-src.tgz' => 'packagist/nomanifest-src.tgz',
             'https://example.com/dist/binary.tar.gz' => 'pecl/mcrypt-1.0.7.tgz',
+            'https://repo.packagist.org/p2/fake/ext-binary.json' => 'packagist/fake-ext-binary.json',
+            'https://repo.packagist.org/p2/fake/ext-vendor.json' => 'packagist/fake-ext-vendor.json',
         ]);
     }
 
@@ -761,6 +765,37 @@ final class ResolverTest extends TestCase
     /**
      * @return void
      */
+    public function testBinaryExtensionAskedWithComposerPackageName()
+    {
+        $php = self::createPHP('8.3.0');
+        $state = new State($php, self::$fs);
+        $extension = new FakeIdentifiedBinaryExtension($php, self::createOS(), self::createDownloader(), 'package.xml');
+        $cases = [
+            // The default version and the exact versions don't use the Composer package (the binary of the fixture is mcrypt 1.0.7)
+            [new Asked\FromComposer('Fake/Ext-Binary', ''), '1.0.7'],
+            [new Asked\FromHandle('fakebinary', '1.2.3'), '1.2.3'],
+            // v1.5 and v1.4.0-beta1 are skipped, v1.3.0.1 is v1.3.0
+            [new Asked\FromComposer('fake/ext-binary', '^1.2'), '1.3.0'],
+            [new Asked\FromHandle('fakebinary', '~1.2.0'), '1.2.3'],
+        ];
+        foreach ($cases as $case) {
+            list($asked, $expectedVersion) = $case;
+            $resolved = self::resolveOne(self::createResolver($php, null, [$extension]), $asked, $state);
+            self::assertInstanceOf(FakeIdentifiedBinaryExtension::class, $resolved->getKnownExtension());
+            self::assertSame(Resolved::ORIGIN_BINARY, $resolved->getOrigin());
+            self::assertSame($expectedVersion, $resolved->getVersion());
+        }
+        try {
+            self::createResolver($php, null, [$extension])->resolveAskedExtensions([new Asked\FromHandle('fakebinary', '^3')], $state);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedExtension $x) {
+            self::assertStringContainsString('no suitable version found (fake/ext-binary)', $x->getMessage());
+        }
+    }
+
+    /**
+     * @return void
+     */
     public function testBinaryExtensionNotAvailableForPHP()
     {
         $php = self::createPHP('8.3.0');
@@ -866,6 +901,36 @@ final class ResolverTest extends TestCase
         self::assertSame('1.2.3', $resolved->getVersion());
         self::assertSame('default', $resolved->getOptionValues()->getCustomValue('variant'));
         self::assertTrue(self::$fs->isFile($resolved->getPath() . DIRECTORY_SEPARATOR . VendorArchivePreparer::ARCHIVE_FILENAME));
+    }
+
+    /**
+     * @return void
+     */
+    public function testVendorArchiveExtensionAskedWithComposerPackageName()
+    {
+        $php = self::createPHP('8.3.0');
+        $state = new State($php, self::$fs);
+        $extension = new FakeIdentifiedVendorArchiveExtension($php, self::createOS());
+        $cases = [
+            [new Asked\FromComposer('fake/ext-vendor', ''), '1.2.3'],
+            [new Asked\FromHandle('fakevendor', '1.0.0'), '1.0.0'],
+            [new Asked\FromComposer('fake/ext-vendor', '~1.1.0'), '1.1.0'],
+            [new Asked\FromHandle('fakevendor', '^1.1'), '1.2.3'],
+        ];
+        foreach ($cases as $case) {
+            list($asked, $expectedVersion) = $case;
+            $resolved = self::resolveOne(self::createResolver($php, null, [$extension]), $asked, $state);
+            self::assertInstanceOf(FakeIdentifiedVendorArchiveExtension::class, $resolved->getKnownExtension());
+            self::assertSame(Resolved::ORIGIN_VENDOR_ARCHIVE, $resolved->getOrigin());
+            self::assertSame($expectedVersion, $resolved->getVersion());
+        }
+        try {
+            // 1.0.0.1 doesn't correspond to a version of the extension
+            self::createResolver($php, null, [$extension])->resolveAskedExtensions([new Asked\FromHandle('fakevendor', '~1.0.0')], $state);
+            self::fail('Expected exception not thrown');
+        } catch (Exception\UnsupportedExtension $x) {
+            self::assertStringContainsString("\n- vendor archive: no suitable version found (fake/ext-vendor)", $x->getMessage());
+        }
     }
 
     /**

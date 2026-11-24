@@ -10,7 +10,7 @@ use IPE\PHPInfo;
 /**
  * An extension to be compiled from an archive of its vendor.
  */
-final class FakeVendorArchiveExtension extends Extension implements
+class FakeVendorArchiveExtension extends Extension implements
     Extension\CompiledFromVendorArchive,
     Extension\DeclaresOptions
 {

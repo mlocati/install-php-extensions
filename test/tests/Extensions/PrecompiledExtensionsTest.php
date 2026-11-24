@@ -308,6 +308,9 @@ final class PrecompiledExtensionsTest extends TestCase
         self::assertSame([Extensions\msgpack::HANDLE, Extensions\igbinary::HANDLE], $extension->getOptionalExtensions('0.30.0'));
         self::assertSame([Extensions\session::HANDLE, Extensions\msgpack::HANDLE, Extensions\igbinary::HANDLE], $extension->getRequiredExtensions('0.20.0'));
         self::assertSame([], $extension->getOptionalExtensions('0.20.0'));
+        self::assertSame('0.62.0', $extension->getExtensionVersionFromComposerVersion('v0.62.0'));
+        self::assertSame('0.50.2', $extension->getExtensionVersionFromComposerVersion('v0.50.2.1'));
+        self::assertSame('', $extension->getExtensionVersionFromComposerVersion('dev-main'));
         self::assertSame([SystemDependencies\binutils::HANDLE], $extension->getRequiredSystemDependencies('', new Values()));
         self::assertSame(
             [SystemDependencies\binutils::HANDLE, SystemDependencies\liblz4::HANDLE, SystemDependencies\libzstd::HANDLE],

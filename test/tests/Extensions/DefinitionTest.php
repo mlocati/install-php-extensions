@@ -43,6 +43,10 @@ final class DefinitionTest extends TestCase
             $composerPackageName = $class::getComposerPackageName();
             self::assertMatchesRegularExpression(Extension\Version\Lister\Composer::RX_VALID_FULLNAME, $composerPackageName);
         }
+        if (is_subclass_of($class, Extension\IdentifiedByComposerPackage::class)) {
+            self::assertFalse(is_subclass_of($class, Extension\AvailableAsComposerPackage::class));
+            self::assertMatchesRegularExpression(Extension\Version\Lister\Composer::RX_VALID_FULLNAME, $class::getIdentifyingComposerPackageName());
+        }
         if (is_subclass_of($class, Extension\AvailableOnPECL::class)) {
             $someSourceFound = true;
             $peclHandle = $class::getPECLHandle();

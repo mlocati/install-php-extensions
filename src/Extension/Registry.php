@@ -130,6 +130,9 @@ class Registry
         if (is_subclass_of($className, AvailableAsComposerPackage::class)) {
             $result[] = $className::getComposerPackageName();
         }
+        if (is_subclass_of($className, IdentifiedByComposerPackage::class)) {
+            $result[] = $className::getIdentifyingComposerPackageName();
+        }
         if (is_subclass_of($className, BundledInPHPSource::class)) {
             $result[] = BundledInPHPSource::COMPOSER_VENDOR . '/' . $className::getHandle();
         }

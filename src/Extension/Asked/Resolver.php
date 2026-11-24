@@ -604,10 +604,10 @@ abstract class Resolver
      */
     public function resolveAskedExtension(Asked $asked, State $state)
     {
-        if ($asked instanceof Asked\FromComposer && strcasecmp($asked->getVendor(), Extension\BundledInPHPSource::COMPOSER_VENDOR) === 0) {
+        if ($asked instanceof Asked\FromComposer) {
             $known = $this->registry->getExtensionByComposerPackageName($asked->getFullName());
-            // php/imap is the same as imap
-            if ($known !== null) {
+            // php/imap is the same as imap, cachewerk/ext-relay is the same as relay
+            if ($known !== null && !($known instanceof Extension\AvailableAsComposerPackage && strcasecmp($known::getComposerPackageName(), $asked->getFullName()) === 0)) {
                 return $this->resolveKnownExtension($known, $asked->getVersionRequirements(), $asked->getOptions(), $state, self::getHandleOrigins());
             }
         }
@@ -940,16 +940,24 @@ abstract class Resolver
                     if (!($extension instanceof Extension\AvailableAsBinary)) {
                         break;
                     }
-                    $path = $this->fetchBinary($extension, $versionRequirements, $state);
+                    $binaryVersion = $this->resolveWithIdentifyingComposerPackage($extension, $versionRequirements, $forcedVersion, $phpToBeChecked, $origin, $notes);
+                    if ($binaryVersion === null) {
+                        break;
+                    }
+                    $path = $this->fetchBinary($extension, $binaryVersion, $state);
                     if ($path === '') {
                         $notes[$origin] = "the vendor doesn't provide a binary for this environment";
                         break;
                     }
-                    $this->logger->info("Using the binary of {$handle}" . $this->describeRequirements($versionRequirements));
+                    $this->logger->info("Using the binary of {$handle}" . $this->describeRequirements($binaryVersion));
 
-                    return $this->createResolvedFromFetched($extension, $path, $versionRequirements, $origin, $userOptions, $state, $forcedVersion);
+                    return $this->createResolvedFromFetched($extension, $path, $binaryVersion, $origin, $userOptions, $state, $forcedVersion);
                 case Resolved::ORIGIN_VENDOR_ARCHIVE:
                     if (!($extension instanceof Extension\CompiledFromVendorArchive)) {
+                        break;
+                    }
+                    $archiveRequirements = $this->resolveWithIdentifyingComposerPackage($extension, $versionRequirements, $forcedVersion, $phpToBeChecked, $origin, $notes);
+                    if ($archiveRequirements === null) {
                         break;
                     }
                     $declaredOptions = $extension instanceof Extension\DeclaresOptions ? $extension::getOptions() : [];
@@ -957,7 +965,7 @@ abstract class Resolver
                     $archiveVersion = '';
                     $path = '';
                     try {
-                        $archiveVersion = $extension->getVendorArchiveVersion($versionRequirements, $optionValues);
+                        $archiveVersion = $extension->getVendorArchiveVersion($archiveRequirements, $optionValues);
                         $path = $this->downloadVendorArchive($extension->getVendorArchiveURL($archiveVersion, $optionValues), $state);
                     } catch (Exception\IO\NotFound $_) {
                     }
@@ -1267,6 +1275,48 @@ abstract class Resolver
         }
 
         return $this->handleUnsupported("The extension {$name} {$version} requires PHP {$constraint}, but the current version is {$this->php->getVersion()}", $name, $state);
+    }
+
+    /**
+     * Resolve the version requirements of an extension identified by a Composer package to an exact version.
+     *
+     * @param string $versionRequirements
+     * @param bool $forcedVersion
+     * @param \IPE\PHPInfo|null $php null to not check the compatibility with PHP
+     * @param non-empty-string $origin
+     * @param array<string, non-empty-string> $notes the keys are the origins, the values explain why they can't be used
+     *
+     * @throws \IPE\Exception\InvalidArgument
+     * @throws \IPE\Exception\IO
+     *
+     * @return string|null NULL if no version satisfies the requirements, $versionRequirements if they can't be resolved
+     */
+    private function resolveWithIdentifyingComposerPackage(Extension $extension, $versionRequirements, $forcedVersion, $php, $origin, array &$notes)
+    {
+        if ($versionRequirements === '' || $forcedVersion || !($extension instanceof Extension\IdentifiedByComposerPackage)) {
+            return $versionRequirements;
+        }
+        $fullName = $extension::getIdentifyingComposerPackageName();
+        list($vendor, $name) = explode('/', $fullName, 2);
+        $whyNone = '';
+        $version = $this->composerSource->selectVersion(
+            $vendor,
+            $name,
+            $versionRequirements,
+            $php,
+            static function (Extension\Version\Composer $version) use ($extension) {
+                return $extension->getExtensionVersionFromComposerVersion($version->getVersion()) !== '';
+            },
+            $whyNone
+        );
+        if ($version === null) {
+            $notes[$origin] = "no suitable version found ({$fullName}): {$whyNone}";
+
+            return null;
+        }
+        $this->logger->info("Using version {$version} of {$fullName} from the Composer repositories");
+
+        return $extension->getExtensionVersionFromComposerVersion($version->getVersion());
     }
 
     /**
