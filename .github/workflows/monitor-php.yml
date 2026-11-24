@@ -1,0 +1,161 @@
+name: Monitor PHP 8.6
+
+on:
+  schedule:
+    - cron: "0 1 */2 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MONITORED_PHP_VERSION: "8.6"
+  # https://t.me/docker_php_extension_installer
+  TELEGRAM_CHANNEL: "-1001237152521"
+
+jobs:
+
+  plan:
+    name: Plan the tests
+    runs-on: ubuntu-latest
+    outputs:
+      jobs: ${{ steps.plan.outputs.jobs }}
+      tests: ${{ steps.plan.outputs.tests }}
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer:v2
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Install Composer dependencies
+        run: composer --no-interaction --ansi --no-progress update --no-dev
+      -
+        name: Plan the tests
+        id: plan
+        run: php scripts/ci-plan-extension-tests.php --monitor "$MONITORED_PHP_VERSION"
+
+  build-phar:
+    name: Build PHAR
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer:v2
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Install Composer dependencies
+        run: composer --no-interaction --ansi --no-progress update --no-dev
+      -
+        name: Build install-php-extensions
+        run: composer --no-interaction --ansi run-script build-phar -- --verbose install-php-extensions
+      -
+        name: Upload PHAR
+        uses: actions/upload-artifact@v7
+        with:
+          name: phar
+          path: install-php-extensions
+          if-no-files-found: error
+
+  test:
+    name: Test ${{ matrix.group || 'extensions' }} on ${{ matrix.distro }}
+    needs:
+      - plan
+      - build-phar
+    if: needs.plan.outputs.jobs != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.jobs) }}
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: none
+          coverage: none
+      -
+        name: Checkout
+        uses: actions/checkout@v7
+      -
+        name: Download PHAR
+        uses: actions/download-artifact@v8
+        with:
+          name: phar
+      -
+        name: Test extensions
+        env:
+          IPE_EXTENSION_TESTS: ${{ needs.plan.outputs.tests }}
+          IPE_EXTENSION_TESTS_RESULTS: ${{ runner.temp }}/results-${{ strategy.job-index }}.json
+        # Most extensions are expected to fail: the results file is missing only if the tests didn't complete
+        run: php scripts/ci-run-extension-tests.php "${{ matrix.distro }}" install-php-extensions "${{ matrix.group }}" || test -f "$IPE_EXTENSION_TESTS_RESULTS"
+      -
+        name: Upload results
+        uses: actions/upload-artifact@v7
+        with:
+          name: results-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/results-${{ strategy.job-index }}.json
+          if-no-files-found: error
+
+  notify:
+    name: Notify
+    needs:
+      - plan
+      - build-phar
+      - test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Download results
+        if: needs.test.result == 'success'
+        uses: actions/download-artifact@v8
+        with:
+          pattern: results-*
+          merge-multiple: true
+          path: results
+      -
+        name: Collect the installed extensions
+        id: collect
+        if: needs.test.result == 'success'
+        run: |
+          installed="$(jq -r '.[] | select(.result == "passed") | .extensions' results/*.json | sort -u | paste -sd ' ' -)"
+          if test -z "$installed"; then
+            printf 'No extension can be installed on PHP %s\n' "$MONITORED_PHP_VERSION"
+          else
+            printf 'These extensions can now be installed on PHP %s: %s\n' "$MONITORED_PHP_VERSION" "$installed"
+            printf 'installed=%s\n' "$installed" >> "$GITHUB_OUTPUT"
+          fi
+      -
+        name: Notify the installed extensions
+        if: steps.collect.outputs.installed != ''
+        uses: appleboy/telegram-action@v1
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          to: ${{ env.TELEGRAM_CHANNEL }}
+          message: |
+            These extensions can now be installed on PHP ${{ env.MONITORED_PHP_VERSION }}: ${{ steps.collect.outputs.installed }}
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      -
+        name: Notify failures
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        uses: appleboy/telegram-action@v1
+        with:
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          to: ${{ env.TELEGRAM_CHANNEL }}
+          message: |
+            Monitoring PHP ${{ env.MONITORED_PHP_VERSION }} failed
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

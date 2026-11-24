@@ -9,6 +9,8 @@ declare(strict_types=1);
  *   For pull requests (see CONTRIBUTING.md)
  * - php scripts/ci-plan-extension-tests.php --quick [<commit before> <commit after>]
  *   For pushes and manual runs: install one extension in a few Docker images (if the commits are specified, only if relevant files changed)
+ * - php scripts/ci-plan-extension-tests.php --monitor <PHP version>
+ *   Install the extensions that support one of the two previous PHP versions, but not the specified one (ignoring the supported PHP versions), to find out when they start supporting it
  * Writes to the file specified by the GITHUB_OUTPUT environment variable (if set):
  * - jobs: the JSON array of the jobs, each one with the operating system of the Docker images, the group of the tests, and the PHP version (empty string for all) (empty if there's nothing to test)
  * - tests: the JSON array of the tests, each one with the space-separated extensions, the PHP version, whether PHP is thread-safe, the options of install-php-extensions (if any), and the group (if not the default one)
@@ -60,6 +62,11 @@ const QUICK_TEST_EXTENSION = 'calendar';
 const QUICK_TEST_PHP_VERSION = '8.5';
 
 const MAX_JOBS_PER_MATRIX = 256;
+
+/**
+ * The extensions that don't support a PHP version are installed with this option to find out when they start supporting it.
+ */
+const MONITOR_OPTIONS = ['--unsupported-extensions=force'];
 
 /**
  * The names that can be used in the Test-Distro lines for a whole family of distros.
@@ -336,6 +343,48 @@ function getQuickTestOperatingSystems(): array
 }
 
 /**
+ * The extensions that support one of the two PHP versions before $phpVersion, but not $phpVersion, to be tested on the most recent Debian of the official Docker PHP images.
+ *
+ * @param array<string, class-string<Extension>> $extensionClasses
+ * @param list<string> $allPHPVersions sorted from the most recent
+ *
+ * @throws InvalidRequestException
+ *
+ * @return list<array{extensions: string, options: list<string>, php: string, zts: bool, group: string, os: non-empty-list<string>}>
+ */
+function planMonitorTests(string $phpVersion, array $extensionClasses, array $allPHPVersions): array
+{
+    $previousPHPVersions = array_slice(array_values(array_filter($allPHPVersions, static fn (string $version): bool => version_compare($version, $phpVersion) < 0)), 0, 2);
+    $officialImages = array_filter(DockerImages::getAll(), static fn (DockerImage $image): bool => $image->getBaseImage() === '' && $image->getPHPVersion() === $phpVersion && !str_starts_with($image->getOS(), 'alpine'));
+    if ($previousPHPVersions === [] || $officialImages === []) {
+        throw new InvalidRequestException("Unable to monitor PHP {$phpVersion}: no previous PHP versions, or no official Debian Docker images");
+    }
+    $os = array_values($officialImages)[count($officialImages) - 1]->getOS();
+    echo '### Extensions that support PHP ', implode(' or ', $previousPHPVersions), " but not PHP {$phpVersion} (to be tested on {$os})\n";
+    $result = [];
+    foreach ($extensionClasses as $handle => $class) {
+        $supported = $class::getSupportedPHPVersions();
+        if (in_array($phpVersion, $supported, true) || array_intersect($previousPHPVersions, $supported) === []) {
+            continue;
+        }
+        $zts = array_find([false, true], static fn (bool $zts): bool => supportsThreadSafety($class, $phpVersion, $zts));
+        $hasImage = $zts !== null && array_any(DockerImages::find($phpVersion, $zts), static fn (DockerImage $image): bool => $image->getOS() === $os);
+        if (!$hasImage) {
+            echo "- {$handle}: skipped (no Docker image)\n";
+            continue;
+        }
+        $group = getTestGroup([$class]);
+        echo "- {$handle}", $zts ? ' (ZTS)' : '', $group === '' ? '' : ' (in its own job)', "\n";
+        $result[] = ['extensions' => $handle, 'options' => MONITOR_OPTIONS, 'php' => $phpVersion, 'zts' => $zts, 'group' => $group, 'os' => [$os]];
+    }
+    if ($result === []) {
+        echo "(none)\n";
+    }
+
+    return $result;
+}
+
+/**
  * The class of the supported extension (if any) of an argument like "xdebug", "xdebug:^3.3", "xdebug/xdebug" or "php/imap".
  *
  * @param array<string, class-string<Extension>> $extensionClasses
@@ -584,12 +633,14 @@ function main(array $argv): int
 {
     $arguments = array_slice($argv, 1);
     $quick = ($arguments[0] ?? '') === '--quick';
-    if ($quick) {
+    $monitor = ($arguments[0] ?? '') === '--monitor';
+    if ($quick || $monitor) {
         array_shift($arguments);
     }
-    $commits = count($arguments) === 2 && !in_array('', $arguments, true) ? [$arguments[0], $arguments[1]] : null;
-    if ($commits === null && !($quick && $arguments === [])) {
-        fwrite(STDERR, "Syntax:\n- {$argv[0]} <base commit> <head commit>\n- {$argv[0]} --quick [<commit before> <commit after>]\n");
+    $commits = !$monitor && count($arguments) === 2 && !in_array('', $arguments, true) ? [$arguments[0], $arguments[1]] : null;
+    $monitorPHPVersion = $monitor && count($arguments) === 1 && preg_match('/^\d+\.\d+$/D', $arguments[0]) ? $arguments[0] : '';
+    if ($commits === null && !($quick && $arguments === []) && $monitorPHPVersion === '') {
+        fwrite(STDERR, "Syntax:\n- {$argv[0]} <base commit> <head commit>\n- {$argv[0]} --quick [<commit before> <commit after>]\n- {$argv[0]} --monitor <PHP version>\n");
 
         return 1;
     }
@@ -600,7 +651,12 @@ function main(array $argv): int
         }
         $allPHPVersions = array_values(array_unique(array_merge(...array_map(static fn (string $class): array => $class::getSupportedPHPVersions(), array_values($extensionClasses)))));
         usort($allPHPVersions, static fn (string $a, string $b): int => version_compare($b, $a));
-        if ($commits !== null && !$quick) {
+        $tests = [];
+        if ($monitorPHPVersion !== '') {
+            $tests = planMonitorTests($monitorPHPVersion, $extensionClasses, $allPHPVersions);
+            $requestedTests = [];
+            $operatingSystems = DockerImages::getOperatingSystems();
+        } elseif ($commits !== null && !$quick) {
             $requestedTests = collectTestsForPullRequest($commits[0], $commits[1], $extensionClasses);
             if ($requestedTests === null) {
                 return 1;
@@ -610,7 +666,6 @@ function main(array $argv): int
             $requestedTests = isQuickTestNeeded($commits) ? [new RequestedTest([QUICK_TEST_EXTENSION], [QUICK_TEST_PHP_VERSION], null, 'quick test')] : [];
             $operatingSystems = getQuickTestOperatingSystems();
         }
-        $tests = [];
         $planned = [];
         foreach ($requestedTests as $requestedTest) {
             $key = $requestedTest->getKey();

@@ -6,6 +6,7 @@ declare(strict_types=1);
  * Run the extension tests planned by scripts/ci-plan-extension-tests.php in the Docker images of an operating system.
  * Syntax: php scripts/ci-run-extension-tests.php <operating system> <path to install-php-extensions> [<group of the tests> [<PHP version>]]
  * The tests are read from the IPE_EXTENSION_TESTS environment variable.
+ * If the IPE_EXTENSION_TESTS_RESULTS environment variable is set, the results are saved as JSON to that file once all the tests have been run.
  */
 
 namespace IPE\Scripts\CI\RunExtensionTests;
@@ -336,6 +337,7 @@ function main(array $argv): int
     $group = $argv[3] ?? '';
     $phpVersion = $argv[4] ?? '';
     $summary = [RESULT_PASSED => [], RESULT_FAILED => [], RESULT_SKIPPED => []];
+    $results = [];
     try {
         $extensionClasses = \IPE\createApp()->make(Extension\Registry::class)->getExtensionClasses();
         /** @var array<string, bool> $preparedImages */
@@ -355,15 +357,20 @@ function main(array $argv): int
                     printError($built ? 'Failed to build the Docker image' : 'Failed to pull the Docker image', "{$description} ({$image})");
                 }
             }
-            if (!$preparedImages[$image]) {
-                $summary[RESULT_FAILED][] = "{$description} ({$image})";
-                continue;
+            if ($preparedImages[$image]) {
+                $start = time();
+                $result = runTest($description, $test['image'], $phar, $test['extensions'], $test['options'], $extensionClasses);
+                $seconds = time() - $start;
+                printIndented('Time: ' . ($seconds < 60 ? "{$seconds} seconds" : sprintf('%.1f minutes', $seconds / 60)));
+            } else {
+                $result = RESULT_FAILED;
             }
-            $start = time();
-            $result = runTest($description, $test['image'], $phar, $test['extensions'], $test['options'], $extensionClasses);
-            $seconds = time() - $start;
-            printIndented('Time: ' . ($seconds < 60 ? "{$seconds} seconds" : sprintf('%.1f minutes', $seconds / 60)));
             $summary[$result][] = "{$description} ({$image})";
+            $results[] = ['extensions' => implode(' ', $test['extensions']), 'options' => $test['options'], 'php' => $test['php'], 'zts' => $test['zts'], 'image' => $image, 'result' => $result];
+        }
+        $resultsFile = getenv('IPE_EXTENSION_TESTS_RESULTS');
+        if (is_string($resultsFile) && $resultsFile !== '' && file_put_contents($resultsFile, json_encode($results, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)) === false) {
+            throw new \RuntimeException("Failed to write {$resultsFile}");
         }
     } catch (\Throwable $x) {
         fwrite(STDERR, rtrim((string) $x) . "\n");
