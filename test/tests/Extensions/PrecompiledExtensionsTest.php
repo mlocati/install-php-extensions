@@ -302,7 +302,12 @@ final class PrecompiledExtensionsTest extends TestCase
         self::assertSame('/src/relay-pkg.so', (new Extensions\relay(self::createPHP(), $os, $downloader))->findBinaryModule('/src', ''));
         self::assertSame('/src/relay-zts.so', (new Extensions\relay(self::createPHP(804, true), $os, $downloader))->findBinaryModule('/src', ''));
         $extension = new Extensions\relay(self::createPHP(), $os, $downloader);
-        self::assertSame([Extensions\msgpack::HANDLE, Extensions\igbinary::HANDLE], $extension->getRequiredExtensions(''));
+        self::assertSame([], $extension->getRequiredExtensions(''));
+        self::assertSame([Extensions\msgpack::HANDLE, Extensions\igbinary::HANDLE], $extension->getOptionalExtensions(''));
+        self::assertSame([], $extension->getRequiredExtensions('0.30.0'));
+        self::assertSame([Extensions\msgpack::HANDLE, Extensions\igbinary::HANDLE], $extension->getOptionalExtensions('0.30.0'));
+        self::assertSame([Extensions\msgpack::HANDLE, Extensions\igbinary::HANDLE], $extension->getRequiredExtensions('0.20.0'));
+        self::assertSame([], $extension->getOptionalExtensions('0.20.0'));
         self::assertSame([SystemDependencies\binutils::HANDLE], $extension->getRequiredSystemDependencies('', new Values()));
         self::assertSame(
             [SystemDependencies\binutils::HANDLE, SystemDependencies\liblz4::HANDLE, SystemDependencies\libzstd::HANDLE],

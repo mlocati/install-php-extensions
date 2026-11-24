@@ -86,7 +86,7 @@ final class relay extends Extension\PrecompiledExtension implements
      */
     public function getRequiredExtensions($version)
     {
-        return [msgpack::HANDLE, igbinary::HANDLE];
+        return self::isVersionAtLeast($version, '0.30.0') ? [] : [msgpack::HANDLE, igbinary::HANDLE];
     }
 
     /**
@@ -96,7 +96,7 @@ final class relay extends Extension\PrecompiledExtension implements
      */
     public function getOptionalExtensions($version)
     {
-        return [];
+        return self::isVersionAtLeast($version, '0.30.0') ? [msgpack::HANDLE, igbinary::HANDLE] : [];
     }
 
     /**
