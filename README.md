@@ -181,18 +181,18 @@ Below the handles there are the Composer package names that can be used to speci
 | brotli<br><sub>kjdev/brotli</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | bz2<br><sub>php/bz2</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | calendar<br><sub>php/calendar</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| cassandra[&#x24D8;](#cassandra) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
+| cassandra[&#x24D8;](#cassandra) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | cmark |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; |  |  |
 | csv<br><sub>girgias/csv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
 | curl<br><sub>php/curl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | dba<br><sub>php/dba</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| ddtrace[&#x24D8;](#ddtrace) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
+| ddtrace[&#x24D8;](#ddtrace) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | decimal<br><sub>php-decimal/ext-decimal</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | dom<br><sub>php/dom</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ds<br><sub>php-ds/ext-ds</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | ecma_intl[&#x24D8;](#ecma_intl) |  |  |  | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | enchant<br><sub>php/enchant</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| ev<br><sub>osmanov/pecl-ev</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| ev<br><sub>osmanov/pecl-ev</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | event<br><sub>osmanov/pecl-event</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | excimer<br><sub>wikimedia/excimer</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | exif<br><sub>php/exif</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -250,7 +250,7 @@ Below the handles there are the Composer package names that can be used to speci
 | opcache<br><sub>php/opcache</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | opencensus |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | openssl<br><sub>php/openssl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| openswoole<br><sub>openswoole/ext-openswoole</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
+| openswoole<br><sub>openswoole/ext-openswoole</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
 | opentelemetry<br><sub>open-telemetry/ext-opentelemetry</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | operator[&#x24D8;](#operator) |  | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | parallel[&#x24D8;](#parallel)<br><sub>pecl/parallel</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
@@ -264,7 +264,7 @@ Below the handles there are the Composer package names that can be used to speci
 | pdo_oci[&#x24D8;](#pdo_oci)<br><sub>pecl/pdo_oci<br>php/pdo_oci</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_odbc<br><sub>php/pdo_odbc</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pdo_pgsql<br><sub>php/pdo_pgsql</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pdo_snowflake[&#x24D8;](#pdo_snowflake) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
+| pdo_snowflake[&#x24D8;](#pdo_snowflake) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | pdo_sqlsrv[&#x24D8;](#pdo_sqlsrv)<br><sub>microsoft/pdo_sqlsrv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | pgsql<br><sub>php/pgsql</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | phalcon<br><sub>phalcon/cphalcon</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
@@ -281,7 +281,7 @@ Below the handles there are the Composer package names that can be used to speci
 | rdkafka[&#x24D8;](#rdkafka)<br><sub>rdkafka/rdkafka</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | recode[&#x24D8;](#recode)<br><sub>php/recode</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
 | redis<br><sub>phpredis/phpredis</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| relay[&#x24D8;](#relay) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
+| relay[&#x24D8;](#relay)<br><sub>cachewerk/ext-relay</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
 | rrd |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | saxon[&#x24D8;](#saxon) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | seasclick |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -300,7 +300,7 @@ Below the handles there are the Composer package names that can be used to speci
 | sourceguardian |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | spx |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | sqlsrv[&#x24D8;](#sqlsrv)<br><sub>microsoft/sqlsrv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| ssh2<br><sub>pecl/ssh2</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| ssh2<br><sub>pecl/ssh2</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | statgrab[&#x24D8;](#statgrab)<br><sub>iliaal/statgrab</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | stomp |  |  | &check; | &check; | &check; |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | swoole[&#x24D8;](#swoole)<br><sub>swoole/swoole</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -310,7 +310,7 @@ Below the handles there are the Composer package names that can be used to speci
 | sysvsem<br><sub>php/sysvsem</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | sysvshm<br><sub>php/sysvshm</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | tensor |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
-| tideways[&#x24D8;](#tideways) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| tideways[&#x24D8;](#tideways) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | tidy<br><sub>php/tidy</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | timezonedb<br><sub>pecl/timezonedb</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | tokenizer<br><sub>php/tokenizer</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -593,7 +593,9 @@ Not available on:
 - Debian 8 (the extension requires OpenSSL 1.1)
 - Ubuntu 14.04 to 16.04 (the extension requires OpenSSL 1.1)
 - Enterprise Linux 8 with PHP 8.5 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 1.1 of this system)
+- Enterprise Linux 8 with PHP 8.6 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 1.1 of this system)
 - Fedora 45 with PHP 8.5 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system)
+- Fedora 45 with PHP 8.6 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system)
 
 ### pdo_sqlsrv
 
