@@ -55,7 +55,7 @@ final class pdo_snowflake extends Extension implements
      */
     public static function getSupportedPHPVersions()
     {
-        return ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+        return ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
     }
 
     /**
@@ -71,7 +71,9 @@ final class pdo_snowflake extends Extension implements
             'ubuntu14.04..16.04' => 'the extension requires OpenSSL 1.1',
             // PHP 8.5 doesn't load extensions with RTLD_DEEPBIND anymore, so the bundled OpenSSL uses the symbols of the OpenSSL loaded by PHP
             'el8-php8.5' => 'the extension includes OpenSSL 3, which is not compatible with the OpenSSL 1.1 of this system',
+            'el8-php8.6' => 'the extension includes OpenSSL 3, which is not compatible with the OpenSSL 1.1 of this system',
             'fedora45-php8.5' => 'the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system',
+            'fedora45-php8.6' => 'the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system',
         ];
     }
 
