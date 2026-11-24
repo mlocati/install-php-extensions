@@ -40,7 +40,7 @@ final class relay extends Extension\PrecompiledExtension implements
      */
     public static function getSupportedPHPVersions()
     {
-        return ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+        return ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
     }
 
     /**
@@ -86,7 +86,13 @@ final class relay extends Extension\PrecompiledExtension implements
      */
     public function getRequiredExtensions($version)
     {
-        return [msgpack::HANDLE, igbinary::HANDLE];
+        $result = [session::HANDLE];
+        if (!self::isVersionAtLeast($version, '0.30.0')) {
+            $result[] = msgpack::HANDLE;
+            $result[] = igbinary::HANDLE;
+        }
+
+        return $result;
     }
 
     /**
@@ -96,7 +102,7 @@ final class relay extends Extension\PrecompiledExtension implements
      */
     public function getOptionalExtensions($version)
     {
-        return [];
+        return self::isVersionAtLeast($version, '0.30.0') ? [msgpack::HANDLE, igbinary::HANDLE] : [];
     }
 
     /**
