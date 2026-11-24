@@ -70,9 +70,11 @@ final class DockerImages
         foreach (self::getOfficialImageDefinitions() as $phpVersion => $definition) {
             $rc = isset($definition['rc']) && $definition['rc'];
             $withoutZTS = isset($definition['withoutZTS']) ? $definition['withoutZTS'] : [];
+            // Since PHP 8.6 all the images are thread-safe, and there are no zts images
+            $onlyZTS = version_compare($phpVersion, '8.6') >= 0;
             foreach ($definition['os'] as $os) {
-                $result[] = new DockerImage("php:{$phpVersion}" . ($rc ? '-rc' : '') . "-cli-{$os}", $os, $phpVersion, false, $rc);
-                if (!in_array($os, $withoutZTS, true)) {
+                $result[] = new DockerImage("php:{$phpVersion}" . ($rc ? '-rc' : '') . "-cli-{$os}", $os, $phpVersion, $onlyZTS, $rc);
+                if (!$onlyZTS && !in_array($os, $withoutZTS, true)) {
                     $result[] = new DockerImage("php:{$phpVersion}" . ($rc ? '-rc' : '') . "-zts-{$os}", $os, $phpVersion, true, $rc);
                 }
             }
@@ -250,7 +252,7 @@ final class DockerImages
     }
 
     /**
-     * The official Docker PHP images (php:<version>[-rc]-<cli|zts>-<os>) of the operating systems supported by IPE.
+     * The official Docker PHP images (php:<version>[-rc]-<cli|zts>-<os>, only php:<version>[-rc]-cli-<os> since PHP 8.6) of the operating systems supported by IPE.
      * Keys:
      * - rc: true if the PHP version has not been released yet
      * - os: the operating systems
