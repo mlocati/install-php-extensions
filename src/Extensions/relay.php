@@ -86,7 +86,13 @@ final class relay extends Extension\PrecompiledExtension implements
      */
     public function getRequiredExtensions($version)
     {
-        return self::isVersionAtLeast($version, '0.30.0') ? [] : [msgpack::HANDLE, igbinary::HANDLE];
+        $result = [session::HANDLE];
+        if (!self::isVersionAtLeast($version, '0.30.0')) {
+            $result[] = msgpack::HANDLE;
+            $result[] = igbinary::HANDLE;
+        }
+
+        return $result;
     }
 
     /**
