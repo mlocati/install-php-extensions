@@ -224,7 +224,7 @@ Below the handles there are the Composer package names that can be used to speci
 | judy[&#x24D8;](#judy)<br><sub>orieg/judy</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | ldap<br><sub>php/ldap</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | luasandbox[&#x24D8;](#luasandbox)<br><sub>wikimedia/luasandbox</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| lz4[&#x24D8;](#lz4) | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |
+| lz4[&#x24D8;](#lz4)<br><sub>kjdev/lz4</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |
 | lzf<br><sub>pecl/lzf</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | mailparse<br><sub>pecl/mailparse</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | maxminddb | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
@@ -290,7 +290,7 @@ Below the handles there are the Composer package names that can be used to speci
 | shmop<br><sub>php/shmop</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | simdjson[&#x24D8;](#simdjson) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | smbclient |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| snappy | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| snappy<br><sub>kjdev/snappy</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | snmp[&#x24D8;](#snmp)<br><sub>php/snmp</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | snuffleupagus[&#x24D8;](#snuffleupagus) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | soap<br><sub>php/soap</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -298,7 +298,7 @@ Below the handles there are the Composer package names that can be used to speci
 | sodium[&#x24D8;](#sodium)<br><sub>php/sodium</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |
 | solr<br><sub>pecl/solr</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | sourceguardian |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| spx |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| spx<br><sub>noisebynorthwest/php-spx</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | sqlsrv[&#x24D8;](#sqlsrv)<br><sub>microsoft/sqlsrv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | ssh2<br><sub>pecl/ssh2</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | statgrab[&#x24D8;](#statgrab)<br><sub>iliaal/statgrab</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
@@ -323,7 +323,7 @@ Below the handles there are the Composer package names that can be used to speci
 | vips[&#x24D8;](#vips) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | vld<br><sub>derickr/vld</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | wddx<br><sub>php/wddx</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
-| wikidiff2[&#x24D8;](#wikidiff2) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
+| wikidiff2[&#x24D8;](#wikidiff2)<br><sub>wikimedia/wikidiff2</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | xattr<br><sub>pecl/xattr</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xdebug<br><sub>xdebug/xdebug</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xdiff<br><sub>pecl/xdiff</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -335,7 +335,7 @@ Below the handles there are the Composer package names that can be used to speci
 | xpass[&#x24D8;](#xpass)<br><sub>remi/xpass</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | xsl<br><sub>php/xsl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | yac<br><sub>laruence/yac</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
-| yajl_stream[&#x24D8;](#yajl_stream) |  | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |  |
+| yajl_stream[&#x24D8;](#yajl_stream)<br><sub>vlydev/yajl-stream</sub> |  | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |  |
 | yaml<br><sub>pecl/yaml</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | yar<br><sub>laruence/yar</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zephir_parser | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
