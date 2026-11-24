@@ -9,7 +9,9 @@ use IPE\SystemDependencies;
 /**
  * @see https://github.com/kjdev/php-ext-snappy
  */
-final class snappy extends Extension\GitHubExtension implements Extension\ProvidesConfigureArguments
+final class snappy extends Extension\GitHubExtension implements
+    Extension\IdentifiedByComposerPackage,
+    Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -41,6 +43,26 @@ final class snappy extends Extension\GitHubExtension implements Extension\Provid
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getIdentifyingComposerPackageName()
+     */
+    public static function getIdentifyingComposerPackageName()
+    {
+        return 'kjdev/snappy';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getExtensionVersionFromComposerVersion()
+     */
+    public function getExtensionVersionFromComposerVersion($composerVersion)
+    {
+        return preg_match('/^\d+(\.\d+)*$/D', $composerVersion) ? $composerVersion : '';
     }
 
     /**

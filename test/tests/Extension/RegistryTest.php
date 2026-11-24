@@ -6,8 +6,10 @@ use IPE\Exception;
 use IPE\Extension\Registry;
 use IPE\Extensions\apcu;
 use IPE\Extensions\bcmath;
+use IPE\Extensions\lz4;
 use IPE\Extensions\memcache;
 use IPE\Extensions\relay;
+use IPE\Extensions\spx;
 use IPE\Extensions\zip;
 use IPE\Filesystem\Downloader;
 use IPE\OS;
@@ -71,6 +73,8 @@ final class RegistryTest extends TestCase
         // Not installed from the Composer package
         self::assertInstanceOf(relay::class, $registry->getExtensionByComposerPackageName('cachewerk/ext-relay'));
         self::assertSame(['cachewerk/ext-relay'], Registry::getComposerPackageNames(relay::class));
+        self::assertInstanceOf(lz4::class, $registry->getExtensionByComposerPackageName('kjdev/lz4'));
+        self::assertInstanceOf(spx::class, $registry->getExtensionByComposerPackageName('NoiseByNorthwest/php-spx'));
         self::assertSame(['apcu/apcu'], Registry::getComposerPackageNames(apcu::class));
         self::assertSame(['php/bcmath'], Registry::getComposerPackageNames(bcmath::class));
         self::assertSame(['pecl/zip', 'php/zip'], Registry::getComposerPackageNames(zip::class));

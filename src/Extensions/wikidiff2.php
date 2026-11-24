@@ -8,7 +8,9 @@ use IPE\SystemDependencies;
 /**
  * @see https://github.com/wikimedia/mediawiki-php-wikidiff2
  */
-final class wikidiff2 extends Extension\GitHubExtension implements Extension\DeclaresUnsupportedEnvironments
+final class wikidiff2 extends Extension\GitHubExtension implements
+    Extension\DeclaresUnsupportedEnvironments,
+    Extension\IdentifiedByComposerPackage
 {
     /**
      * @public
@@ -52,6 +54,26 @@ final class wikidiff2 extends Extension\GitHubExtension implements Extension\Dec
         return [
             'debian8..9' => "the extension can't be compiled with the compiler or the libraries of this system",
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getIdentifyingComposerPackageName()
+     */
+    public static function getIdentifyingComposerPackageName()
+    {
+        return 'wikimedia/wikidiff2';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getExtensionVersionFromComposerVersion()
+     */
+    public function getExtensionVersionFromComposerVersion($composerVersion)
+    {
+        return preg_match('/^\d+(\.\d+)*$/D', $composerVersion) ? $composerVersion : '';
     }
 
     /**

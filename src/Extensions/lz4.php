@@ -11,6 +11,7 @@ use IPE\SystemDependencies;
  */
 final class lz4 extends Extension\GitHubExtension implements
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\IdentifiedByComposerPackage,
     Extension\ProvidesConfigureArguments
 {
     /**
@@ -57,6 +58,27 @@ final class lz4 extends Extension\GitHubExtension implements
             'debian8' => 'the version of the LZ4 library of this system is too old',
             'ubuntu14.04' => 'the version of the LZ4 library of this system is too old',
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getIdentifyingComposerPackageName()
+     */
+    public static function getIdentifyingComposerPackageName()
+    {
+        return 'kjdev/lz4';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getExtensionVersionFromComposerVersion()
+     */
+    public function getExtensionVersionFromComposerVersion($composerVersion)
+    {
+        // The +pie tags (like 0.4.4+pie) only add composer.json and CI files
+        return preg_match('/^(\d+(\.\d+)*)(\+pie)?$/D', $composerVersion, $matches) ? $matches[1] : '';
     }
 
     /**
