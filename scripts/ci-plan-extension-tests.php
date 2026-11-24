@@ -192,13 +192,57 @@ function resolveOperatingSystems(string $pattern): array
 }
 
 /**
+ * The handle of the supported extension (if any) whose files include a path.
+ *
+ * @param array<string, class-string<Extension>> $extensionClasses
+ *
+ * @return non-empty-string|null
+ */
+function getChangedExtensionHandle(string $path, array $extensionClasses): ?string
+{
+    if (!preg_match('_^(?:src/Extensions|test/extensions)/(?<handle>[^/]+)(?:\.php$|/)_', $path, $matches)) {
+        return null;
+    }
+    $handle = $matches['handle'];
+
+    return isset($extensionClasses[$handle]) ? $handle : null;
+}
+
+/**
+ * The supported extensions whose files have been changed by a commit.
+ *
+ * @param array<string, class-string<Extension>> $extensionClasses
+ *
+ * @throws \RuntimeException
+ *
+ * @return list<non-empty-string> sorted
+ */
+function getExtensionsChangedByCommit(string $hash, array $extensionClasses): array
+{
+    $handles = [];
+    foreach (git(['diff-tree', '--no-commit-id', '--name-only', '--no-renames', '-r', $hash]) as $path) {
+        $handle = getChangedExtensionHandle($path, $extensionClasses);
+        if ($handle !== null) {
+            $handles[$handle] = true;
+        }
+    }
+    $handles = array_keys($handles);
+    sort($handles, SORT_STRING);
+
+    return $handles;
+}
+
+/**
  * Inspect the commits starting from the most recent one, until a "-STOP-" is found.
+ * The Test-PHP and Test-Distro lines apply also to the extensions whose files have been changed by the same commit.
+ *
+ * @param array<string, class-string<Extension>> $extensionClasses
  *
  * @throws \RuntimeException
  *
  * @return array{list<RequestedTest>, bool} the requested tests, and whether "-STOP-" has been found
  */
-function collectTestsFromCommits(string $base, string $head): array
+function collectTestsFromCommits(string $base, string $head, array $extensionClasses): array
 {
     echo "### Commits of the pull request (from the most recent)\n";
     $result = [];
@@ -239,6 +283,12 @@ function collectTestsFromCommits(string $base, string $head): array
                 }
             }
         }
+        if (!$stop && ($phpVersions !== null || $operatingSystems !== null)) {
+            foreach (getExtensionsChangedByCommit($hash, $extensionClasses) as $handle) {
+                echo "  {$handle}: changed by this commit\n";
+                $tests[] = [$handle];
+            }
+        }
         foreach ($tests as $extensions) {
             $result[] = new RequestedTest(
                 $extensions,
@@ -271,9 +321,10 @@ function collectTestsFromChanges(array $changedFiles, array $extensionClasses): 
     echo "### Changed files of the supported extensions\n";
     $handles = [];
     foreach ($changedFiles as $path) {
-        if (preg_match('_^(?:src/Extensions|test/extensions)/(?<handle>[^/]+)(?:\.php$|/)_', $path, $matches) && isset($extensionClasses[$matches['handle']])) {
-            echo "- {$path} ({$matches['handle']})\n";
-            $handles[$matches['handle']] = true;
+        $handle = getChangedExtensionHandle($path, $extensionClasses);
+        if ($handle !== null) {
+            echo "- {$path} ({$handle})\n";
+            $handles[$handle] = true;
         }
     }
     if ($handles === []) {
@@ -600,7 +651,7 @@ function writeOutput(string $name, mixed $value): void
 function collectTestsForPullRequest(string $base, string $head, array $extensionClasses): ?array
 {
     $changedFiles = git(['diff', '--name-only', '--no-renames', "{$base}...{$head}"]);
-    [$requestedTests, $stopFound] = collectTestsFromCommits($base, $head);
+    [$requestedTests, $stopFound] = collectTestsFromCommits($base, $head, $extensionClasses);
     if ($stopFound) {
         return $requestedTests;
     }
