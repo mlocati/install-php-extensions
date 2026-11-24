@@ -8,7 +8,7 @@ use IPE\SystemDependencies;
 /**
  * @see https://github.com/NoiseByNorthwest/php-spx
  */
-final class spx extends Extension\GitHubExtension
+final class spx extends Extension\GitHubExtension implements Extension\IdentifiedByComposerPackage
 {
     /**
      * @public
@@ -40,6 +40,26 @@ final class spx extends Extension\GitHubExtension
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getIdentifyingComposerPackageName()
+     */
+    public static function getIdentifyingComposerPackageName()
+    {
+        return 'noisebynorthwest/php-spx';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getExtensionVersionFromComposerVersion()
+     */
+    public function getExtensionVersionFromComposerVersion($composerVersion)
+    {
+        return preg_match('/^v(\d+(\.\d+)*)$/D', $composerVersion, $matches) ? $matches[1] : '';
     }
 
     /**

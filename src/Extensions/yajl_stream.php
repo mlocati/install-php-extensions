@@ -10,6 +10,7 @@ use IPE\SystemDependencies;
  */
 final class yajl_stream extends Extension\GitHubExtension implements
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\IdentifiedByComposerPackage,
     Extension\ProvidesConfigureArguments
 {
     /**
@@ -54,6 +55,26 @@ final class yajl_stream extends Extension\GitHubExtension implements
         return [
             'el10' => "this system doesn't provide the YAJL library",
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getIdentifyingComposerPackageName()
+     */
+    public static function getIdentifyingComposerPackageName()
+    {
+        return 'vlydev/yajl-stream';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getExtensionVersionFromComposerVersion()
+     */
+    public function getExtensionVersionFromComposerVersion($composerVersion)
+    {
+        return preg_match('/^v(\d+(\.\d+)*)$/D', $composerVersion, $matches) ? $matches[1] : '';
     }
 
     /**
