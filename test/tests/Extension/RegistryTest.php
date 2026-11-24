@@ -7,6 +7,7 @@ use IPE\Extension\Registry;
 use IPE\Extensions\apcu;
 use IPE\Extensions\bcmath;
 use IPE\Extensions\memcache;
+use IPE\Extensions\relay;
 use IPE\Extensions\zip;
 use IPE\Filesystem\Downloader;
 use IPE\OS;
@@ -67,6 +68,9 @@ final class RegistryTest extends TestCase
         self::assertNull($registry->getExtensionByComposerPackageName('php/apcu'));
         self::assertNull($registry->getExtensionByComposerPackageName('php/not-an-extension'));
         self::assertNull($registry->getExtensionByComposerPackageName('other/bcmath'));
+        // Not installed from the Composer package
+        self::assertInstanceOf(relay::class, $registry->getExtensionByComposerPackageName('cachewerk/ext-relay'));
+        self::assertSame(['cachewerk/ext-relay'], Registry::getComposerPackageNames(relay::class));
         self::assertSame(['apcu/apcu'], Registry::getComposerPackageNames(apcu::class));
         self::assertSame(['php/bcmath'], Registry::getComposerPackageNames(bcmath::class));
         self::assertSame(['pecl/zip', 'php/zip'], Registry::getComposerPackageNames(zip::class));

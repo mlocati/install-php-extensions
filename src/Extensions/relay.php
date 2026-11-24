@@ -15,6 +15,7 @@ use IPE\SystemDependencies;
 final class relay extends Extension\PrecompiledExtension implements
     Extension\DeclaresUnsupportedEnvironments,
     Extension\DependsOnExtensions,
+    Extension\IdentifiedByComposerPackage,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -65,6 +66,29 @@ final class relay extends Extension\PrecompiledExtension implements
             'el9-zts' => $noHiredis,
             'fedora45..46' => 'the vendor builds require OpenSSL 3, but this system uses OpenSSL 4',
         ];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getIdentifyingComposerPackageName()
+     */
+    public static function getIdentifyingComposerPackageName()
+    {
+        return 'cachewerk/ext-relay';
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\IdentifiedByComposerPackage::getExtensionVersionFromComposerVersion()
+     */
+    public function getExtensionVersionFromComposerVersion($composerVersion)
+    {
+        $matches = null;
+
+        // A fourth number (for example v0.50.2.1) marks a fix of the Composer package
+        return preg_match('/^v?(\d+\.\d+\.\d+)(\.\d+)?$/D', $composerVersion, $matches) ? $matches[1] : '';
     }
 
     /**
