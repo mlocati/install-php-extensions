@@ -36,7 +36,7 @@ final class ssh2 extends Extension implements
      */
     public static function getSupportedPHPVersions()
     {
-        return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+        return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
     }
 
     /**
@@ -101,14 +101,10 @@ final class ssh2 extends Extension implements
 
             return '1.4.1';
         }
-        // Newer versions require libssh2 1.11, but these systems provide libssh2 1.8, 1.9 or 1.10
+        // Newer versions require libssh2 1.9, but these systems provide libssh2 1.8
         if (
-            $this->os instanceof OS\Alpine && $this->os->getNumericVersion() <= 315
-            || $this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::BOOKWORM
-            || $this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::LUNAR
-            || $this->os instanceof OS\Posix\RHELLike\EnterpriseLinux && $this->os->getNumericVersion() <= 8
-            || $this->os instanceof OS\AmazonLinux && $this->os->getNumericVersion() <= 2023
-            || $this->os instanceof OS\Fedora && $this->os->getNumericVersion() <= 38
+            $this->os instanceof OS\Debian && $this->os->getNumericVersion() <= OS\Debian::BUSTER
+            || $this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::FOCAL
         ) {
             return '1.5.0';
         }
