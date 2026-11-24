@@ -258,7 +258,13 @@ final class cassandra extends Extension implements
             $arguments[] = "--with-php-config={$phpConfig}";
         }
         $this->runStep('./configure', $arguments, $directory, $buildTools->getConfigureEnvironment());
-        $this->runStep($buildTools->getMake(), ['-j' . $parallelJobs, 'install'], $directory);
+        $makeArguments = ['-j' . $parallelJobs];
+        if ($this->php->getMajorMinorVersion() >= 806) {
+            // PHP 8.6 removed XtOffsetOf() and zend_binary_zval_strcmp() (make passes the quotes to the shell)
+            $makeArguments[] = "EXTRA_CFLAGS=-DXtOffsetOf=offsetof '-Dzend_binary_zval_strcmp(a,b)=zend_binary_strcmp(Z_STRVAL_P(a),Z_STRLEN_P(a),Z_STRVAL_P(b),Z_STRLEN_P(b))'";
+        }
+        $makeArguments[] = 'install';
+        $this->runStep($buildTools->getMake(), $makeArguments, $directory);
     }
 
     /**
