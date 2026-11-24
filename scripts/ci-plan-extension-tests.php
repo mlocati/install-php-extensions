@@ -418,9 +418,8 @@ function planMonitorTests(string $phpVersion, array $extensionClasses, array $al
         if (in_array($phpVersion, $supported, true) || array_intersect($previousPHPVersions, $supported) === []) {
             continue;
         }
-        $zts = array_find([false, true], static fn (bool $zts): bool => supportsThreadSafety($class, $phpVersion, $zts));
-        $hasImage = $zts !== null && array_any(DockerImages::find($phpVersion, $zts), static fn (DockerImage $image): bool => $image->getOS() === $os);
-        if (!$hasImage) {
+        $zts = array_find([false, true], static fn (bool $zts): bool => supportsThreadSafety($class, $phpVersion, $zts) && array_any(DockerImages::find($phpVersion, $zts), static fn (DockerImage $image): bool => $image->getOS() === $os));
+        if ($zts === null) {
             echo "- {$handle}: skipped (no Docker image)\n";
             continue;
         }
@@ -544,18 +543,25 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
     }
     $result = [];
     foreach ($phpVersions as $phpVersion) {
-        $zts = array_find([false, true], static fn (bool $zts): bool => array_all($classes, static fn (string $class): bool => supportsThreadSafety($class, $phpVersion, $zts)));
-        if ($zts === null) {
+        $supportedZTS = array_values(array_filter([false, true], static fn (bool $zts): bool => array_all($classes, static fn (string $class): bool => supportsThreadSafety($class, $phpVersion, $zts))));
+        if ($supportedZTS === []) {
             echo "  - PHP {$phpVersion}: skipped (no build of PHP supports all the extensions)\n";
             continue;
         }
-        $imageOperatingSystems = array_values(array_intersect(array_map(static fn (DockerImage $image): string => $image->getOS(), DockerImages::find($phpVersion, $zts)), $operatingSystems));
-        if ($imageOperatingSystems === []) {
-            echo "  - PHP {$phpVersion}" . ($zts ? ' (ZTS)' : '') . ": skipped (no Docker image)\n";
-            continue;
+        // Use the ZTS image of an operating system only if there's no NTS image (since PHP 8.6 the official images are ZTS)
+        $coveredOperatingSystems = [];
+        foreach ($supportedZTS as $zts) {
+            $imageOperatingSystems = array_values(array_diff(array_intersect(array_map(static fn (DockerImage $image): string => $image->getOS(), DockerImages::find($phpVersion, $zts)), $operatingSystems), $coveredOperatingSystems));
+            if ($imageOperatingSystems === []) {
+                continue;
+            }
+            $coveredOperatingSystems = array_merge($coveredOperatingSystems, $imageOperatingSystems);
+            foreach ($optionVariants as $options) {
+                $result[] = ['extensions' => implode(' ', $test->extensions), 'options' => $options, 'php' => $phpVersion, 'zts' => $zts, 'group' => $group, 'os' => $imageOperatingSystems];
+            }
         }
-        foreach ($optionVariants as $options) {
-            $result[] = ['extensions' => implode(' ', $test->extensions), 'options' => $options, 'php' => $phpVersion, 'zts' => $zts, 'group' => $group, 'os' => $imageOperatingSystems];
+        if ($coveredOperatingSystems === []) {
+            echo "  - PHP {$phpVersion}: skipped (no Docker image)\n";
         }
     }
     if ($result === []) {

@@ -83,7 +83,7 @@ final class DockerImagesTest extends TestCase
         ksort($expected);
         $actual = [];
         foreach (DockerImages::getAll() as $image) {
-            if ($image->isZTS() || version_compare($image->getPHPVersion(), '5.6') < 0 || $image->getBaseImage() !== '') {
+            if (strpos($image->getName(), '-zts') !== false || version_compare($image->getPHPVersion(), '5.6') < 0 || $image->getBaseImage() !== '') {
                 continue;
             }
             if (!isset($actual[$image->getPHPVersion()])) {
