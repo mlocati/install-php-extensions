@@ -17,6 +17,7 @@ use IPE\Service\Container;
 use IPE\Service\JSON;
 use IPE\Service\PHPScript;
 use IPE\SystemDependencies;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -118,6 +119,24 @@ final class PrecompiledExtensionsTest extends TestCase
         self::assertSame('', $extension->findBinaryModule('/src', ''));
         self::assertSame("blackfire.agent_socket=tcp://blackfire:8307\n", $extension->getBinaryIniSettings(self::createBuildContext('', null, '/src')));
         self::assertFalse($extension->isZendExtension());
+    }
+
+    /**
+     * @return void
+     */
+    public function testBlackfireOnMacOS()
+    {
+        $fs = self::createFilesystem(['/src/blackfire.so']);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, "/opt/homebrew\n"]);
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getDisplayName')->andReturn('The OS');
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        $extension = new Extensions\blackfire(self::createPHP(), $os, M::mock(Downloader::class));
+        self::assertMatchesRegularExpression('#^https://blackfire\.io/api/v1/releases/probe/php/darwin/\w+/84$#', $extension->getBinaryArchiveURL(''));
+        self::assertSame('/src/blackfire.so', $extension->findBinaryModule('/src', ''));
+        self::assertSame("blackfire.agent_socket=unix:///opt/homebrew/var/run/blackfire-agent.sock\n", $extension->getBinaryIniSettings(self::createBuildContext('', null, '/src')));
     }
 
     /**
