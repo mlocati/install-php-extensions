@@ -136,6 +136,23 @@ final class HomebrewTest extends TestCase
     /**
      * @return void
      */
+    public function testExpandPackageListWithAliases()
+    {
+        $fs = self::createFilesystem();
+        self::expectBrew($fs, ['deps', '--union', '--formula', 'icu4c', 'openssl'], 0, "ca-certificates\n");
+        self::expectBrew($fs, ['list', '--formula', '-1'], 0, "ca-certificates\nicu4c@79\n");
+        self::expectBrew($fs, ['info', '--json=v2', '--formula', 'icu4c', 'openssl'], 0, (string) json_encode([
+            'formulae' => [
+                ['name' => 'icu4c@79', 'full_name' => 'icu4c@79', 'versions' => ['stable' => '79.1'], 'revision' => 0],
+                ['name' => 'openssl@4', 'full_name' => 'openssl@4', 'versions' => ['stable' => '4.1.0'], 'revision' => 0],
+            ],
+        ]));
+        self::assertSame(['openssl@4' => '4.1.0'], self::createHomebrew($fs)->expandPackageList(['icu4c', 'openssl']));
+    }
+
+    /**
+     * @return void
+     */
     public function testFindAvailablePackage()
     {
         $fs = self::createFilesystem();

@@ -3,6 +3,7 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Extensions;
+use IPE\Filesystem;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
@@ -16,6 +17,7 @@ use IPE\SystemDependencies\libidn2;
 use IPE\SystemDependencies\libidnkit;
 use IPE\SystemDependencies\libopenssl;
 use IPE\SystemDependencies\libzlib;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -83,36 +85,85 @@ final class HttpTest extends TestCase
      */
     public function testSystemPackages()
     {
-        $alpine = self::createOS(OS\Alpine::class, 323);
+        $alpine = new Extensions\http(self::createPHP(804), self::createOS(OS\Alpine::class, 323));
         self::assertSame(
             [libcurl::HANDLE, libevent::HANDLE, libidn::HANDLE, libzlib::HANDLE],
-            (new Extensions\http(self::createPHP(506), $alpine))->getRequiredSystemDependencies('', new Values())
+            $alpine->getRequiredSystemDependencies('2.6.0', new Values())
         );
         self::assertSame(
             [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libicu::HANDLE, libidn::HANDLE, libidnkit::HANDLE, libzlib::HANDLE],
-            (new Extensions\http(self::createPHP(804), $alpine))->getRequiredSystemDependencies('', new Values())
+            $alpine->getRequiredSystemDependencies('', new Values())
         );
-        $debian = self::createOS(OS\Debian::class, OS\Debian::TRIXIE);
+        $debian = new Extensions\http(self::createPHP(804), self::createOS(OS\Debian::class, OS\Debian::TRIXIE));
         self::assertSame(
             [libcurl::HANDLE, libevent::HANDLE, libidn::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
-            (new Extensions\http(self::createPHP(506), $debian))->getRequiredSystemDependencies('', new Values())
+            $debian->getRequiredSystemDependencies('2.6.0', new Values())
         );
         self::assertSame(
-            [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
-            (new Extensions\http(self::createPHP(804), $debian))->getRequiredSystemDependencies('', new Values())
+            [libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libidn2::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
+            $debian->getRequiredSystemDependencies('3.0.0', new Values())
         );
         self::assertSame(
             [libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
-            (new Extensions\http(self::createPHP(703), self::createOS(OS\Debian::class, OS\Debian::STRETCH)))->getRequiredSystemDependencies('', new Values())
+            $debian->getRequiredSystemDependencies('3.1.0', new Values())
         );
-        $almalinux = self::createOS(OS\AlmaLinux::class, 10);
+        self::assertSame(
+            [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
+            $debian->getRequiredSystemDependencies('3.2.4', new Values())
+        );
+        self::assertSame(
+            [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
+            $debian->getRequiredSystemDependencies('', new Values())
+        );
+        self::assertSame(
+            [libcurl::HANDLE, libevent::HANDLE, libgcrypt::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
+            (new Extensions\http(self::createPHP(703), self::createOS(OS\Debian::class, OS\Debian::STRETCH)))->getRequiredSystemDependencies('3.2.4', new Values())
+        );
+        $almalinux = new Extensions\http(self::createPHP(804), self::createOS(OS\AlmaLinux::class, 10));
         self::assertSame(
             [libcurl::HANDLE, libevent::HANDLE, libidn::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
-            (new Extensions\http(self::createPHP(506), $almalinux))->getRequiredSystemDependencies('', new Values())
+            $almalinux->getRequiredSystemDependencies('2.6.0', new Values())
         );
         self::assertSame(
             [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libicu::HANDLE, libidn2::HANDLE, libidnkit::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
-            (new Extensions\http(self::createPHP(804), $almalinux))->getRequiredSystemDependencies('', new Values())
+            $almalinux->getRequiredSystemDependencies('4.3.1', new Values())
         );
+    }
+
+    /**
+     * @return array<array{string, list<string>}>
+     */
+    public static function provideMacOSConfigureArguments()
+    {
+        return [
+            ['/sdk', ['--with-http-libcurl-dir=/opt/homebrew/opt/curl', '--with-http-libidn2-dir=/opt/homebrew/opt/libidn2', '--with-http-zlib-dir=/sdk/usr']],
+            ['', ['--with-http-libcurl-dir=/opt/homebrew/opt/curl', '--with-http-libidn2-dir=/opt/homebrew/opt/libidn2']],
+        ];
+    }
+
+    /**
+     * @dataProvider provideMacOSConfigureArguments
+     *
+     * @param string $sdkPath
+     * @param list<string> $expected
+     *
+     * @return void
+     */
+    public function testMacOS($sdkPath, array $expected)
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, "/opt/homebrew\n"]);
+        $macOS = M::mock(OS\MacOS::class);
+        $macOS->shouldReceive('getFilesystem')->andReturn($fs);
+        $macOS->shouldReceive('getSystemPackager')->andReturn(new Homebrew($macOS));
+        $macOS->shouldReceive('getSDKPath')->andReturn($sdkPath);
+        $http = new Extensions\http(self::createPHP(804), $macOS);
+        self::assertSame(
+            [libbrotli::HANDLE, libcurl::HANDLE, libevent::HANDLE, libicu::HANDLE, libidn2::HANDLE, libopenssl::HANDLE, libzlib::HANDLE],
+            $http->getRequiredSystemDependencies('', new Values())
+        );
+        self::assertSame($expected, $http->getConfigureArguments(self::createBuildContext()));
+        self::assertSame([], (new Extensions\http(self::createPHP(804), self::createOS(OS\Debian::class, OS\Debian::TRIXIE)))->getConfigureArguments(self::createBuildContext()));
     }
 }

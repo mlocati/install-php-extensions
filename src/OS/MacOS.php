@@ -4,6 +4,7 @@ namespace IPE\OS;
 
 use IPE\Exception;
 use IPE\Filesystem;
+use IPE\Filesystem\Command;
 use IPE\Service\Container;
 use IPE\SystemPackager;
 use IPE\Traits;
@@ -40,6 +41,11 @@ class MacOS implements Posix
      * @var \IPE\SystemPackager\Homebrew|null
      */
     private $systemPackager = null;
+
+    /**
+     * @var string|null
+     */
+    private $sdkPath = null;
 
     /**
      * @param non-empty-string $version eg '15.7.1'
@@ -146,5 +152,24 @@ class MacOS implements Posix
         }
 
         return $this->systemPackager;
+    }
+
+    /**
+     * The headers and the libraries of the system (like zlib) are only in the SDK: /usr/include doesn't exist.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if the Xcode Command Line Tools are not installed
+     *
+     * @example '/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk'
+     */
+    public function getSDKPath()
+    {
+        if ($this->sdkPath === null) {
+            list($rc, $output) = $this->fs->run(Command::create('xcrun', ['--show-sdk-path'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+            $this->sdkPath = $rc === 0 ? rtrim(trim($output), '/') : '';
+        }
+
+        return $this->sdkPath;
     }
 }

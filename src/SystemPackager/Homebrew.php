@@ -306,9 +306,15 @@ final class Homebrew extends SystemPackager
         if ($toInstall === []) {
             return [];
         }
+        // brew info fails if a formula doesn't exist, and the aliases (like openssl for openssl@4) are described with the names of their formulae
         $result = $this->getFormulaVersions($toInstall);
-        if (count($result) !== count($toInstall)) {
+        if ($result === []) {
             throw new Exception\SystemPackager('brew failed to describe the formulae ' . implode(' ', $toInstall));
+        }
+        foreach (array_keys($result) as $name) {
+            if (in_array(self::getShortName($name), $installed, true)) {
+                unset($result[$name]);
+            }
         }
 
         return $result;

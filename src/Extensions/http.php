@@ -2,7 +2,6 @@
 
 namespace IPE\Extensions;
 
-use IPE\Exception;
 use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
@@ -16,6 +15,7 @@ final class http extends Extension implements
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresPriority,
     Extension\DependsOnExtensions,
+    Extension\ProvidesConfigureArguments,
     Extension\ProvidesSystemPackageNames,
     Extension\RequiresSystemDependencies
 {
@@ -139,32 +139,35 @@ final class http extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        // The versions of the extension for PHP 5 don't use brotli, ICU and idnkit
-        $legacy = $this->php->getMajorMinorVersion() <= 506;
-        $result = [];
-        // The configure script of the other versions always uses brotli when it finds it (for example, libcurl-devel depends on brotli-devel on EL 10)
-        if (!$legacy && SystemDependencies\libbrotli::isProvidedByOS($this->os)) {
+        $os = $this->os;
+        if (!$os instanceof OS\Alpine && !$os instanceof OS\Posix\DebianLike && !$os instanceof OS\Posix\RHELLike && !$os instanceof OS\MacOS) {
+            throw $this->createUnknownOSException();
+        }
+        $result = [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libzlib::HANDLE];
+        // The configure script always uses brotli when it finds it (for example, libcurl-devel depends on brotli-devel on EL 10)
+        if (self::isVersionAtLeast($version, '3.2.0') && SystemDependencies\libbrotli::isProvidedByOS($os)) {
             $result[] = SystemDependencies\libbrotli::HANDLE;
         }
-        if ($this->os instanceof OS\Alpine) {
-            // curl-dev provides the SSL headers
-            return array_merge($result, $legacy
-                ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libzlib::HANDLE]
-                : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libzlib::HANDLE]);
+        if (self::isVersionAtLeast($version, '3.1.0')) {
+            $result[] = SystemDependencies\libicu::HANDLE;
+            // On macOS it's optional, and IPE would compile it in /usr/local
+            if (!$os instanceof OS\MacOS) {
+                $result[] = SystemDependencies\libidnkit::HANDLE;
+            }
         }
-        if ($this->os instanceof OS\Posix\DebianLike) {
-            return array_merge($result, $legacy
-                ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]
-                : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libgcrypt::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn2::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]);
+        $v3 = self::isVersionAtLeast($version, '3.0.0');
+        // The libcurl of Debian and Ubuntu uses GnuTLS (the other ones use OpenSSL)
+        if ($v3 && $os instanceof OS\Posix\DebianLike) {
+            $result[] = SystemDependencies\libgcrypt::HANDLE;
         }
-        if ($this->os instanceof OS\Posix\RHELLike) {
-            // libcurl uses OpenSSL, so GnuTLS and libgcrypt are not needed
-            return array_merge($result, $legacy
-                ? [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libidn::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]
-                : [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libicu::HANDLE, SystemDependencies\libidn2::HANDLE, SystemDependencies\libidnkit::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libzlib::HANDLE]);
+        $result[] = !$v3 || $os instanceof OS\Alpine ? SystemDependencies\libidn::HANDLE : SystemDependencies\libidn2::HANDLE;
+        // On Alpine, curl-dev provides the SSL headers
+        if (!$os instanceof OS\Alpine) {
+            $result[] = SystemDependencies\libopenssl::HANDLE;
         }
+        sort($result);
 
-        throw new Exception\UnsupportedOS('The system libraries required by ' . self::getHandle() . " are not known for {$this->os->getDisplayName()}");
+        return $result;
     }
 
     /**
@@ -175,6 +178,31 @@ final class http extends Extension implements
     public static function getPriority()
     {
         return 90;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for zlib and libidn2 only in /usr/local, /usr and /opt, and it would use the curl-config of the system.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        if (!$this->os instanceof OS\MacOS) {
+            return [];
+        }
+        $homebrew = $this->os->getSystemPackager();
+        $result = [
+            '--with-http-libcurl-dir=' . $homebrew->getFormulaPrefix('curl'),
+            '--with-http-libidn2-dir=' . $homebrew->getFormulaPrefix('libidn2'),
+        ];
+        $sdkPath = $this->os->getSDKPath();
+        if ($sdkPath !== '') {
+            $result[] = "--with-http-zlib-dir={$sdkPath}/usr";
+        }
+
+        return $result;
     }
 
     /**

@@ -76,6 +76,12 @@ class libicu extends SystemDependency
                 ['libicu-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // An alias of the most recent versioned formula (like icu4c@79)
+            return new Packages(
+                ['icu4c']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -91,6 +91,11 @@ class libcurl extends SystemDependency
                 ['libcurl-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['curl']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
