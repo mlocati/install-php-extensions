@@ -57,6 +57,47 @@ final class DownloaderTest extends TestCase
     }
 
     /**
+     * @return array<array{int, string, class-string<\IPE\Exception\IO>}>
+     */
+    public static function provideCurlCommandErrors()
+    {
+        return [
+            [22, 'curl: (22) The requested URL returned error: 404', Exception\IO\NotFound::class],
+            [22, 'curl: (22) The requested URL returned error: 403', Exception\IO\Forbidden::class],
+            [22, 'curl: (22) The requested URL returned error: 500', Exception\IO::class],
+            [56, 'curl: (56) The requested URL returned error: 404', Exception\IO\NotFound::class],
+            [56, 'curl: (56) The requested URL returned error: 403', Exception\IO\Forbidden::class],
+            [56, 'curl: (56) Recv failure: Connection reset by peer (port 404)', Exception\IO::class],
+            [6, 'curl: (6) Could not resolve host: 404.example.com', Exception\IO::class],
+        ];
+    }
+
+    /**
+     * @dataProvider provideCurlCommandErrors
+     *
+     * @param int $rc
+     * @param string $output
+     * @param class-string<\IPE\Exception\IO> $expectedClass
+     *
+     * @return void
+     */
+    public function testCurlCommandErrors($rc, $output, $expectedClass)
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('curl')->andReturn('/usr/bin/curl');
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('run')->andReturn([0, 'curl 8.7.1 (x86_64-apple-darwin25.0)'], [$rc, $output]);
+        $downloader = Downloader\WithCurlCommand::createIfAvailable([], $fs, new \IPE\Logger());
+        self::assertInstanceOf(Downloader\WithCurlCommand::class, $downloader);
+        try {
+            $downloader->saveAs('https://www.example.com/file.tgz', '/tmp/file.tgz');
+            self::fail('Expected exception not thrown');
+        } catch (Exception\IO $x) {
+            self::assertSame($expectedClass, get_class($x));
+        }
+    }
+
+    /**
      * @dataProvider provideValidConfigCases
      *
      * @param int $usingProxy
