@@ -126,6 +126,10 @@ final class ioncube_loader extends Extension\PrecompiledExtension implements
         if ($os instanceof OS\Posix\DebianLike || $os instanceof OS\Posix\RHELLike) {
             return 'lin';
         }
+        if ($os instanceof OS\MacOS) {
+            // Before 14.4.1 the platform was named after Darwin
+            return self::isVersionAtLeast($version, '14.4.1') ? 'mac' : 'dar';
+        }
 
         throw new Exception\UnsupportedOS("ionCube Loader can't be installed on {$os->getDisplayName()}");
     }
@@ -137,6 +141,13 @@ final class ioncube_loader extends Extension\PrecompiledExtension implements
      */
     private function getVendorArchitecture()
     {
+        if ($this->os instanceof OS\MacOS) {
+            return $this->php->getArchitecture()->map([
+                Architecture::X64 => 'x86-64',
+                Architecture::ARM64 => 'arm64',
+            ], true);
+        }
+
         return $this->php->getArchitecture()->map([
             Architecture::X86 => 'x86',
             Architecture::X64 => 'x86-64',

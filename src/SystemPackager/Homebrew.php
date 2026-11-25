@@ -232,6 +232,25 @@ final class Homebrew extends SystemPackager
     }
 
     /**
+     * Get a formula of EXTENSIONS_TAP that doesn't depend on the PHP version (like a library), if the user tapped and trusted it and PHP_TAP.
+     *
+     * @param non-empty-string $name
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return string empty string if it's not available
+     *
+     * @example 'shivammathur/extensions/imap-uw' for 'imap-uw'
+     */
+    public function getExtensionsTapFormula($name)
+    {
+        $candidate = self::EXTENSIONS_TAP . "/{$name}";
+
+        return in_array($candidate, $this->listExtensionsTapFormulae(), true) ? $candidate : '';
+    }
+
+    /**
      * {@inheritdoc}
      *
      * @see \IPE\SystemPackager::doInstallPackages()

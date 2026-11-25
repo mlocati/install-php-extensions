@@ -31,6 +31,7 @@ final class HomebrewTest extends TestCase
         'installed' => true,
         'trusted' => true,
         'formula_names' => [
+            'shivammathur/extensions/imap-uw',
             'shivammathur/extensions/phpredis@8.4',
             'shivammathur/extensions/xdebug@8.4',
             'shivammathur/extensions/xdebug@8.5',
@@ -201,6 +202,8 @@ final class HomebrewTest extends TestCase
         self::assertSame([], $homebrew->getPHPExtensionPackageCandidates($php84, 'gd'));
         self::assertSame(['shivammathur/extensions/xdebug@8.5'], $homebrew->getPHPExtensionPackageCandidates(new Package('php', '8.5.0_1', 'php'), 'xdebug'));
         self::assertSame([], $homebrew->getPHPExtensionPackageCandidates(new Package('php@8.4-zts', '8.4.14', 'php@8.4-zts'), 'xdebug'));
+        self::assertSame('shivammathur/extensions/imap-uw', $homebrew->getExtensionsTapFormula('imap-uw'));
+        self::assertSame('', $homebrew->getExtensionsTapFormula('xdebug'));
     }
 
     /**
@@ -227,7 +230,9 @@ final class HomebrewTest extends TestCase
     {
         $fs = self::createFilesystem();
         self::expectBrew($fs, self::$tapInfoArguments, 0, (string) json_encode($tapInfo));
-        self::assertSame([], self::createHomebrew($fs)->getPHPExtensionPackageCandidates(new Package('php@8.4', '8.4.14_1', 'php@8.4'), 'xdebug'));
+        $homebrew = self::createHomebrew($fs);
+        self::assertSame([], $homebrew->getPHPExtensionPackageCandidates(new Package('php@8.4', '8.4.14_1', 'php@8.4'), 'xdebug'));
+        self::assertSame('', $homebrew->getExtensionsTapFormula('imap-uw'));
     }
 
     /**

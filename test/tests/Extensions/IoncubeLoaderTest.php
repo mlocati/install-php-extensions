@@ -89,6 +89,12 @@ final class IoncubeLoaderTest extends TestCase
         self::assertStringEndsWith('/ioncube_loaders_lin_x86-64_14.0.0.tar.gz', self::createExtension($php, $alpine)->getBinaryArchiveURL('14.0.0'));
         self::assertStringEndsWith('/ioncube_loaders_lin-musl_x86-64_14.4.0.tar.gz', self::createExtension($php, $alpine)->getBinaryArchiveURL('14.4.0'));
         self::assertStringEndsWith('/ioncube_loaders_lin_x86-64.tar.gz', self::createExtension($php, M::mock(OS\AlmaLinux::class))->getBinaryArchiveURL(''));
+        $macOS = M::mock(OS\MacOS::class);
+        $armPHP = self::createPHP(804, false, 64, 'arm64');
+        self::assertStringEndsWith('/ioncube_loaders_mac_arm64.tar.gz', self::createExtension($armPHP, $macOS)->getBinaryArchiveURL(''));
+        self::assertStringEndsWith('/ioncube_loaders_mac_arm64_14.4.1.tar.gz', self::createExtension($armPHP, $macOS)->getBinaryArchiveURL('14.4.1'));
+        self::assertStringEndsWith('/ioncube_loaders_dar_arm64_14.4.0.tar.gz', self::createExtension($armPHP, $macOS)->getBinaryArchiveURL('14.4.0'));
+        self::assertStringEndsWith('/ioncube_loaders_mac_x86-64.tar.gz', self::createExtension($php, $macOS)->getBinaryArchiveURL(''));
     }
 
     /**

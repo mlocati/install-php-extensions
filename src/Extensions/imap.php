@@ -149,6 +149,10 @@ final class imap extends Extension implements
             // libc-client is in lib64, the libdir of PHP that the compiler passes
             return ['--with-kerberos', '--with-imap-ssl'];
         }
+        if ($this->os instanceof OS\MacOS) {
+            // configure looks for c-client only in /usr/local and /usr
+            return ['--with-imap=' . $this->os->getSystemPackager()->getFormulaPrefix('imap-uw'), '--with-kerberos', '--with-imap-ssl'];
+        }
 
         throw $this->createUnknownOSException();
     }
