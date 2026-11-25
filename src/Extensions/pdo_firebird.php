@@ -4,12 +4,14 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class pdo_firebird extends Extension implements
     Extension\BundledInPHPSource,
     Extension\DeclaresUnsupportedEnvironments,
     Extension\DependsOnExtensions,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -109,6 +111,24 @@ final class pdo_firebird extends Extension implements
      */
     public function getOptionalExtensions($version)
     {
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, the Homebrew formula doesn't provide fb_config.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            $formula = SystemDependencies\libfbclient::getHomebrewFormula($this->php->getMajorMinorVersion());
+
+            return ['--with-pdo-firebird=' . $this->os->getSystemPackager()->getFormulaPrefix($formula)];
+        }
+
         return [];
     }
 }
