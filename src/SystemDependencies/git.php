@@ -50,6 +50,10 @@ final class git extends SystemDependency
                 ['git-core']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // The Command Line Tools of Xcode, required to compile, include git
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }
