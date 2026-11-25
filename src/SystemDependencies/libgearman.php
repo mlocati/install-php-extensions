@@ -73,6 +73,11 @@ final class libgearman extends CompiledLibrary
                 ['boost-devel', 'gperf', 'libevent-devel', 'libuuid-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['gearman']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

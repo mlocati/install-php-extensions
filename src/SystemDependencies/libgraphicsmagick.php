@@ -50,6 +50,11 @@ final class libgraphicsmagick extends SystemDependency
                 ['GraphicsMagick-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['graphicsmagick']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
