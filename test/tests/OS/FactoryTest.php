@@ -130,6 +130,102 @@ final class FactoryTest extends TestCase
     /**
      * @return void
      */
+    public function testDetectingMacOS()
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('isFile')->withArgs(['/etc/os-release'])->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('uname', ['-s'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "Darwin\n"]);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('sw_vers', ['-productVersion'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "15.7.1\n"]);
+        $app = self::createApp();
+        $app->singleton(Filesystem::class, static function () use ($fs) { return $fs; });
+        $os = (new OS\Factory($app, new \IPE\Logger()))->detectOS();
+        self::assertInstanceOf(OS\MacOS::class, $os);
+        self::assertSame('macOS 15.7.1', $os->getDisplayName());
+        self::assertSame(1507, $os->getNumericVersion());
+    }
+
+    /**
+     * @return void
+     */
+    public function testDetectingUnrecognizedMacOSVersion()
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('isFile')->withArgs(['/etc/os-release'])->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('uname', ['-s'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "Darwin\n"]);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('sw_vers', ['-productVersion'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "\n"]);
+        $app = self::createApp();
+        $app->singleton(Filesystem::class, static function () use ($fs) { return $fs; });
+        $this->expectException(Exception\UnsupportedOS::class);
+        $this->expectExceptionMessage("Unrecognized macOS version: ''");
+        (new OS\Factory($app, new \IPE\Logger()))->detectOS();
+    }
+
+    /**
+     * @return array<array{string, int|null}>
+     */
+    public static function provideMacOSNumericVersions()
+    {
+        return [
+            ['15', 1500],
+            ['15.7', 1507],
+            ['26.1', 2601],
+            ['15.7.1', null],
+            ['0', null],
+        ];
+    }
+
+    /**
+     * @dataProvider provideMacOSNumericVersions
+     *
+     * @param string $version
+     * @param int|null $expected
+     *
+     * @return void
+     */
+    public function testMacOSNumericVersions($version, $expected)
+    {
+        self::assertSame($expected, OS\MacOS::parseNumericVersion($version));
+    }
+
+    /**
+     * @return array<array{non-empty-string, int|null}>
+     */
+    public static function provideMacOSVersions()
+    {
+        return [
+            ['15', 1500],
+            ['15.7', 1507],
+            ['15.7.1', 1507],
+            ['26.1.2', 2601],
+            ['15.123', null],
+            ['0.1', null],
+            ['15.', null],
+        ];
+    }
+
+    /**
+     * @dataProvider provideMacOSVersions
+     *
+     * @param non-empty-string $version
+     * @param int|null $expected NULL if the version is invalid
+     *
+     * @return void
+     */
+    public function testMacOSVersions($version, $expected)
+    {
+        if ($expected === null) {
+            $this->expectException(Exception\InvalidArgument::class);
+        }
+        $os = new OS\MacOS($version, M::mock(Filesystem::class), self::createApp());
+        self::assertSame($expected, $os->getNumericVersion());
+        self::assertSame($version, $os->getVersion());
+    }
+
+    /**
+     * @return void
+     */
     public function testWindowsIsNotDetectedFromOSRelease()
     {
         $fs = M::mock(Filesystem::class);
@@ -215,6 +311,7 @@ final class FactoryTest extends TestCase
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
         $fs->shouldReceive('isFile')->withArgs(['/etc/os-release'])->andReturn(false);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('uname', ['-s'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "Linux\n"]);
         $app = self::createApp();
         $app->singleton(Filesystem::class, static function () use ($fs) { return $fs; });
         $factory = new OS\Factory($app, new \IPE\Logger());

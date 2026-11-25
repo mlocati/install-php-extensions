@@ -50,6 +50,11 @@ final class libzip extends SystemDependency
                 ['libzip-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libzip']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

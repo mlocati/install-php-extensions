@@ -8,7 +8,7 @@ use IPE\Service\Container;
 use IPE\SystemPackager;
 use IPE\Traits;
 
-class Ubuntu implements Posix\DebianLike
+class Ubuntu implements Posix\DebianLike, Posix\WithOSRelease
 {
     use Traits\OSArchitecture\Posix;
 
@@ -385,7 +385,7 @@ class Ubuntu implements Posix\DebianLike
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\OS\Posix::fromOSRelease()
+     * @see \IPE\OS\Posix\WithOSRelease::fromOSRelease()
      */
     public static function fromOSRelease(array $data, Container $app)
     {

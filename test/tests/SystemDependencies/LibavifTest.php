@@ -8,7 +8,6 @@ use IPE\Filesystem\Command;
 use IPE\Filesystem\Downloader;
 use IPE\Filesystem\VolatileDirectory;
 use IPE\Installer\BuildOptions;
-use IPE\Installer\BuildTools;
 use IPE\Installer\State;
 use IPE\Option\Values;
 use IPE\OS;
@@ -58,7 +57,7 @@ final class LibavifTest extends TestCase
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
         $os->shouldReceive('getFilesystem')->andReturn($fs);
 
-        return [$php, $os, new BuildTools($php, $fs, new \IPE\Logger()), $fs];
+        return [$php, $os, self::createBuildTools($php, $fs), $fs];
     }
 
     /**

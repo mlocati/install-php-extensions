@@ -6,7 +6,6 @@ use IPE\Filesystem;
 use IPE\Filesystem\ArchiveExtractor;
 use IPE\Filesystem\Downloader;
 use IPE\Installer\BuildOptions;
-use IPE\Installer\BuildTools;
 use IPE\Installer\State;
 use IPE\Option\Values;
 use IPE\OS;
@@ -58,7 +57,7 @@ final class LibgearmanTest extends TestCase
         self::assertInstanceOf(OS\Posix::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
         $os->shouldReceive('getFilesystem')->andReturn($fs);
-        $libgearman = new libgearman($php, $os, new Values(), M::mock(Downloader::class), M::mock(ArchiveExtractor::class), new BuildTools($php, $fs, new \IPE\Logger()), new BuildOptions(), new \IPE\Logger());
+        $libgearman = new libgearman($php, $os, new Values(), M::mock(Downloader::class), M::mock(ArchiveExtractor::class), self::createBuildTools($php, $fs), new BuildOptions(), new \IPE\Logger());
         $packages = $libgearman->getSystemPackages(M::mock(State::class));
         self::assertSame($persistent, $packages->getPersistent());
         self::assertSame($volatile, $packages->getVolatile());

@@ -137,6 +137,7 @@ final class ExtensionsInstaller
         $systemPackager = $this->os->getSystemPackager();
         $dependencies = $this->dependencyRegistry->resolveDependencies($this->collectDependencyHandles($resolvedExtensions));
         $packages = $this->dependencyRegistry->collectSystemPackages($dependencies, $state);
+        $dependencyPackages = array_merge($packages->getPersistent(), $packages->getVolatile());
         $extensionPackages = [];
         $needsPhpize = false;
         foreach ($resolvedExtensions as $resolvedExtension) {
@@ -166,6 +167,7 @@ final class ExtensionsInstaller
         $installedExtensions = [];
         $moduleNames = [];
         try {
+            self::addToEnvironment($systemPackager->getBuildEnvironment($dependencyPackages), $state);
             foreach ($dependencies as $dependency) {
                 $dependency->install($state);
                 if ($dependency instanceof SystemDependency\CompiledLibrary && $dependency->getCompiledSourceURL() !== '') {
@@ -215,15 +217,29 @@ final class ExtensionsInstaller
      */
     private function addLocalPkgConfigPath(State $state)
     {
-        if (!$this->os instanceof OS\Posix\RHELLike) {
-            return;
+        if ($this->os instanceof OS\Posix\RHELLike) {
+            self::addToEnvironment(['PKG_CONFIG_PATH' => '/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/share/pkgconfig'], $state);
         }
-        $previous = getenv('PKG_CONFIG_PATH');
-        $directories = '/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig:/usr/local/share/pkgconfig';
-        putenv('PKG_CONFIG_PATH=' . (is_string($previous) && $previous !== '' ? "{$previous}:{$directories}" : $directories));
-        $state->registerShutdownCallback(static function () use ($previous) {
-            putenv($previous === false ? 'PKG_CONFIG_PATH' : "PKG_CONFIG_PATH={$previous}");
-        });
+    }
+
+    /**
+     * The values are added after the existing ones, so that the ones of the user win.
+     * The environment is inherited also by the build scripts of the vendors.
+     *
+     * @param array<non-empty-string, non-empty-string> $variables PKG_CONFIG_PATH is separated by colons, the other variables by spaces
+     *
+     * @return void
+     */
+    private static function addToEnvironment(array $variables, State $state)
+    {
+        foreach ($variables as $name => $value) {
+            $previous = getenv($name);
+            $separator = $name === 'PKG_CONFIG_PATH' ? ':' : ' ';
+            putenv("{$name}=" . (is_string($previous) && $previous !== '' ? "{$previous}{$separator}{$value}" : $value));
+            $state->registerShutdownCallback(static function () use ($name, $previous) {
+                putenv($previous === false ? $name : "{$name}={$previous}");
+            });
+        }
     }
 
     /**

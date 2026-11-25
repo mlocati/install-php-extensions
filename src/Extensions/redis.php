@@ -154,7 +154,12 @@ final class redis extends Extension implements
         $result = [];
         if ($this->usesSystemLZF($version)) {
             $result[] = '--enable-redis-lzf';
-            $result[] = '--with-liblzf';
+            if ($this->os instanceof OS\MacOS) {
+                // The formula has no pkg-config file, and config.m4 looks for the headers only in /usr/local and /usr
+                $result[] = '--with-liblzf=' . $this->os->getSystemPackager()->getFormulaPrefix('liblzf');
+            } else {
+                $result[] = '--with-liblzf';
+            }
         } elseif ($this->os->getFilesystem()->isFile($context->getSourceDirectory() . '/liblzf/lzf.h')) {
             // liblzf is a git submodule: the PECL archives include it, the GitHub archives (used by Packagist) don't
             $result[] = '--enable-redis-lzf';
@@ -213,6 +218,9 @@ final class redis extends Extension implements
             return $this->os->getNumericVersion() > OS\Ubuntu::XENIAL;
         }
         if ($this->os instanceof OS\Posix\RHELLike) {
+            return true;
+        }
+        if ($this->os instanceof OS\MacOS) {
             return true;
         }
 

@@ -9,7 +9,6 @@ use IPE\Extensions;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\Filesystem\Downloader;
-use IPE\Installer\BuildTools;
 use IPE\Installer\State;
 use IPE\Option\Values;
 use IPE\OS;
@@ -602,7 +601,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $php->shouldReceive('getVersion')->andReturn('8.4.27');
         $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $pdoSnowflake = new Extensions\pdo_snowflake($php, self::createOS(OS\Debian::class, 12, $fs));
-        self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), new BuildTools($php, $fs, new \IPE\Logger())));
+        self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), self::createBuildTools($php, $fs)));
         self::assertCount($needsPlatform ? 2 : 1, $commands);
         $build = $commands[count($commands) - 1];
         self::assertSame('bash', $build->getCommand());

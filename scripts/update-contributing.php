@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace IPE\Scripts\Contributing\Update;
 
-use IPE\Dev\DockerImages;
 use IPE\Dev\Markdown\Contributing;
+use IPE\Dev\TestEnvironments;
 
 set_error_handler(
     static function (int $errno, string $errstr, string $errfile = '', int $errline = 0): never {
@@ -27,14 +27,14 @@ require_once dirname(__DIR__) . '/src/autoload.php';
 function generateTestDistros(): array
 {
     $phpVersions = [];
-    foreach (DockerImages::getAll() as $image) {
-        $phpVersions[$image->getOS()][] = $image->getPHPVersion();
+    foreach (TestEnvironments::getAll() as $environment) {
+        $phpVersions[$environment->getOS()][] = $environment->getPHPVersion();
     }
     $lines = [
         '| Distro | PHP versions |',
         '|---|---|',
     ];
-    foreach (DockerImages::getOperatingSystems() as $os) {
+    foreach (TestEnvironments::getOperatingSystems() as $os) {
         $osPHPVersions = array_values(array_unique($phpVersions[$os] ?? []));
         usort($osPHPVersions, static fn (string $a, string $b): int => version_compare($a, $b));
         $lines[] = "| `{$os}` | " . implode(', ', $osPHPVersions) . ' |';

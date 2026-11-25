@@ -7,7 +7,7 @@ namespace IPE\Dev;
  *
  * @internal
  */
-final class DockerImage
+final class DockerImage implements TestEnvironment
 {
     /**
      * @var non-empty-string
@@ -72,7 +72,9 @@ final class DockerImage
     }
 
     /**
-     * @return non-empty-string eg 'php:8.4-cli-alpine3.21'
+     * {@inheritdoc}
+     *
+     * @see \IPE\Dev\TestEnvironment::getName()
      */
     public function getName()
     {
@@ -80,7 +82,9 @@ final class DockerImage
     }
 
     /**
-     * @return non-empty-string eg 'alpine3.21'
+     * {@inheritdoc}
+     *
+     * @see \IPE\Dev\TestEnvironment::getOS()
      */
     public function getOS()
     {
@@ -88,7 +92,9 @@ final class DockerImage
     }
 
     /**
-     * @return non-empty-string major.minor
+     * {@inheritdoc}
+     *
+     * @see \IPE\Dev\TestEnvironment::getPHPVersion()
      */
     public function getPHPVersion()
     {
@@ -96,7 +102,9 @@ final class DockerImage
     }
 
     /**
-     * @return bool true for thread-safe builds of PHP
+     * {@inheritdoc}
+     *
+     * @see \IPE\Dev\TestEnvironment::isZTS()
      */
     public function isZTS()
     {
@@ -136,12 +144,24 @@ final class DockerImage
     }
 
     /**
-     * How many times the CI installs every extension in this image: when PHP is installed by the system packager, also with --system-packages=never.
+     * {@inheritdoc}
      *
-     * @return int
+     * When PHP is installed by the system packager, also with --system-packages=never.
+     *
+     * @see \IPE\Dev\TestEnvironment::getInstallationsPerExtension()
      */
     public function getInstallationsPerExtension()
     {
         return $this->baseImage === '' ? 1 : 2;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Dev\TestEnvironment::getRunsOn()
+     */
+    public function getRunsOn()
+    {
+        return 'ubuntu-latest';
     }
 }

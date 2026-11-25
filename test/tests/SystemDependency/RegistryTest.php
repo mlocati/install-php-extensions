@@ -32,6 +32,7 @@ final class RegistryTest extends TestCase
     {
         $app = self::createApp();
         $app->instance(PHPInfo::class, M::mock(PHPInfo::class));
+        $app->instance(OS::class, $os);
         $app->instance(OS\Posix::class, $os);
         $app->instance(Filesystem::class, M::mock(Filesystem::class));
         $app->instance(Filesystem\Downloader::class, M::mock(Filesystem\Downloader::class));

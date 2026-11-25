@@ -47,6 +47,11 @@ final class FakePackager extends SystemPackager
     public $apiVersions = [];
 
     /**
+     * @var array<non-empty-string, non-empty-string>
+     */
+    public $buildEnvironment = [];
+
+    /**
      * @param list<non-empty-string> $installed
      * @param array<non-empty-string, list<non-empty-string>> $expansions
      */
@@ -65,6 +70,18 @@ final class FakePackager extends SystemPackager
     public function getPhpizeRequirements()
     {
         return ['autoconf', 'gcc'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemPackager::getBuildEnvironment()
+     */
+    public function getBuildEnvironment(array $packages)
+    {
+        $this->log[] = 'build-environment ' . implode(' ', $packages);
+
+        return $this->buildEnvironment;
     }
 
     /**

@@ -32,9 +32,27 @@ abstract class SystemPackager
     }
 
     /**
+     * @throws \IPE\Exception\SystemPackager if something that the packager can't install is missing
+     * @throws \IPE\Exception\IO
+     *
      * @return list<non-empty-string>
      */
     public abstract function getPhpizeRequirements();
+
+    /**
+     * The environment variables needed to build with the headers and the libraries of the installed packages.
+     *
+     * @param list<non-empty-string> $packages the packages required by the system dependencies
+     *
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\IO
+     *
+     * @return array<non-empty-string, non-empty-string> PKG_CONFIG_PATH is separated by colons, the other variables by spaces
+     */
+    public function getBuildEnvironment(array $packages)
+    {
+        return [];
+    }
 
     /**
      * @param list<non-empty-string> $packages

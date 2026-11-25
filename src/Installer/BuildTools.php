@@ -5,6 +5,7 @@ namespace IPE\Installer;
 use IPE\Exception;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
+use IPE\OS;
 use IPE\PHPInfo;
 use IPE\Service\SizeFormatter;
 
@@ -22,6 +23,11 @@ final class BuildTools
      * @var \IPE\PHPInfo
      */
     private $php;
+
+    /**
+     * @var \IPE\OS
+     */
+    private $os;
 
     /**
      * @var \IPE\Filesystem
@@ -68,10 +74,11 @@ final class BuildTools
      */
     private $stackProtectorFlag = null;
 
-    public function __construct(PHPInfo $php, Filesystem $fs, \IPE\Logger $logger)
+    public function __construct(PHPInfo $php, OS $os, Filesystem $fs, \IPE\Logger $logger)
     {
         $this->logger = $logger;
         $this->php = $php;
+        $this->os = $os;
         $this->fs = $fs;
     }
 
@@ -409,7 +416,9 @@ final class BuildTools
             throw new Exception\IO('The strip command is not available');
         }
         $sizeBefore = $this->fs->getFileSize($modulePath);
-        list($rc) = $this->fs->run(Command::create($strip, ['--strip-all', $modulePath])->withWorkingDirectory($workingDirectory)->withOutput(Command::OUTPUT_SHOW));
+        // The strip of macOS doesn't support --strip-all, and -x keeps the global symbols that PHP looks for in Mach-O modules
+        $flag = $this->os instanceof OS\MacOS ? '-x' : '--strip-all';
+        list($rc) = $this->fs->run(Command::create($strip, [$flag, $modulePath])->withWorkingDirectory($workingDirectory)->withOutput(Command::OUTPUT_SHOW));
         if ($rc !== 0) {
             throw new Exception\IO("strip failed with exit code {$rc}");
         }

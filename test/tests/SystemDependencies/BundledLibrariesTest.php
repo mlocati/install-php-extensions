@@ -7,7 +7,6 @@ use IPE\Extensions\enchant;
 use IPE\Filesystem;
 use IPE\Filesystem\Downloader;
 use IPE\Installer\BuildOptions;
-use IPE\Installer\BuildTools;
 use IPE\Installer\State;
 use IPE\Option\Validator;
 use IPE\Option\Values;
@@ -156,7 +155,7 @@ final class BundledLibrariesTest extends TestCase
     {
         $php = self::createPHP($phpVersion);
 
-        return new libenchant($php, self::createOS($class, $osVersion, $existingFiles), new Values(), M::mock(Downloader::class), M::mock(Filesystem\ArchiveExtractor::class), new BuildTools($php, M::mock(Filesystem::class), new \IPE\Logger()), new BuildOptions(), new \IPE\Logger());
+        return new libenchant($php, self::createOS($class, $osVersion, $existingFiles), new Values(), M::mock(Downloader::class), M::mock(Filesystem\ArchiveExtractor::class), self::createBuildTools($php, M::mock(Filesystem::class)), new BuildOptions(), new \IPE\Logger());
     }
 
     /**
@@ -229,7 +228,7 @@ final class BundledLibrariesTest extends TestCase
         self::assertPackages(['^libck0(t64)?$'], [], (new libck($php, $trixie, new Values()))->getSystemPackages($state));
         self::assertUnsupportedOS(new libuv($php, $jessie, new Values()));
         self::assertPackages(['^libuv1(t64)?$'], ['libuv1-dev'], (new libuv($php, $stretch, new Values()))->getSystemPackages($state));
-        self::assertUnsupportedOS(new libcassandra($php, $jessie, new Values(), M::mock(Downloader::class), M::mock(Filesystem\ArchiveExtractor::class), new BuildTools($php, M::mock(Filesystem::class), new \IPE\Logger()), new BuildOptions(), new \IPE\Logger()));
+        self::assertUnsupportedOS(new libcassandra($php, $jessie, new Values(), M::mock(Downloader::class), M::mock(Filesystem\ArchiveExtractor::class), self::createBuildTools($php, M::mock(Filesystem::class)), new BuildOptions(), new \IPE\Logger()));
         self::assertUnsupportedOS(new libmaxminddb($php, $jessie, new Values()));
         self::assertPackages(['^libmaxminddb[0-9]*$'], ['libmaxminddb-dev'], (new libmaxminddb($php, $stretch, new Values()))->getSystemPackages($state));
     }
@@ -293,7 +292,7 @@ final class BundledLibrariesTest extends TestCase
     {
         $php = self::createPHP($phpVersion);
 
-        return new libfbclient($php, self::createOS($class, $osVersion, $existingFiles), new Values(), M::mock(Downloader::class), M::mock(Filesystem\ArchiveExtractor::class), new BuildTools($php, M::mock(Filesystem::class), new \IPE\Logger()), new BuildOptions(), new \IPE\Logger());
+        return new libfbclient($php, self::createOS($class, $osVersion, $existingFiles), new Values(), M::mock(Downloader::class), M::mock(Filesystem\ArchiveExtractor::class), self::createBuildTools($php, M::mock(Filesystem::class)), new BuildOptions(), new \IPE\Logger());
     }
 
     /**
