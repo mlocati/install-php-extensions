@@ -50,6 +50,11 @@ final class librabbitmq extends SystemDependency
                 ['librabbitmq-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['rabbitmq-c']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
