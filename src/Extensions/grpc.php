@@ -144,6 +144,10 @@ final class grpc extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
+        if ($this->os instanceof OS\MacOS) {
+            return [SystemDependencies\libstdcxx::HANDLE, SystemDependencies\libzlib::HANDLE];
+        }
+
         return [SystemDependencies\libstdcxx::HANDLE, SystemDependencies\libzlib::HANDLE, SystemDependencies\linuxheaders::HANDLE];
     }
 
