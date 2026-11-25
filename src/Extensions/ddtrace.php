@@ -86,6 +86,7 @@ final class ddtrace extends Extension implements
     {
         return [
             'debian8' => "the extension can't be installed on this system",
+            'macos' => "Datadog doesn't provide the extension for this system",
         ];
     }
 
