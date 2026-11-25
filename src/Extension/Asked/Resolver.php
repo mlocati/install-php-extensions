@@ -689,7 +689,47 @@ abstract class Resolver
             }
         }
 
-        return $this->createResolved($known, $path, '', $origin, $manifest, $asked->getOptions(), $state);
+        return $this->createResolved($known, $path, '', $origin, $manifest, self::getOptionsOfDirectory($asked, $known, $manifest), $state);
+    }
+
+    /**
+     * The options asked for an extension in a directory, plus the ones specified for the names it has in its manifest (or in IPE).
+     *
+     * @param \IPE\Extension|null $known
+     * @param \IPE\Extension\Manifest|null $manifest
+     *
+     * @throws \IPE\Exception\InvalidOptionValues if an option has been specified with different values
+     *
+     * @return array<string, string|true>
+     */
+    private static function getOptionsOfDirectory(Asked\FromDirectory $asked, $known, $manifest)
+    {
+        $result = $asked->getOptions();
+        // Without a manifest the extension has no name
+        if ($manifest === null) {
+            return $result;
+        }
+        $names = [$manifest->getExtensionName()];
+        if ($manifest->getType() === Manifest::TYPE_COMPOSER) {
+            $names[] = $manifest->getPackageName();
+        }
+        if ($known !== null) {
+            $names = array_merge($names, [$known::getHandle()], Extension\Registry::getComposerPackageNames(get_class($known)));
+        }
+        $names = array_map('strtolower', $names);
+        foreach ($asked->getOptionsByName() as $name => $options) {
+            if (!in_array(strtolower($name), $names, true)) {
+                continue;
+            }
+            foreach ($options as $option => $value) {
+                if (isset($result[$option]) && $result[$option] !== $value) {
+                    throw new Exception\InvalidOptionValues("The option {$option} of the extension in {$asked->getPath()} has been specified with different values");
+                }
+                $result[$option] = $value;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -822,7 +862,7 @@ abstract class Resolver
             $sourceDir .= str_replace('/', $fs->getDirectorySeparator(), '/' . $asked->getSubdir());
         }
         $fs->deleteDirectory($tarballDir);
-        $extensionFromDir = new Asked\FromDirectory($sourceDir, $asked->getOptions());
+        $extensionFromDir = new Asked\FromDirectory($sourceDir, $asked->getOptions(), $asked->getOptionsByName());
 
         return self::withGitSource(
             $this->resolveAskedExtensionFromDirectory($extensionFromDir, $state, Resolved::ORIGIN_URL),

@@ -61,9 +61,9 @@ final class ArgumentsParser
      */
     public function parseArgument($argument, array $optionsByHandle = [])
     {
-        $result = $this->tryGitHostArgument($argument)
-            ?: $this->tryURLArgument($argument)
-            ?: $this->tryDirectoryArgument($argument)
+        $result = $this->tryGitHostArgument($argument, $optionsByHandle)
+            ?: $this->tryURLArgument($argument, $optionsByHandle)
+            ?: $this->tryDirectoryArgument($argument, $optionsByHandle)
             ?: $this->tryComposerArgument($argument, $optionsByHandle)
             ?: $this->tryHandleArgument($argument, $optionsByHandle);
         if ($result === null) {
@@ -75,6 +75,7 @@ final class ArgumentsParser
 
     /**
      * @param non-empty-string $argument
+     * @param array<string, array<string, string|true>> $optionsByHandle the options specified for the extensions, keyed by extension handle or Composer package name
      *
      * @throws \IPE\Exception\InvalidArgument
      *
@@ -101,7 +102,7 @@ final class ArgumentsParser
      *          cb:owner/repository@main
      *          bb:workspace/repository@cafebabecafe
      */
-    private function tryGitHostArgument($argument)
+    private function tryGitHostArgument($argument, array $optionsByHandle)
     {
         list($base, $subdir) = $this->extractSubdirFromUrlLike($argument);
         if (!preg_match('/^(?<handle>[^\s:]+):(?<repository>[^@\s]*)(?:@(?<ref>\S*))?$/D', $base, $match)) {
@@ -115,34 +116,36 @@ final class ArgumentsParser
             throw new Exception\InvalidArgument("'{$argument}' is not a valid {$host->getName()} shortcut");
         }
 
-        return new Asked\FromURL($host->getArchiveURL($match['repository'], $match['ref']), $subdir);
+        return new Asked\FromURL($host->getArchiveURL($match['repository'], $match['ref']), $subdir, [], $optionsByHandle);
     }
 
     /**
      * @param non-empty-string $argument
+     * @param array<string, array<string, string|true>> $optionsByHandle the options specified for the extensions, keyed by extension handle or Composer package name
      *
      * @throws \IPE\Exception\InvalidArgument
      *
      * @return \IPE\Extension\Asked|null
      */
-    private function tryURLArgument($argument)
+    private function tryURLArgument($argument, array $optionsByHandle)
     {
         if (!preg_match('#^(http|https)://#i', $argument)) {
             return null;
         }
         list($base, $subdir) = $this->extractSubdirFromUrlLike($argument);
 
-        return new Asked\FromURL($base, $subdir);
+        return new Asked\FromURL($base, $subdir, [], $optionsByHandle);
     }
 
     /**
      * @param non-empty-string $argument
+     * @param array<string, array<string, string|true>> $optionsByHandle the options specified for the extensions, keyed by extension handle or Composer package name
      *
      * @throws \IPE\Exception\InvalidArgument
      *
      * @return \IPE\Extension\Asked\FromDirectory|null
      */
-    private function tryDirectoryArgument($argument)
+    private function tryDirectoryArgument($argument, array $optionsByHandle)
     {
         $starts = [
             preg_quote('/', '/'),
@@ -177,7 +180,7 @@ final class ArgumentsParser
             throw new Exception\InvalidArgument("Error checking the path '{$path}': {$x->getMessage()}");
         }
 
-        return new Asked\FromDirectory($path);
+        return new Asked\FromDirectory($path, [], $optionsByHandle);
     }
 
     /**

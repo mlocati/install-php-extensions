@@ -59,7 +59,12 @@ final class InstallPHPExtensionsTest extends TestCase
         );
         self::assertStringContainsString("--vendor/fakeext:enable-fake-lz4[=value]\n", $argv->describeExtensionOptions(new Asked\FromComposer('vendor/fakeext'), $resolved));
         self::assertSame("fakeext 1.2.3 (from pecl):\nNo options are available", $argv->describeExtensionOptions(new Asked\FromHandle('fakeext', ''), new Resolved(null, '/src', '1.2.3', Resolved::ORIGIN_PECL, new Manifest(Manifest::TYPE_PECL, 'fakeext', 'fakeext'))));
-        self::assertStringContainsString('Options can be specified only for', $argv->describeExtensionOptions(new Asked\FromDirectory('/src'), $resolved));
+        self::assertStringContainsString("--fakeext:with-fake-lib[=]value\n", $argv->describeExtensionOptions(new Asked\FromDirectory('/src'), $resolved));
+        self::assertStringContainsString("--fakeext:with-fake-lib[=]value\n", $argv->describeExtensionOptions(new Asked\FromURL('https://example.com/fakeext.tgz'), $resolved));
+        $composerManifest = new Manifest(Manifest::TYPE_COMPOSER, 'vendor/fakeext', '');
+        $composerManifest->addConfigureOption(new ConfigureOption('with-fake-lib', 'Use the system library', true));
+        self::assertStringContainsString("--vendor/fakeext:with-fake-lib[=]value\n", $argv->describeExtensionOptions(new Asked\FromDirectory('/src'), new Resolved(null, '/src', '', Resolved::ORIGIN_DIRECTORY, $composerManifest)));
+        self::assertStringContainsString("No options are available (the source code doesn't include", $argv->describeExtensionOptions(new Asked\FromDirectory('/src'), new Resolved(null, '/src', '', Resolved::ORIGIN_DIRECTORY)));
         self::assertStringContainsString('no options can be specified', $argv->describeExtensionOptions(new Asked\FromHandle('fakeext', ''), new Resolved(null, '/etc/fakeext.ini', '', Resolved::ORIGIN_DISABLED)));
         self::assertStringContainsString('--system-packages=never', $argv->describeExtensionOptions(new Asked\FromHandle('fakeext', ''), new Resolved(null, 'php-fakeext', '', Resolved::ORIGIN_SYSTEM_PACKAGE)));
         self::assertStringContainsString("--show-options\n", $argv->buildCLIHelpString());
