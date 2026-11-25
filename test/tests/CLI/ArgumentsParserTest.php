@@ -365,4 +365,19 @@ final class ArgumentsParserTest extends TestCase
         self::assertSame(['enable-foo' => true], $parser->parseArgument('vendor/name:^1', $options)->getOptions());
         self::assertSame([], $parser->parseArgument('vendor/another', $options)->getOptions());
     }
+
+    /**
+     * @return void
+     */
+    public function testURLOptionsArePickedLater()
+    {
+        $parser = new ArgumentsParser(M::mock(Filesystem::class)->shouldIgnoreMissing(), (new GitHost\Registry())->registerDefaultHosts());
+        $options = ['apcu' => ['enable-apcu-debug' => true]];
+        foreach (['gh:krakjoe/apcu@master', 'https://example.com/apcu.tgz'] as $argument) {
+            $asked = $parser->parseArgument($argument, $options);
+            self::assertInstanceOf(Asked\FromURL::class, $asked);
+            self::assertSame([], $asked->getOptions());
+            self::assertSame($options, $asked->getOptionsByName());
+        }
+    }
 }

@@ -116,7 +116,12 @@ final class InstallPHPExtensions extends Argv
         } elseif ($asked instanceof Extension\Asked\FromComposer) {
             $prefix = $asked->getFullName();
         } else {
-            $prefix = '';
+            // The options of the extensions from URLs and directories are picked by the names in their manifests
+            $prefix = $resolved->getName();
+            $manifest = $resolved->getManifest();
+            if ($prefix === '' && $manifest !== null && $manifest->getType() === Extension\Manifest::TYPE_COMPOSER) {
+                $prefix = $manifest->getPackageName();
+            }
         }
         $result = "{$resolved}:\n";
         $origin = $resolved->getOrigin();
@@ -127,7 +132,7 @@ final class InstallPHPExtensions extends Argv
             return "{$result}The system package doesn't accept options (use --system-packages=never to compile the extension)";
         }
         if ($prefix === '') {
-            return "{$result}Options can be specified only for the extensions specified with their handle or with their Composer package";
+            return "{$result}No options are available (the source code doesn't include package.xml or composer.json)";
         }
         $definitions = [];
         foreach ($resolved->getDeclaredOptions() as $option) {

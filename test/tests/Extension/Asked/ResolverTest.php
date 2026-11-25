@@ -1046,6 +1046,26 @@ final class ResolverTest extends TestCase
         self::assertNull($resolved->getManifest());
         self::assertSame(['--with-foo=/usr', '--enable-bar'], $resolved->getOptionValues()->getConfigureArguments());
         self::assertSame("unknown extension (from {$path})", (string) $resolved);
+        // Without a manifest the extension has no name
+        $resolved = self::resolveOne(self::createResolver($php), new Asked\FromDirectory($path, [], ['nomanifest' => ['with-foo' => '/usr']]), $state);
+        self::assertSame([], $resolved->getOptionValues()->getConfigureArguments());
+    }
+
+    /**
+     * @return void
+     */
+    public function testOptionsPickedByManifestName()
+    {
+        $php = self::createPHP('8.3.0');
+        $state = new State($php, self::$fs);
+        $path = self::getAssetPath('directories/known-pecl');
+        $resolved = self::resolveOne(self::createResolver($php), new Asked\FromDirectory($path, [], ['LZF' => ['enable-lzf-better-compression' => 'yes'], 'redis' => ['nope' => true]]), $state);
+        self::assertSame(['--enable-lzf-better-compression=yes'], $resolved->getOptionValues()->getConfigureArguments());
+        $resolved = self::resolveOne(self::createResolver($php), new Asked\FromDirectory($path, ['with-lzf-dir' => true], ['lzf' => ['with-lzf-dir' => true]]), $state);
+        self::assertSame(['--enable-lzf-better-compression=no', '--with-lzf-dir'], $resolved->getOptionValues()->getConfigureArguments());
+        $this->expectException(Exception\InvalidOptionValues::class);
+        $this->expectExceptionMessage('enable-lzf-better-compression');
+        self::createResolver($php)->resolveAskedExtensions([new Asked\FromDirectory($path, ['enable-lzf-better-compression' => 'no'], ['lzf' => ['enable-lzf-better-compression' => 'yes']])], $state);
     }
 
     /**
