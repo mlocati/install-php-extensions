@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class judy extends Extension implements
@@ -11,6 +12,7 @@ final class judy extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -115,5 +117,21 @@ final class judy extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libjudy::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for the library only in /usr/local and /usr.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return ['--with-judy=' . $this->os->getSystemPackager()->getFormulaPrefix('judy')];
+        }
+
+        return [];
     }
 }
