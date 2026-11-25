@@ -42,8 +42,8 @@ final class SlowExtensions
     {
         return [
             Extensions\cassandra::HANDLE => [
-                'almalinux9-remi' => true,
-                'almalinux10-remi' => true,
+                'almalinux9-remi' => ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'],
+                'almalinux10-remi' => ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'],
             ],
             Extensions\grpc::HANDLE => [
                 'alpine3.24-apk' => true,
