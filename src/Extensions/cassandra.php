@@ -257,6 +257,10 @@ final class cassandra extends Extension implements
             // php-config may be missing from the PATH (for example, with the PHP packages of Remi)
             $arguments[] = "--with-php-config={$phpConfig}";
         }
+        if ($this->os instanceof OS\MacOS) {
+            // The formula doesn't install cassandra.pc, and configure would look only in /usr/local and /usr
+            $arguments[] = '--with-cassandra=' . $this->os->getSystemPackager()->getFormulaPrefix('cassandra-cpp-driver');
+        }
         $this->runStep('./configure', $arguments, $directory, $buildTools->getConfigureEnvironment());
         $makeArguments = ['-j' . $parallelJobs];
         if ($this->php->getMajorMinorVersion() >= 806) {
