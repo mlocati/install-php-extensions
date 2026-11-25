@@ -32,7 +32,7 @@ final class SlowExtensions
 
     /**
      * Where the slow extensions are available as system packages: elsewhere they are compiled even without --system-packages=never.
-     * Keys: the handles of the extensions, then the operating systems of the images with PHP installed by the system packager.
+     * Keys: the handles of the extensions, then the operating systems of the images with PHP installed by the system packager (and macOS, for the formulae of the tap of the extensions).
      * Values: true for all the PHP versions of the images (among the ones supported by the extension), or the list of the PHP versions.
      * Verified by check().
      *
@@ -51,6 +51,7 @@ final class SlowExtensions
                 'ubuntu24.04-sury' => true,
                 'almalinux9-remi' => true,
                 'almalinux10-remi' => true,
+                HomebrewFormula::OS => true,
             ],
             Extensions\pdo_firebird::HANDLE => [
                 'bookworm-apt' => true,
@@ -64,12 +65,14 @@ final class SlowExtensions
                 'almalinux10-remi' => true,
                 'fedora44-dnf' => true,
                 'fedora45-dnf' => true,
+                HomebrewFormula::OS => true,
             ],
             Extensions\phalcon::HANDLE => [
                 'trixie-sury' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
                 'ubuntu24.04-sury' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
                 'almalinux9-remi' => true,
                 'almalinux10-remi' => true,
+                HomebrewFormula::OS => ['8.4'],
             ],
             Extensions\swoole::HANDLE => [
                 'alpine3.24-apk' => true,
@@ -77,6 +80,7 @@ final class SlowExtensions
                 'ubuntu24.04-sury' => ['8.2', '8.3', '8.4', '8.5'],
                 'almalinux9-remi' => true,
                 'almalinux10-remi' => true,
+                HomebrewFormula::OS => true,
             ],
         ];
     }
@@ -104,7 +108,7 @@ final class SlowExtensions
     }
 
     /**
-     * Inspect the package indexes, to get what getSystemPackages() should return.
+     * Inspect the package indexes and the formulae of the tap of the extensions, to get what getSystemPackages() should return.
      *
      * @throws \IPE\Exception\IO if a package index can't be downloaded
      * @throws \RuntimeException
@@ -195,6 +199,49 @@ final class SlowExtensions
                 if ($withPackage !== []) {
                     $result[$class::getHandle()][$os] = $withPackage === $phpVersions ? true : $withPackage;
                 }
+            }
+        }
+        $macOS = ExtensionFactory::createMacOSWithExtensionsTapFormulae(self::listExtensionsTapFormulae($downloader));
+        foreach (self::getClasses() as $class) {
+            $phpVersions = [];
+            $withPackage = [];
+            foreach (TestEnvironments::getAll() as $environment) {
+                if (!$environment instanceof HomebrewFormula || !in_array($environment->getPHPVersion(), $class::getSupportedPHPVersions(), true)) {
+                    continue;
+                }
+                $phpVersion = $environment->getPHPVersion();
+                $phpVersions[] = $phpVersion;
+                $phpPackage = new SystemPackager\Package($environment->getName(), "{$phpVersion}.0", $environment->getName());
+                $extension = ExtensionFactory::createForPHPVersion($class, $phpVersion, $macOS);
+                if (PHPSystemPackage::getExtensionPackageCandidates($macOS->getSystemPackager(), $phpPackage, $extension) !== []) {
+                    $withPackage[] = $phpVersion;
+                }
+            }
+            if ($withPackage !== []) {
+                $result[$class::getHandle()][HomebrewFormula::OS] = $withPackage === $phpVersions ? true : $withPackage;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     * @throws \RuntimeException
+     *
+     * @return list<string> like 'shivammathur/extensions/grpc@8.4'
+     */
+    private static function listExtensionsTapFormulae(Filesystem\Downloader $downloader)
+    {
+        $url = 'https://api.github.com/repos/shivammathur/homebrew-extensions/git/trees/HEAD:Formula';
+        $data = json_decode($downloader->getContent($url), true);
+        if (!is_array($data) || !isset($data['tree']) || !is_array($data['tree']) || (isset($data['truncated']) && $data['truncated'] !== false)) {
+            throw new \RuntimeException("Unexpected response from {$url}");
+        }
+        $result = [];
+        foreach ($data['tree'] as $item) {
+            if (is_array($item) && isset($item['path']) && is_string($item['path']) && substr($item['path'], -3) === '.rb') {
+                $result[] = SystemPackager\Homebrew::EXTENSIONS_TAP . '/' . substr($item['path'], 0, -3);
             }
         }
 

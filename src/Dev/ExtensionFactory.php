@@ -3,6 +3,7 @@
 namespace IPE\Dev;
 
 use IPE\Extension;
+use IPE\OS;
 use IPE\PHPInfo;
 use IPE\SystemPackager;
 
@@ -48,12 +49,12 @@ final class ExtensionFactory
     /**
      * Create an operating system that only provides its system packager (to inspect the names of the system packages).
      *
-     * @param class-string<\IPE\OS\Debian>|class-string<\IPE\OS\Alpine>|class-string<\IPE\OS\Posix\RHELLike> $osClass
+     * @param class-string<\IPE\OS\Debian>|class-string<\IPE\OS\Alpine>|class-string<\IPE\OS\Posix\RHELLike>|class-string<\IPE\OS\MacOS> $osClass
      * @param class-string<\IPE\SystemPackager> $packagerClass
      *
      * @throws \RuntimeException
      *
-     * @return \IPE\OS\Debian|\IPE\OS\Alpine|\IPE\OS\Posix\RHELLike
+     * @return \IPE\OS\Debian|\IPE\OS\Alpine|\IPE\OS\Posix\RHELLike|\IPE\OS\MacOS
      */
     public static function createOSWithSystemPackager($osClass, $packagerClass)
     {
@@ -70,6 +71,26 @@ final class ExtensionFactory
             }
         }
         self::setProperty($declaringClass->getProperty('systemPackager'), $os, $packager);
+
+        return $os;
+    }
+
+    /**
+     * Create a macOS whose Homebrew sees the given formulae of the tap of the extensions, without running brew.
+     *
+     * @param list<string> $extensionsTapFormulae like 'shivammathur/extensions/grpc@8.4'
+     *
+     * @throws \RuntimeException
+     *
+     * @return \IPE\OS\MacOS
+     */
+    public static function createMacOSWithExtensionsTapFormulae(array $extensionsTapFormulae)
+    {
+        $os = self::createOSWithSystemPackager(OS\MacOS::class, SystemPackager\Homebrew::class);
+        if (!$os instanceof OS\MacOS) {
+            throw new \RuntimeException('Failed to create macOS');
+        }
+        self::setProperty(new \ReflectionProperty(SystemPackager\Homebrew::class, 'extensionsTapFormulae'), $os->getSystemPackager(), $extensionsTapFormulae);
 
         return $os;
     }
