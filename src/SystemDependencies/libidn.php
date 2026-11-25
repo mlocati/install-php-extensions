@@ -50,6 +50,11 @@ class libidn extends SystemDependency
                 ['libidn-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libidn']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

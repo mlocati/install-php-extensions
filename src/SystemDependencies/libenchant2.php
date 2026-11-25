@@ -44,6 +44,9 @@ final class libenchant2 extends SystemDependency
         if ($os instanceof OS\Ubuntu) {
             return $os->getNumericVersion() >= OS\Ubuntu::FOCAL;
         }
+        if ($os instanceof OS\MacOS) {
+            return true;
+        }
 
         return false;
     }
@@ -74,6 +77,11 @@ final class libenchant2 extends SystemDependency
             return new Packages(
                 ['libenchant-2-2'],
                 ['libenchant-2-dev']
+            );
+        }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['enchant']
             );
         }
 

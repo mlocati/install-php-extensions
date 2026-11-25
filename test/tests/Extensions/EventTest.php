@@ -3,51 +3,38 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Extensions\event;
+use IPE\Filesystem;
 use IPE\OS;
 use IPE\PHPInfo;
-use IPE\PHPInfo\SSLLibrary;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
 final class EventTest extends TestCase
 {
     /**
-     * @return array<array{class-string<\IPE\OS>, int, string, string}> the OS, its version, the value of OPENSSL_VERSION_TEXT in PHP, and the expected OpenSSL argument
-     */
-    public static function provideOpenSSLArguments()
-    {
-        return [
-            [OS\Debian::class, OS\Debian::JESSIE, 'OpenSSL 1.0.1t  3 May 2016', '--with-event-openssl'],
-            [OS\Debian::class, OS\Debian::STRETCH, 'OpenSSL 1.0.2q  20 Nov 2018', '--without-event-openssl'],
-            [OS\Debian::class, OS\Debian::STRETCH, 'OpenSSL 1.1.0j  20 Nov 2018', '--with-event-openssl'],
-            [OS\Debian::class, OS\Debian::STRETCH, 'LibreSSL 2.6.5', '--with-event-openssl'],
-            [OS\Debian::class, OS\Debian::STRETCH, '', '--with-event-openssl'],
-            [OS\Debian::class, OS\Debian::BUSTER, 'OpenSSL 1.1.1d  10 Sep 2019', '--with-event-openssl'],
-            [OS\Alpine::class, 308, 'OpenSSL 1.0.2u  20 Dec 2019', '--with-event-openssl'],
-        ];
-    }
-
-    /**
-     * @dataProvider provideOpenSSLArguments
-     *
-     * @param class-string<\IPE\OS> $osClass
-     * @param int $osVersion
-     * @param string $phpVersionText
-     * @param string $expected
-     *
      * @return void
      */
-    public function testOpenSSLArgument($osClass, $osVersion, $phpVersionText, $expected)
+    public function testConfigureArguments()
     {
         $php = M::mock(PHPInfo::class);
-        $php->shouldReceive('getMajorMinorVersion')->andReturn(506);
-        $php->shouldReceive('getSSLLibrary')->andReturn(SSLLibrary::fromVersionText($phpVersionText));
+        $php->shouldReceive('getSSLLibrary')->andReturn(null);
         $php->shouldReceive('getInstalledExtensions')->andReturn([]);
-        $os = M::mock($osClass);
-        self::assertInstanceOf(OS::class, $os);
-        $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
-        $arguments = (new event($php, $os))->getConfigureArguments(self::createBuildContext());
-        self::assertContains($expected, $arguments);
-        self::assertNotContains($expected === '--with-event-openssl' ? '--without-event-openssl' : '--with-event-openssl', $arguments);
+        $debian = M::mock(OS\Debian::class);
+        $debian->shouldReceive('getNumericVersion')->andReturn(OS\Debian::TRIXIE);
+        self::assertSame(
+            ['--with-event-libevent-dir=/usr', '--with-event-pthreads', '--with-event-extra', '--with-event-openssl', '--disable-event-sockets'],
+            (new event($php, $debian))->getConfigureArguments(self::createBuildContext('3.2.0'))
+        );
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, "/opt/homebrew\n"]);
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        self::assertSame(
+            ['--with-event-libevent-dir=/opt/homebrew/opt/libevent', '--with-event-pthreads', '--with-event-extra', '--with-event-openssl', '--disable-event-sockets'],
+            (new event($php, $os))->getConfigureArguments(self::createBuildContext('3.2.0'))
+        );
     }
 }
