@@ -7,6 +7,7 @@ use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\OS;
 use IPE\SystemPackager\Homebrew;
+use IPE\SystemPackager\Package;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -16,6 +17,35 @@ final class HomebrewTest extends TestCase
      * @var non-empty-string
      */
     const BREW = '/opt/homebrew/bin/brew';
+
+    /**
+     * @var list<string>
+     */
+    private static $tapInfoArguments = ['tap-info', '--json', 'shivammathur/extensions', 'shivammathur/php'];
+
+    /**
+     * @var array<string, mixed>
+     */
+    private static $extensionsTapInfo = [
+        'name' => 'shivammathur/extensions',
+        'installed' => true,
+        'trusted' => true,
+        'formula_names' => [
+            'shivammathur/extensions/phpredis@8.4',
+            'shivammathur/extensions/xdebug@8.4',
+            'shivammathur/extensions/xdebug@8.5',
+        ],
+    ];
+
+    /**
+     * @var array<string, mixed>
+     */
+    private static $phpTapInfo = [
+        'name' => 'shivammathur/php',
+        'installed' => true,
+        'trusted' => true,
+        'formula_names' => ['shivammathur/php/php@8.4'],
+    ];
 
     /**
      * @param string $brew the path of brew (empty string if it's not installed)
@@ -37,13 +67,14 @@ final class HomebrewTest extends TestCase
      * @param list<string> $arguments
      * @param int $rc
      * @param string $output
+     * @param non-empty-string $outputMode one of the Command::OUTPUT_ constants
      *
      * @return void
      */
-    private static function expectBrew($fs, array $arguments, $rc, $output)
+    private static function expectBrew($fs, array $arguments, $rc, $output, $outputMode = Command::OUTPUT_CAPTURE_STDOUT)
     {
         $command = Command::create(self::BREW, $arguments)
-            ->withOutput(Command::OUTPUT_CAPTURE_STDOUT)
+            ->withOutput($outputMode)
             ->withEnvironment([
                 'HOMEBREW_NO_AUTO_UPDATE' => '1',
                 'HOMEBREW_NO_INSTALL_UPGRADE' => '1',
@@ -125,6 +156,7 @@ final class HomebrewTest extends TestCase
     {
         $fs = self::createFilesystem();
         self::expectBrew($fs, ['--cellar'], 0, "/opt/homebrew/Cellar\n");
+        self::expectBrew($fs, self::$tapInfoArguments, 0, (string) json_encode([['name' => 'shivammathur/extensions', 'installed' => false, 'formula_names' => []], self::$phpTapInfo]));
         $fs->shouldReceive('getRealPath')->with('/opt/homebrew/bin/php')->andReturn('/opt/homebrew/Cellar/php@8.4/8.4.14_1/bin/php');
         $fs->shouldReceive('getRealPath')->with('/usr/local/bin/php')->andReturn('/usr/local/bin/php');
         $homebrew = self::createHomebrew($fs);
@@ -135,6 +167,74 @@ final class HomebrewTest extends TestCase
         self::assertSame('php@8.4', $homebrew->getPHPDevelopmentPackageName($package));
         self::assertSame([], $homebrew->getPHPExtensionPackageCandidates($package, 'xdebug'));
         self::assertNull($homebrew->getInstalledPackageOwningFile('/usr/local/bin/php'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testExtensionsTapCandidates()
+    {
+        $fs = self::createFilesystem();
+        self::expectBrew($fs, self::$tapInfoArguments, 0, (string) json_encode([self::$extensionsTapInfo, self::$phpTapInfo]));
+        $homebrew = self::createHomebrew($fs);
+        $php84 = new Package('php@8.4', '8.4.14_1', 'php@8.4');
+        self::assertSame(['shivammathur/extensions/xdebug@8.4'], $homebrew->getPHPExtensionPackageCandidates($php84, 'Xdebug'));
+        self::assertSame([], $homebrew->getPHPExtensionPackageCandidates($php84, 'redis'));
+        self::assertSame(['shivammathur/extensions/phpredis@8.4'], $homebrew->getExtensionFormulae($php84, ['phpredis', 'redis']));
+        self::assertSame([], $homebrew->getPHPExtensionPackageCandidates($php84, 'gd'));
+        self::assertSame(['shivammathur/extensions/xdebug@8.5'], $homebrew->getPHPExtensionPackageCandidates(new Package('php', '8.5.0_1', 'php'), 'xdebug'));
+        self::assertSame([], $homebrew->getPHPExtensionPackageCandidates(new Package('php@8.4-zts', '8.4.14', 'php@8.4-zts'), 'xdebug'));
+    }
+
+    /**
+     * @return array<array{list<array<string, mixed>>}>
+     */
+    public static function provideUnusableExtensionsTaps()
+    {
+        return [
+            [[['name' => 'shivammathur/extensions', 'installed' => false, 'formula_names' => []], self::$phpTapInfo]],
+            [[['trusted' => false] + self::$extensionsTapInfo, self::$phpTapInfo]],
+            [[self::$extensionsTapInfo, ['name' => 'shivammathur/php', 'installed' => false, 'formula_names' => []]]],
+            [[self::$extensionsTapInfo, ['trusted' => false] + self::$phpTapInfo]],
+        ];
+    }
+
+    /**
+     * @dataProvider provideUnusableExtensionsTaps
+     *
+     * @param list<array<string, mixed>> $tapInfo
+     *
+     * @return void
+     */
+    public function testUnusableExtensionsTap(array $tapInfo)
+    {
+        $fs = self::createFilesystem();
+        self::expectBrew($fs, self::$tapInfoArguments, 0, (string) json_encode($tapInfo));
+        self::assertSame([], self::createHomebrew($fs)->getPHPExtensionPackageCandidates(new Package('php@8.4', '8.4.14_1', 'php@8.4'), 'xdebug'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testRemoveOnlyInstalledFormulae()
+    {
+        $fs = self::createFilesystem();
+        self::expectBrew($fs, ['list', '--formula', '-1'], 0, "liblzf\nphp@8.4\n");
+        self::expectBrew($fs, ['uninstall', '--formula', 'liblzf'], 0, '', Command::OUTPUT_SHOW);
+        self::createHomebrew($fs)->removePackages(['shivammathur/extensions/phpredis@8.4', 'liblzf']);
+    }
+
+    /**
+     * @return void
+     */
+    public function testFindAvailableTapFormula()
+    {
+        $fs = self::createFilesystem();
+        self::expectBrew($fs, ['info', '--json=v2', '--formula', 'shivammathur/extensions/xdebug@8.4'], 0, (string) json_encode(['formulae' => [['name' => 'xdebug@8.4', 'full_name' => 'shivammathur/extensions/xdebug@8.4', 'versions' => ['stable' => '3.5.3'], 'revision' => 0]]]));
+        $package = self::createHomebrew($fs)->findAvailablePackage('shivammathur/extensions/xdebug@8.4');
+        self::assertNotNull($package);
+        self::assertSame('shivammathur/extensions/xdebug@8.4', $package->getName());
+        self::assertSame('3.5.3', $package->getVersion());
     }
 
     /**

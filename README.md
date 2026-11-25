@@ -16,7 +16,8 @@ It works on:
 - Alpine Linux 3.15 or later, with PHP installed from the Alpine packages;
 - Enterprise Linux 8 or later (AlmaLinux, CentOS Stream, Oracle Linux, Red Hat Enterprise Linux, Rocky Linux), with PHP installed from the system packages (including their module streams) or from the [packages of Remi](https://rpms.remirepo.net/) (see [Optional repositories on Enterprise Linux](#optional-repositories-on-enterprise-linux));
 - Fedora, with PHP installed from the Fedora packages;
-- Amazon Linux 2023, with PHP installed from the Amazon Linux packages.
+- Amazon Linux 2023, with PHP installed from the Amazon Linux packages;
+- macOS, with PHP installed with [Homebrew](https://brew.sh) (see [macOS](#macos)).
 
 When PHP has been installed by the system packager (APT, APK or DNF), IPE may install the extensions from its packages whenever they are available (see the `--system-packages` option).
 
@@ -782,6 +783,23 @@ IPE doesn't enable them: if it fails because some packages are missing, enable t
 | Red Hat Enterprise Linux | `dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm && subscription-manager repos --enable codeready-builder-for-rhel-$(rpm -E %rhel)-$(arch)-rpms` |
 
 With the PHP packages of [Remi](https://rpms.remirepo.net/), some extensions (like dba) also need libraries that are only available in the `remi` repository, which is disabled by default: enable it with `dnf config-manager --set-enabled remi`.
+
+
+## macOS
+
+IPE works with the PHP formulae of [Homebrew](https://brew.sh), like `php` and `php@8.4`.
+It needs the Xcode Command Line Tools, which provide the compiler and `make`: you can install them with `xcode-select --install`.
+
+Run IPE as your user, not with `sudo`: Homebrew refuses to run as root.
+
+IPE installs the extensions for the PHP that runs it, or for the one specified with the `--php` option.
+The formulae of the older PHP versions (like `php@8.4`) are keg-only, so their `php` command is not in the `PATH`: use for example `install-php-extensions --php=/opt/homebrew/opt/php@8.4/bin/php redis`, or run IPE with the PHP command of the formula (`/opt/homebrew/opt/php@8.4/bin/php install-php-extensions redis`).
+
+IPE installs with Homebrew the formulae needed by the extensions, without running `brew update` and without upgrading the formulae that are already installed (PHP included).
+The formulae needed only to compile the extensions are uninstalled at the end, unless they were already installed.
+
+homebrew-core doesn't have formulae for single PHP extensions, but IPE can use the ones of the [`shivammathur/extensions`](https://github.com/shivammathur/homebrew-extensions) tap if you added and trusted it together with the [`shivammathur/php`](https://github.com/shivammathur/homebrew-php) tap, which its formulae depend on (`brew tap shivammathur/extensions && brew tap shivammathur/php && brew trust shivammathur/extensions && brew trust shivammathur/php`).
+Otherwise, or with `--system-packages=never`, IPE compiles the extensions.
 
 
 ## System dependencies

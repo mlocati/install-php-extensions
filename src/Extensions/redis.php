@@ -6,6 +6,7 @@ use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
 use IPE\SystemDependencies;
+use IPE\SystemPackager;
 
 final class redis extends Extension implements
     Extension\AvailableAsComposerPackage,
@@ -13,6 +14,7 @@ final class redis extends Extension implements
     Extension\DeclaresDefaultVersion,
     Extension\DependsOnExtensions,
     Extension\ProvidesConfigureArguments,
+    Extension\ProvidesSystemPackageNames,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -140,6 +142,20 @@ final class redis extends Extension implements
         }
 
         return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return $this->os->getSystemPackager()->getExtensionFormulae($phpPackage, ['phpredis']);
+        }
+
+        return null;
     }
 
     /**

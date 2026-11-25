@@ -231,6 +231,9 @@ abstract class SystemPackager
      * @param \IPE\SystemPackager\Package $phpPackage the package that installed PHP
      * @param non-empty-string $extensionName the handle of the extension, or one of the names it's installed with
      *
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\IO
+     *
      * @return list<non-empty-string> empty array if $extensionName can't be part of the name of a package
      *
      * @example ['php8.4-pdo-mysql'] (APT)

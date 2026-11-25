@@ -18,6 +18,7 @@ use IPE\Dev\SlowExtensions;
 use IPE\Dev\TestEnvironment;
 use IPE\Dev\TestEnvironments;
 use IPE\Extension;
+use IPE\SystemPackager\Homebrew;
 
 set_error_handler(
     static function (int $errno, string $errstr, string $errfile = '', int $errline = 0): never {
@@ -127,7 +128,20 @@ function getRealPath(string $path): string
 function prepareEnvironment(TestEnvironment $environment): array
 {
     if ($environment instanceof HomebrewFormula) {
-        return [...run(['brew', 'install', '--formula', $environment->getName()]), 'brew install'];
+        foreach ([
+            'brew install' => ['brew', 'install', '--formula', $environment->getName()],
+            'brew tap ' . Homebrew::EXTENSIONS_TAP => ['brew', 'tap', Homebrew::EXTENSIONS_TAP],
+            'brew trust ' . Homebrew::EXTENSIONS_TAP => ['brew', 'trust', Homebrew::EXTENSIONS_TAP],
+            'brew tap ' . Homebrew::PHP_TAP => ['brew', 'tap', Homebrew::PHP_TAP],
+            'brew trust ' . Homebrew::PHP_TAP => ['brew', 'trust', Homebrew::PHP_TAP],
+        ] as $command => $arguments) {
+            [$rc, $output] = run($arguments);
+            if ($rc !== 0) {
+                return [$rc, $output, $command];
+            }
+        }
+
+        return [0, '', 'brew install'];
     }
     if (!$environment instanceof DockerImage) {
         throw new \RuntimeException('Unsupported test environment: ' . $environment::class);
@@ -190,6 +204,22 @@ function inspectHomebrewFormula(HomebrewFormula $formula): array
     }
 
     return $cache[$name] = [$php, array_values(array_filter(explode("\n", $output), static fn (string $dir): bool => $dir !== ''))];
+}
+
+/**
+ * @throws \RuntimeException
+ *
+ * @return list<string>
+ */
+function listHomebrewFormulae(): array
+{
+    [$rc, $output] = run(['brew', 'list', '--formula', '-1']);
+    if ($rc !== 0) {
+        throw new \RuntimeException("Failed to list the Homebrew formulae:\n{$output}");
+    }
+
+    // Skip the warnings
+    return array_values(array_filter(explode("\n", $output), static fn (string $line): bool => preg_match('/^[a-z0-9][a-z0-9_.+@\-]*$/D', $line) === 1));
 }
 
 /**
@@ -304,6 +334,7 @@ function runTest(string $description, TestEnvironment $environment, string $phar
         $bindNow = ['DYLD_BIND_AT_LAUNCH' => '1'];
         // The next tests use the same PHP: what install-php-extensions adds must be removed
         $hostFiles = listFiles($hostDirs);
+        $hostFormulae = listHomebrewFormulae();
     } else {
         rmdir($outputDir);
 
@@ -372,6 +403,14 @@ function runTest(string $description, TestEnvironment $environment, string $phar
             }
             if (is_file($report)) {
                 unlink($report);
+            }
+            // Otherwise the next tests would find the formulae of the extensions already installed (without their ini files)
+            $newFormulae = array_values(array_diff(listHomebrewFormulae(), $hostFormulae));
+            if ($newFormulae !== []) {
+                [$rc, $output] = run(['brew', 'uninstall', '--formula', '--ignore-dependencies', ...$newFormulae]);
+                if ($rc !== 0) {
+                    printIndented("Failed to uninstall the new Homebrew formulae:\n{$output}");
+                }
             }
         }
         // Not "@rmdir()": the error handler would throw anyway

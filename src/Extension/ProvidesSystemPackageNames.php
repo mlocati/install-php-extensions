@@ -14,6 +14,9 @@ interface ProvidesSystemPackageNames
      *
      * @param \IPE\SystemPackager\Package $phpPackage the system package that installed PHP
      *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
      * @return list<non-empty-string>|null NULL to look for the packages named after the extension, empty array if the extension must never be installed from system packages
      *
      * @example ['php8.4-phalcon', 'php8.4-phalcon5']

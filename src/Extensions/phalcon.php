@@ -130,6 +130,9 @@ final class phalcon extends Extension implements
      */
     public function getSystemPackageNames(SystemPackager\Package $phpPackage)
     {
+        if ($this->os instanceof OS\MacOS) {
+            return $this->os->getSystemPackager()->getExtensionFormulae($phpPackage, ['phalcon5', 'phalcon4', 'phalcon3']);
+        }
         if (!$this->os instanceof OS\Posix || !$this->os->getSystemPackager() instanceof SystemPackager\APT) {
             return null;
         }

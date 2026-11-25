@@ -7,6 +7,7 @@ use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
 use IPE\SystemDependencies;
+use IPE\SystemPackager;
 
 final class http extends Extension implements
     Extension\AvailableAsComposerPackage,
@@ -15,6 +16,7 @@ final class http extends Extension implements
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresPriority,
     Extension\DependsOnExtensions,
+    Extension\ProvidesSystemPackageNames,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -173,5 +175,19 @@ final class http extends Extension implements
     public static function getPriority()
     {
         return 90;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return $this->os->getSystemPackager()->getExtensionFormulae($phpPackage, ['pecl_http']);
+        }
+
+        return null;
     }
 }

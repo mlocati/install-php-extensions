@@ -13,9 +13,28 @@ use IPE\SystemPackager;
 final class Homebrew extends SystemPackager
 {
     /**
+     * The tap with the formulae of the PHP extensions, used only when the user tapped and trusted it (together with PHP_TAP).
+     *
+     * @var non-empty-string
+     */
+    const EXTENSIONS_TAP = 'shivammathur/extensions';
+
+    /**
+     * The tap with the PHP formulae the formulae of EXTENSIONS_TAP depend on.
+     *
+     * @var non-empty-string
+     */
+    const PHP_TAP = 'shivammathur/php';
+
+    /**
      * @var string|null
      */
     private $brew = null;
+
+    /**
+     * @var list<string>|null the full names of the formulae of EXTENSIONS_TAP (empty if it or PHP_TAP are not tapped and trusted)
+     */
+    private $extensionsTapFormulae = null;
 
     /**
      * @var string|null
@@ -174,13 +193,42 @@ final class Homebrew extends SystemPackager
     /**
      * {@inheritdoc}
      *
-     * The PHP formulae of Homebrew include the extensions they provide.
+     * homebrew-core doesn't have formulae for single PHP extensions: only EXTENSIONS_TAP has them.
      *
      * @see \IPE\SystemPackager::getPHPExtensionPackageCandidates()
      */
     public function getPHPExtensionPackageCandidates(Package $phpPackage, $extensionName)
     {
-        return [];
+        return $this->getExtensionFormulae($phpPackage, [strtolower($extensionName)]);
+    }
+
+    /**
+     * Get the formulae of EXTENSIONS_TAP for the installed PHP, if the user tapped and trusted it and PHP_TAP.
+     *
+     * @param list<non-empty-string> $names the names of the formulae without the PHP version, in order of preference
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return list<non-empty-string> only the formulae that exist
+     *
+     * @example ['shivammathur/extensions/phpredis@8.4'] for ['phpredis'] with php@8.4
+     */
+    public function getExtensionFormulae(Package $phpPackage, array $names)
+    {
+        $phpVersion = self::getPHPFormulaVersion($phpPackage);
+        if ($phpVersion === '') {
+            return [];
+        }
+        $result = [];
+        foreach ($names as $name) {
+            $candidate = self::EXTENSIONS_TAP . "/{$name}@{$phpVersion}";
+            if (in_array($candidate, $this->listExtensionsTapFormulae(), true)) {
+                $result[] = $candidate;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -330,11 +378,23 @@ final class Homebrew extends SystemPackager
     /**
      * {@inheritdoc}
      *
+     * After a failed installation some formulae may be missing, and brew uninstall would fail.
+     *
      * @see \IPE\SystemPackager::doRemovePackages()
      */
     protected function doRemovePackages(array $packages)
     {
-        list($rc) = $this->runBrew(array_merge(['uninstall', '--formula'], $packages), Command::OUTPUT_SHOW);
+        $installed = $this->listInstalledPackages();
+        $toRemove = [];
+        foreach ($packages as $package) {
+            if (in_array(self::getShortName($package), $installed, true)) {
+                $toRemove[] = $package;
+            }
+        }
+        if ($toRemove === []) {
+            return;
+        }
+        list($rc) = $this->runBrew(array_merge(['uninstall', '--formula'], $toRemove), Command::OUTPUT_SHOW);
         if ($rc !== 0) {
             throw new Exception\SystemPackager('brew uninstall failed');
         }
@@ -379,7 +439,7 @@ final class Homebrew extends SystemPackager
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\SystemPackager
      *
-     * @return array<non-empty-string, non-empty-string> the keys are the names of the formulae, the values are their versions (with the revision, like 8.4.14_1)
+     * @return array<non-empty-string, non-empty-string> the keys are the full names of the formulae, the values are their versions (with the revision, like 8.4.14_1)
      */
     private function getFormulaVersions(array $names)
     {
@@ -428,7 +488,7 @@ final class Homebrew extends SystemPackager
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\SystemPackager
      *
-     * @return array<non-empty-string, array<mixed>> the data of brew info, by formula name
+     * @return array<non-empty-string, array<mixed>> the data of brew info, by full formula name
      */
     private function describeFormulae(array $names)
     {
@@ -442,12 +502,87 @@ final class Homebrew extends SystemPackager
             return $result;
         }
         foreach ($data['formulae'] as $formula) {
-            if (is_array($formula) && isset($formula['name']) && is_string($formula['name']) && $formula['name'] !== '') {
+            if (!is_array($formula)) {
+                continue;
+            }
+            // The full name (like shivammathur/extensions/xdebug@8.4) of the formulae of the taps isn't ambiguous
+            if (isset($formula['full_name']) && is_string($formula['full_name']) && $formula['full_name'] !== '') {
+                $result[$formula['full_name']] = $formula;
+            } elseif (isset($formula['name']) && is_string($formula['name']) && $formula['name'] !== '') {
                 $result[$formula['name']] = $formula;
             }
         }
 
         return $result;
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return list<string>
+     */
+    private function listExtensionsTapFormulae()
+    {
+        if ($this->extensionsTapFormulae === null) {
+            $this->extensionsTapFormulae = [];
+            list($rc, $output) = $this->runBrew(['tap-info', '--json', self::EXTENSIONS_TAP, self::PHP_TAP], Command::OUTPUT_CAPTURE_STDOUT);
+            $data = $rc === 0 ? json_decode($output, true) : null;
+            $taps = [];
+            foreach (is_array($data) ? $data : [] as $tap) {
+                if (self::isTapUsable($tap)) {
+                    $taps[$tap['name']] = $tap['formula_names'];
+                }
+            }
+            // Even when installing the bottles, brew resolves the dependency of the formulae of the extensions on the PHP formulae of PHP_TAP
+            if (isset($taps[self::EXTENSIONS_TAP], $taps[self::PHP_TAP])) {
+                foreach ($taps[self::EXTENSIONS_TAP] as $name) {
+                    if (is_string($name)) {
+                        $this->extensionsTapFormulae[] = $name;
+                    }
+                }
+            }
+        }
+
+        return $this->extensionsTapFormulae;
+    }
+
+    /**
+     * Homebrew 7 refuses to load the formulae of the taps that the user didn't trust (older versions don't have "trusted").
+     *
+     * @param mixed $tap an item of the output of brew tap-info --json
+     *
+     * @return bool
+     *
+     * @phpstan-assert-if-true array{name: string, formula_names: array<mixed>} $tap
+     */
+    private static function isTapUsable($tap)
+    {
+        return is_array($tap)
+            && isset($tap['name'], $tap['installed'], $tap['formula_names'])
+            && is_string($tap['name'])
+            && $tap['installed'] === true
+            && is_array($tap['formula_names'])
+            && (!isset($tap['trusted']) || $tap['trusted'] === true);
+    }
+
+    /**
+     * @return string empty string if EXTENSIONS_TAP doesn't have the extensions of the formula (like php@8.4-zts)
+     *
+     * @example '8.4' for php@8.4
+     * @example '8.5' for php 8.5.0_1
+     */
+    private static function getPHPFormulaVersion(Package $phpPackage)
+    {
+        $match = null;
+        if (preg_match('/^php@(?<version>\d+\.\d+)$/D', $phpPackage->getName(), $match)) {
+            return $match['version'];
+        }
+        if ($phpPackage->getName() === 'php' && preg_match('/^(?<version>\d+\.\d+)\./', $phpPackage->getVersion(), $match)) {
+            return $match['version'];
+        }
+
+        return '';
     }
 
     /**

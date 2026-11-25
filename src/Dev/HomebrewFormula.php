@@ -77,13 +77,13 @@ final class HomebrewFormula implements TestEnvironment
     /**
      * {@inheritdoc}
      *
-     * The PHP formulae include their extensions: the other ones are always compiled.
+     * With the formulae of the tap of the PHP extensions, and with --system-packages=never.
      *
      * @see \IPE\Dev\TestEnvironment::getInstallationsPerExtension()
      */
     public function getInstallationsPerExtension()
     {
-        return 1;
+        return 2;
     }
 
     /**
