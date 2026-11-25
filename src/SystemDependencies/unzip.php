@@ -55,6 +55,10 @@ class unzip extends SystemDependency
                 ['unzip']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // macOS includes unzip
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }
