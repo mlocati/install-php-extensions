@@ -78,6 +78,16 @@ final class libpcre extends SystemDependency
                 ['pcre2-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // The PHP formulae use PCRE2 since PHP 7.3, before they use the bundled PCRE
+            if ($this->php->getMajorMinorVersion() <= 702) {
+                return new Packages();
+            }
+
+            return new Packages(
+                ['pcre2']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

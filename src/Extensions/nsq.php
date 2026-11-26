@@ -4,10 +4,12 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class nsq extends Extension implements
     Extension\AvailableOnPECL,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -74,5 +76,21 @@ final class nsq extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libopenssl::HANDLE, SystemDependencies\libevent::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for libevent only in /usr, /usr/local, /opt/local and the Cellar of Intel Macs.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return ['--with-libevent-path=' . $this->os->getSystemPackager()->getFormulaPrefix('libevent')];
+        }
+
+        return [];
     }
 }

@@ -21,6 +21,7 @@ final class newrelic extends Extension implements
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresOptions,
     Extension\DeclaresThreadSafetySupport,
+    Extension\DeclaresUnsupportedEnvironments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -76,6 +77,18 @@ final class newrelic extends Extension implements
     public static function getSupportedPHPVersions()
     {
         return ['7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            'macos' => "New Relic doesn't provide the agent for this system",
+        ];
     }
 
     /**
