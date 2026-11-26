@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\Service\Regex;
 use IPE\SystemDependencies;
 
@@ -88,6 +89,10 @@ final class odbc extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
+        if ($this->os instanceof OS\MacOS) {
+            return ['--with-unixODBC=shared,' . $this->os->getSystemPackager()->getFormulaPrefix('unixodbc')];
+        }
+
         return ['--with-unixODBC=shared,/usr'];
     }
 

@@ -70,6 +70,11 @@ final class libodbc extends SystemDependency
                 ['unixODBC-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['unixodbc']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

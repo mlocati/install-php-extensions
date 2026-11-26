@@ -3,10 +3,12 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Extensions\openswoole;
+use IPE\Filesystem;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
 use IPE\SystemDependencies;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -67,5 +69,26 @@ final class OpenswooleTest extends TestCase
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
         $dependencies = (new openswoole(M::mock(PHPInfo::class), $os))->getRequiredSystemDependencies('4.10.0', new Values());
         self::assertSame($expected, in_array(SystemDependencies\libbrotli::HANDLE, $dependencies, true));
+    }
+
+    /**
+     * @return void
+     */
+    public function testMacOS()
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getInstalledExtensions')->andReturn([]);
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, "/opt/homebrew\n"]);
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        $extension = new openswoole($php, $os);
+        self::assertNotContains(SystemDependencies\linuxheaders::HANDLE, $extension->getRequiredSystemDependencies('25.2.0', new Values()));
+        self::assertSame(
+            ['--enable-openssl', '--enable-http2', '--enable-mysqlnd', '--with-postgres=/opt/homebrew/opt/libpq', '--enable-hook-curl'],
+            $extension->getConfigureArguments(self::createBuildContext('25.2.0'))
+        );
     }
 }
