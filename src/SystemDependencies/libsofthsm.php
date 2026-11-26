@@ -60,6 +60,11 @@ final class libsofthsm extends SystemDependency
                 []
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['softhsm']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
