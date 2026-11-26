@@ -50,6 +50,11 @@ final class libsodium extends SystemDependency
                 ['libsodium-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libsodium']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

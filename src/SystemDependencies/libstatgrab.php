@@ -62,6 +62,11 @@ final class libstatgrab extends CompiledLibrary
         if ($this->os instanceof OS\Posix\RHELLike) {
             return new Packages();
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libstatgrab']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

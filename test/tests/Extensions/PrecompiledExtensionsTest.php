@@ -273,6 +273,21 @@ final class PrecompiledExtensionsTest extends TestCase
     /**
      * @return void
      */
+    public function testSourceGuardianOnMacOS()
+    {
+        $downloader = M::mock(Downloader::class);
+        $os = self::createOS(OS\MacOS::class, 1500, self::createFilesystem(['/src/ixed.8.4.dar', '/src/ixed.8.4ts.dar']));
+        $extension = new Extensions\sourceguardian(self::createPHP(), $os, $downloader);
+        self::assertSame('https://www.sourceguardian.com/loaders/download/loaders.macosx-arm64.tar.gz', $extension->getBinaryArchiveURL(''));
+        self::assertSame('https://www.sourceguardian.com/loaders/download/loaders.macosx.tar.gz', (new Extensions\sourceguardian(self::createPHP(804, false, 64, '', 'x86_64'), $os, $downloader))->getBinaryArchiveURL(''));
+        self::assertSame('/src/ixed.8.4.dar', $extension->findBinaryModule('/src', ''));
+        self::assertSame('/src/ixed.8.4ts.dar', (new Extensions\sourceguardian(self::createPHP(804, true), $os, $downloader))->findBinaryModule('/src', ''));
+        self::assertSame([], $extension->getRequiredSystemDependencies('', new Values()));
+    }
+
+    /**
+     * @return void
+     */
     public function testTideways()
     {
         $link = 'https://example.com/tideways.tar.gz';

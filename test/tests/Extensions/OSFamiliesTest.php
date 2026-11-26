@@ -26,6 +26,7 @@ final class OSFamiliesTest extends TestCase
             [stomp::class, OS\Alpine::class, ['--with-openssl-dir=/usr']],
             [stomp::class, OS\Debian::class, ['--with-openssl-dir=yes']],
             [stomp::class, OS\AmazonLinux::class, ['--with-openssl-dir=yes']],
+            [stomp::class, OS\MacOS::class, ['--with-openssl-dir=yes']],
         ];
     }
 

@@ -50,6 +50,11 @@ final class libxml2 extends SystemDependency
                 ['libxml2-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libxml2']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

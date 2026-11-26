@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class sybase_ct extends Extension implements
@@ -97,6 +98,13 @@ final class sybase_ct extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        return ['--with-sybase-ct=/usr'];
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-sybase-ct=' . $this->os->getSystemPackager()->getFormulaPrefix('freetds');
+        } else {
+            $result[] = '--with-sybase-ct=/usr';
+        }
+
+        return $result;
     }
 }
