@@ -50,6 +50,11 @@ final class libzmq extends SystemDependency
                 ['zeromq-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['zeromq']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

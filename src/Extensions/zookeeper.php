@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\Service\Regex;
 use IPE\SystemDependencies;
 
@@ -13,7 +14,8 @@ final class zookeeper extends Extension implements
     Extension\DependsOnExtensions,
     Extension\DeclaresThreadSafetySupport,
     Extension\PatchesSourceCode,
-    Extension\RequiresSystemDependencies
+    Extension\RequiresSystemDependencies,
+    Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -178,5 +180,22 @@ final class zookeeper extends Extension implements
     public function getOptionalExtensions($version)
     {
         return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for libzookeeper only in /usr and /usr/local.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-libzookeeper-dir=' . $this->os->getSystemPackager()->getFormulaPrefix('zookeeper');
+        }
+
+        return $result;
     }
 }

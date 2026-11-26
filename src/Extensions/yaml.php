@@ -4,13 +4,15 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class yaml extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
-    Extension\RequiresSystemDependencies
+    Extension\RequiresSystemDependencies,
+    Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -101,5 +103,22 @@ final class yaml extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libyaml::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for libyaml only in /usr and /usr/local.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-yaml=' . $this->os->getSystemPackager()->getFormulaPrefix('libyaml');
+        }
+
+        return $result;
     }
 }

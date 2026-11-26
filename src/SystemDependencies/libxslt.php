@@ -51,6 +51,11 @@ final class libxslt extends SystemDependency
                 ['libxslt-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libxslt']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -53,6 +53,11 @@ final class libyajl extends SystemDependency
                 ['yajl-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['yajl']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

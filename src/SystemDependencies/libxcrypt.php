@@ -2,8 +2,10 @@
 
 namespace IPE\SystemDependencies;
 
+use IPE\Installer\State;
 use IPE\OS;
 use IPE\SystemDependency\CompiledLibrary;
+use IPE\SystemPackager\Packages;
 
 /**
  * musl does not provide the functions of libxcrypt.
@@ -30,6 +32,23 @@ final class libxcrypt extends CompiledLibrary
     public static function getHandle()
     {
         return self::HANDLE;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemDependency::getSystemPackages()
+     */
+    public function getSystemPackages(State $state)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            // The libc of macOS lacks crypt_gensalt()
+            return new Packages(
+                ['libxcrypt']
+            );
+        }
+
+        return new Packages();
     }
 
     /**
