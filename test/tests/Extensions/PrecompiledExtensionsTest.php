@@ -400,6 +400,7 @@ final class PrecompiledExtensionsTest extends TestCase
             [OS\AlmaLinux::class, 10, false],
             [OS\AmazonLinux::class, 2023, true],
             [OS\Fedora::class, 44, false],
+            [OS\MacOS::class, 1500, true],
         ];
     }
 
@@ -475,6 +476,56 @@ final class PrecompiledExtensionsTest extends TestCase
         $fs->shouldReceive('writeFile')->once()->with('/ext/relay.so', 'a11111111-2222-3333-4444-555555555555b');
         (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class)))->postProcessBinaryModule('/ext/relay.so');
         $this->addToAssertionCount(1);
+    }
+
+    /**
+     * @return void
+     */
+    public function testRelayOnMacOS()
+    {
+        $module = "a00000000-0000-0000-0000-000000000000b\x00/opt/homebrew/opt/hiredis/lib/libhiredis.1.5.0.dylib\x00/opt/homebrew/opt/openssl@4/lib/libssl.4.dylib\x00/opt/homebrew/lib/libck.0.dylib\x00/opt/homebrew/lib\x00/opt/homebrew/lib/libck.0.dylib\x00";
+        $commands = [];
+        $fs = self::createFilesystem(['/src/relay.so']);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/usr/local/bin/brew');
+        $fs->shouldReceive('run')->andReturnUsing(static function (Command $command) use (&$commands) {
+            $commands[] = array_merge([$command->getCommand()], $command->getArguments());
+            if ($command->getCommand() === 'uuidgen') {
+                return [0, "11111111-2222-3333-4444-AAAAAAAAAAAA\n"];
+            }
+
+            return [0, $command->getArguments() === ['--prefix'] ? "/usr/local\n" : ''];
+        });
+        $fs->shouldReceive('readFile')->with('/ext/relay.so')->andReturn($module);
+        $fs->shouldReceive('writeFile')->once()->with('/ext/relay.so', str_replace('00000000-0000-0000-0000-000000000000', '11111111-2222-3333-4444-aaaaaaaaaaaa', $module));
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getDisplayName')->andReturn('The OS');
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        $downloader = M::mock(Downloader::class);
+        $downloader->shouldReceive('getContent')->with('https://builds.r2.relay.so/meta/latest')->andReturn("v0.62.0\n");
+        $extension = new Extensions\relay(self::createPHP(), $os, $downloader);
+        self::assertSame('https://builds.r2.relay.so/v0.62.0/relay-v0.62.0-php8.4-darwin-arm64.tar.gz', $extension->getBinaryArchiveURL(''));
+        self::assertSame('/src/relay.so', $extension->findBinaryModule('/src', ''));
+        self::assertSame(
+            [SystemDependencies\binutils::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libhiredis::HANDLE, SystemDependencies\libck::HANDLE],
+            $extension->getRequiredSystemDependencies('', new Values())
+        );
+        $extension->postProcessBinaryModule('/ext/relay.so');
+        self::assertContains(
+            [
+                'install_name_tool',
+                '-change', '/opt/homebrew/opt/hiredis/lib/libhiredis.1.5.0.dylib', '/usr/local/opt/hiredis/lib/libhiredis.dylib',
+                '-change', '/opt/homebrew/opt/openssl@4/lib/libssl.4.dylib', '/usr/local/opt/openssl@4/lib/libssl.dylib',
+                '-change', '/opt/homebrew/lib/libck.0.dylib', '/usr/local/lib/libck.dylib',
+                '/ext/relay.so',
+            ],
+            $commands
+        );
+        $state = M::mock(State::class);
+        self::assertSame(['hiredis'], (new SystemDependencies\libhiredis(self::createPHP(), $os, new Values()))->getSystemPackages($state)->getPersistent());
+        self::assertSame(['concurrencykit'], (new SystemDependencies\libck(self::createPHP(), $os, new Values()))->getSystemPackages($state)->getPersistent());
+        $this->expectException(Exception\UnsupportedOS::class);
+        $extension->getBinaryArchiveURL('0.50.2');
     }
 
     /**
