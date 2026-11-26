@@ -9,6 +9,7 @@ use IPE\SystemDependencies;
 
 final class php_trie extends Extension implements
     Extension\AvailableOnPECL,
+    Extension\DeclaresUnsupportedEnvironments,
     Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
@@ -36,6 +37,19 @@ final class php_trie extends Extension implements
     public static function getSupportedPHPVersions()
     {
         return ['7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            // The code uses long variables where zend_long is required, but zend_long is long long on macOS
+            'macos' => "the extension can't be compiled with the compiler or the libraries of this system",
+        ];
     }
 
     /**
