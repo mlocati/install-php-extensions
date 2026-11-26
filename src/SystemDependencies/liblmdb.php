@@ -51,6 +51,12 @@ final class liblmdb extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['lmdb']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

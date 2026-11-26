@@ -71,6 +71,12 @@ final class libfreetype2 extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['freetype']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

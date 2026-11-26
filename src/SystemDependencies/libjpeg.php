@@ -57,6 +57,12 @@ final class libjpeg extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['jpeg-turbo']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

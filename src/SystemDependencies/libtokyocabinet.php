@@ -48,6 +48,12 @@ final class libtokyocabinet extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['tokyo-cabinet']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

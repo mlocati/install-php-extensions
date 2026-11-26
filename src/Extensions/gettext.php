@@ -4,10 +4,12 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class gettext extends Extension implements
     Extension\BundledInPHPSource,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -76,5 +78,21 @@ final class gettext extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libgettext::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            // configure looks for the headers only in /usr/local and /usr
+            $result[] = '--with-gettext=' . $this->os->getSystemPackager()->getFormulaPrefix('gettext');
+        }
+
+        return $result;
     }
 }

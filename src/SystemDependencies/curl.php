@@ -53,6 +53,11 @@ final class curl extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            // macOS includes curl
+            return new Packages();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

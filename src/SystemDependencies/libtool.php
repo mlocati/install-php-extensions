@@ -51,6 +51,13 @@ final class libtool extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                [],
+                ['libtool']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

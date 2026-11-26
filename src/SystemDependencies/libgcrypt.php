@@ -51,6 +51,12 @@ class libgcrypt extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libgcrypt']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

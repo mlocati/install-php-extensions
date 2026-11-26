@@ -81,6 +81,11 @@ final class libenchant extends CompiledLibrary
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            // Homebrew only provides enchant 2
+            throw $this->createNotProvidedException();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 

@@ -83,6 +83,12 @@ final class libargon2 extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['argon2']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

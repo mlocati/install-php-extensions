@@ -63,6 +63,12 @@ final class libgmp extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['gmp']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 

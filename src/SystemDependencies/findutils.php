@@ -43,6 +43,11 @@ final class findutils extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            // macOS includes find
+            return new Packages();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

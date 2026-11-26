@@ -52,6 +52,11 @@ final class libgeoip extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            // Homebrew dropped the legacy GeoIP library
+            throw $this->createNotProvidedException();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class gd extends Extension implements
@@ -140,14 +141,21 @@ final class gd extends Extension implements
     public function getConfigureArguments(Extension\BuildContext $context)
     {
         $phpVersion = $this->php->getMajorMinorVersion();
-        if ($phpVersion <= 506) {
-            return ['--with-gd', '--with-jpeg-dir', '--with-png-dir', '--with-zlib-dir', '--with-xpm-dir', '--with-freetype-dir', '--enable-gd-native-ttf', '--with-vpx-dir'];
-        }
-        if ($phpVersion <= 701) {
-            return ['--with-gd', '--with-jpeg-dir', '--with-png-dir', '--with-zlib-dir', '--with-xpm-dir', '--with-freetype-dir', '--enable-gd-native-ttf', '--with-webp-dir'];
-        }
         if ($phpVersion <= 703) {
-            return ['--with-gd', '--with-jpeg-dir', '--with-png-dir', '--with-zlib-dir', '--with-xpm-dir', '--with-freetype-dir', '--with-webp-dir'];
+            $result = ['--with-gd'];
+            foreach (['jpeg', 'png', 'zlib', 'xpm', 'freetype'] as $library) {
+                $result[] = $this->getLibraryDirectoryArgument($library);
+            }
+            if ($phpVersion <= 701) {
+                $result[] = '--enable-gd-native-ttf';
+            }
+            if ($phpVersion <= 506) {
+                $result[] = $this->getLibraryDirectoryArgument('vpx');
+            } else {
+                $result[] = $this->getLibraryDirectoryArgument('webp');
+            }
+
+            return $result;
         }
         $result = ['--enable-gd', '--with-webp', '--with-jpeg', '--with-xpm', '--with-freetype'];
         if ($this->isAvifEnabled($context->getOptionValues())) {
@@ -169,5 +177,31 @@ final class gd extends Extension implements
         }
 
         return !$options->hasCustomValue(self::OPTION_WITHOUT_AVIF) || SystemDependencies\libavif::isAvailableWithoutCompiling($this->php, $this->os);
+    }
+
+    /**
+     * @param 'jpeg'|'png'|'zlib'|'xpm'|'freetype'|'webp'|'vpx' $library
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string
+     */
+    private function getLibraryDirectoryArgument($library)
+    {
+        $result = "--with-{$library}-dir";
+        if ($this->os instanceof OS\MacOS) {
+            // Before PHP 7.4, configure looks for the libraries only in /usr/local and /usr
+            if ($library === 'zlib') {
+                $sdkPath = $this->os->getSDKPath();
+                if ($sdkPath !== '') {
+                    $result .= "={$sdkPath}/usr";
+                }
+            } else {
+                $formulas = ['jpeg' => 'jpeg-turbo', 'png' => 'libpng', 'xpm' => 'libxpm', 'freetype' => 'freetype', 'webp' => 'webp', 'vpx' => 'libvpx'];
+                $result .= '=' . $this->os->getSystemPackager()->getFormulaPrefix($formulas[$library]);
+            }
+        }
+
+        return $result;
     }
 }

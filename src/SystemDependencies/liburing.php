@@ -61,6 +61,10 @@ class liburing extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            throw $this->createNotProvidedException();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

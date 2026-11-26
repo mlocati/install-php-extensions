@@ -45,6 +45,12 @@ final class libgettext extends SystemDependency
             return new Packages();
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['gettext']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

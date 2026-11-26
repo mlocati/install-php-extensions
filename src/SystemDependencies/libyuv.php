@@ -56,6 +56,11 @@ class libyuv extends CompiledLibrary
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            // macOS includes libc++
+            return new Packages();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 

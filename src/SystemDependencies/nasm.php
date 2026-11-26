@@ -39,6 +39,13 @@ final class nasm extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                [],
+                ['nasm']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

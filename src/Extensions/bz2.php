@@ -4,10 +4,12 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class bz2 extends Extension implements
     Extension\BundledInPHPSource,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -76,5 +78,24 @@ final class bz2 extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libbz2::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $sdkPath = $this->os->getSDKPath();
+            if ($sdkPath !== '') {
+                // configure looks for the headers only in /usr/local and /usr, but macOS has them only in its SDK
+                $result[] = "--with-bz2={$sdkPath}/usr";
+            }
+        }
+
+        return $result;
     }
 }

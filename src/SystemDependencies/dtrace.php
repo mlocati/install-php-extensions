@@ -57,6 +57,11 @@ final class dtrace extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            // macOS includes DTrace
+            return new Packages();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }
