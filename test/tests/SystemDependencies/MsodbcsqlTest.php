@@ -55,6 +55,7 @@ final class MsodbcsqlTest extends TestCase
     {
         $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
         $fs->shouldReceive('isFile')->with('/etc/odbcinst.ini')->andReturn($odbcinst !== '');
+        $fs->shouldReceive('isFile')->with('/opt/microsoft/msodbcsql18/lib64/libmsodbcsql-18.so')->andReturn(true);
         $fs->shouldReceive('readFile')->with('/etc/odbcinst.ini')->andReturn($odbcinst);
         $fs->shouldReceive('writeFile')->andReturnUsing(function ($path, $content) {
             if (is_string($path) && is_string($content)) {
@@ -215,6 +216,8 @@ final class MsodbcsqlTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
         $fs->shouldReceive('isFile')->with('/opt/homebrew/etc/odbcinst.ini')->andReturn($odbcinst !== '');
         $fs->shouldReceive('readFile')->with('/opt/homebrew/etc/odbcinst.ini')->andReturn($odbcinst);
+        $fs->shouldReceive('isFile')->with('/opt/homebrew/lib/libmsodbcsql.18.dylib')->andReturn(true);
+        $fs->shouldReceive('isFile')->with('/opt/homebrew/lib/libmsodbcsql.17.dylib')->andReturn(false);
         $fs->shouldReceive('run')->andReturnUsing(function (Command $command) {
             $arguments = $command->getArguments();
             if ($arguments === ['--prefix']) {
@@ -261,7 +264,9 @@ final class MsodbcsqlTest extends TestCase
         $php = M::mock(PHPInfo::class);
         $phpPackage = new SystemPackager\Package('php@8.4', '8.4.27', 'php@8.4');
         self::assertSame([], (new sqlsrv($php, $this->createMacOS()))->getSystemPackageNames($phpPackage));
-        self::assertNull((new pdo_sqlsrv($php, $this->createMacOS("[ODBC Driver 18 for SQL Server]\nDriver=x\n")))->getSystemPackageNames($phpPackage));
+        self::assertNull((new pdo_sqlsrv($php, $this->createMacOS("[ODBC Driver 18 for SQL Server]\nDescription=x\nDriver=/opt/homebrew/lib/libmsodbcsql.18.dylib\n")))->getSystemPackageNames($phpPackage));
+        // The registration of a driver that has been uninstalled
+        self::assertSame([], (new pdo_sqlsrv($php, $this->createMacOS("[ODBC Driver 17 for SQL Server]\nDriver=/opt/homebrew/lib/libmsodbcsql.17.dylib\n")))->getSystemPackageNames($phpPackage));
     }
 
     /**
@@ -269,9 +274,18 @@ final class MsodbcsqlTest extends TestCase
      */
     public function testAlreadyInstalled()
     {
-        $this->createDependency(OS\Debian::class, OS\Debian::TRIXIE, 804, "[Other]\nDriver=x\n\n[ODBC Driver 18 for SQL Server]\nDriver=y\n")->install(M::mock(State::class));
+        $this->createDependency(OS\Debian::class, OS\Debian::TRIXIE, 804, "[Other]\nDriver=x\n\n[ODBC Driver 18 for SQL Server]\nDescription=Microsoft ODBC Driver 18 for SQL Server\nDriver = /opt/microsoft/msodbcsql18/lib64/libmsodbcsql-18.so \nUsageCount=1\n")->install(M::mock(State::class));
         self::assertSame([], $this->commands);
         self::assertSame([], $this->downloads);
+    }
+
+    /**
+     * @return void
+     */
+    public function testRegisteredButMissing()
+    {
+        $this->createDependency(OS\Debian::class, OS\Debian::TRIXIE, 804, "[ODBC Driver 18 for SQL Server]\nDriver=/opt/microsoft/msodbcsql18/lib64/missing.so\n\n[Other]\nDriver=/opt/microsoft/msodbcsql18/lib64/libmsodbcsql-18.so\n")->install(self::createState());
+        self::assertNotSame([], $this->commands);
     }
 
     /**

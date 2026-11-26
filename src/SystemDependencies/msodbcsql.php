@@ -214,8 +214,19 @@ final class msodbcsql extends SystemDependency
         if ($os instanceof OS\MacOS) {
             $file = $os->getSystemPackager()->getPrefix() . '/etc/odbcinst.ini';
         }
+        if (!$fs->isFile($file)) {
+            return false;
+        }
+        // The registration outlives the driver (for example, uninstalling the formula of Homebrew doesn't remove it)
+        $matches = null;
+        preg_match_all('/^\[ODBC Driver \d+ for SQL Server\][^\[]*?^Driver\s*=\s*(\S.*?)\s*$/ms', $fs->readFile($file), $matches);
+        foreach ($matches[1] as $library) {
+            if ($fs->isFile($library)) {
+                return true;
+            }
+        }
 
-        return $fs->isFile($file) && preg_match('/^\[ODBC Driver \d+ for SQL Server\]/m', $fs->readFile($file)) === 1;
+        return false;
     }
 
     /**
