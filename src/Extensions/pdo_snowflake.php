@@ -171,7 +171,9 @@ final class pdo_snowflake extends Extension implements
         if ($rc !== 0) {
             throw new Exception\IO("Failed to compile the pdo_snowflake extension: the build script failed with exit code {$rc}");
         }
-        $fs->createDirectory(dirname(self::CACERT_FILE));
+        if (!$fs->isDirectory(dirname(self::CACERT_FILE))) {
+            $fs->createDirectory(dirname(self::CACERT_FILE));
+        }
         $fs->copyFile("{$rootDir}/libsnowflakeclient/cacert.pem", self::CACERT_FILE);
 
         return "{$rootDir}/modules/pdo_snowflake.so";

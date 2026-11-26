@@ -4,10 +4,12 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class php_trie extends Extension implements
     Extension\AvailableOnPECL,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -74,5 +76,22 @@ final class php_trie extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libstdcxx::HANDLE, SystemDependencies\libhattrie::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, the headers of hat-trie are not in a directory where configure looks for them.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-hattrie=' . SystemDependencies\libhattrie::getHeadersDirectory($this->os);
+        }
+
+        return $result;
     }
 }

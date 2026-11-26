@@ -613,6 +613,7 @@ final class PrecompiledExtensionsTest extends TestCase
                     return [0, ''];
             }
         });
+        $fs->shouldReceive('isDirectory')->once()->with(dirname(Extensions\pdo_snowflake::CACERT_FILE))->andReturn(false);
         $fs->shouldReceive('createDirectory')->once();
         $fs->shouldReceive('copyFile')->once()->with('/src/libsnowflakeclient/cacert.pem', Extensions\pdo_snowflake::CACERT_FILE);
         $php = M::mock(PHPInfo::class);
