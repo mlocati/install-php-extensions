@@ -3,12 +3,15 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 /**
  * @see https://github.com/NoiseByNorthwest/php-spx
  */
-final class spx extends Extension\GitHubExtension implements Extension\IdentifiedByComposerPackage
+final class spx extends Extension\GitHubExtension implements
+    Extension\IdentifiedByComposerPackage,
+    Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -110,5 +113,25 @@ final class spx extends Extension\GitHubExtension implements Extension\Identifie
     protected function getSourceDependencies($version)
     {
         return [SystemDependencies\libzlib::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, zlib is in the SDK, but configure looks for it only in /usr/local, /usr and /opt/local.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $sdkPath = $this->os->getSDKPath();
+            if ($sdkPath !== '') {
+                $result[] = "--with-zlib-dir={$sdkPath}/usr";
+            }
+        }
+
+        return $result;
     }
 }
