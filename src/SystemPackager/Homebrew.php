@@ -99,6 +99,10 @@ final class Homebrew extends SystemPackager
         foreach ($prefixes as $formulaPrefix) {
             $pkgConfigPaths[] = "{$formulaPrefix}/lib/pkgconfig";
         }
+        // The .pc files may require the ones of keg-only dependencies (like vips with libarchive): only pkg-config needs them
+        foreach ($this->getKegOnlyFormulae(array_values(array_diff($this->listDependencies($packages), $packages))) as $name) {
+            $pkgConfigPaths[] = $this->getFormulaPrefix($name) . '/lib/pkgconfig';
+        }
         if ($pkgConfigPaths !== []) {
             $result['PKG_CONFIG_PATH'] = implode(':', $pkgConfigPaths);
         }
@@ -521,6 +525,28 @@ final class Homebrew extends SystemPackager
         }
 
         return $result;
+    }
+
+    /**
+     * @param list<non-empty-string> $names
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return list<non-empty-string> the runtime dependencies of the formulae, recursively
+     */
+    private function listDependencies(array $names)
+    {
+        if ($names === []) {
+            return [];
+        }
+        // Without --union, brew lists only the dependencies shared by all the formulae
+        list($rc, $output) = $this->runBrew(array_merge(['deps', '--formula', '--union', '--full-name'], $names), Command::OUTPUT_CAPTURE_STDOUT);
+        if ($rc !== 0) {
+            return [];
+        }
+
+        return preg_split('/\s+/', $output, -1, PREG_SPLIT_NO_EMPTY) ?: [];
     }
 
     /**

@@ -5,6 +5,7 @@ namespace IPE\Extensions;
 use IPE\Extension;
 use IPE\OS;
 use IPE\SystemDependencies;
+use IPE\SystemPackager;
 
 /**
  * There are no releases that support PHP 8: we use the HEAD of the php8 branch.
@@ -13,7 +14,8 @@ use IPE\SystemDependencies;
  */
 final class v8js extends Extension\GitHubExtension implements
     Extension\DeclaresUnsupportedEnvironments,
-    Extension\ProvidesConfigureArguments
+    Extension\ProvidesConfigureArguments,
+    Extension\ProvidesSystemPackageNames
 {
     /**
      * @public
@@ -60,6 +62,8 @@ final class v8js extends Extension\GitHubExtension implements
             'debian10..11' => $reason,
             'ubuntu20.04..22.04' => $reason,
             'alpine3.12..3.18' => $reason,
+            // The code uses APIs that newer versions of V8 removed (like PropertyCallbackInfo::This())
+            'macos' => 'the version of the V8 library of this system is too recent',
         ];
     }
 
@@ -118,5 +122,20 @@ final class v8js extends Extension\GitHubExtension implements
         }
 
         return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            // The modules of the extensions tap crash: they are built for a V8 library with the sandbox enabled
+            return [];
+        }
+
+        return null;
     }
 }

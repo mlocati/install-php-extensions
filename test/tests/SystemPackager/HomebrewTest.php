@@ -272,10 +272,17 @@ final class HomebrewTest extends TestCase
                 ['name' => 'zlib', 'keg_only' => true],
             ],
         ]));
+        self::expectBrew($fs, ['deps', '--formula', '--union', '--full-name', 'liblzf', 'zlib'], 0, "libarchive\nlz4\nzlib\n");
+        self::expectBrew($fs, ['info', '--json=v2', '--formula', 'libarchive', 'lz4'], 0, (string) json_encode([
+            'formulae' => [
+                ['name' => 'libarchive', 'keg_only' => true],
+                ['name' => 'lz4', 'keg_only' => false],
+            ],
+        ]));
         $homebrew = self::createHomebrew($fs);
         self::assertSame(
             [
-                'PKG_CONFIG_PATH' => '/opt/homebrew/opt/zlib/lib/pkgconfig',
+                'PKG_CONFIG_PATH' => '/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/libarchive/lib/pkgconfig',
                 'CPPFLAGS' => '-I/opt/homebrew/opt/zlib/include -I/opt/homebrew/include',
                 'LDFLAGS' => '-L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/lib',
             ],
