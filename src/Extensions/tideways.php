@@ -115,13 +115,22 @@ final class tideways extends Extension\PrecompiledExtension implements
             $platform = 'linux-alpine';
         } elseif ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
             $platform = 'linux';
+        } elseif ($this->os instanceof OS\MacOS) {
+            $platform = 'mac';
         } else {
             throw new Exception\UnsupportedOS("Tideways can't be installed on {$this->os->getDisplayName()}");
         }
-        $architecture = $this->php->getArchitecture()->map([
-            Architecture::X64 => 'amd64',
-            Architecture::ARM64 => 'arm64',
-        ], true);
+        if ($this->os instanceof OS\MacOS) {
+            $architecture = $this->php->getArchitecture()->map([
+                Architecture::X64 => 'x86',
+                Architecture::ARM64 => 'arm',
+            ], true);
+        } else {
+            $architecture = $this->php->getArchitecture()->map([
+                Architecture::X64 => 'amd64',
+                Architecture::ARM64 => 'arm64',
+            ], true);
+        }
         try {
             $links = JSON::decode($this->downloader->getContent('https://app.tideways.io/api/current-versions'), true);
         } catch (Exception\JSON $x) {

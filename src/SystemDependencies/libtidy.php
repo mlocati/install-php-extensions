@@ -62,6 +62,11 @@ final class libtidy extends SystemDependency
                 ['libtidy-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['tidy-html5']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

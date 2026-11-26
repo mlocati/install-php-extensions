@@ -3,8 +3,10 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Extensions\tensor;
+use IPE\Filesystem;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -71,5 +73,19 @@ final class TensorTest extends TestCase
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
         $expected = $openBLAS ? ['CPPFLAGS' => '-I/usr/include/openblas'] : [];
         self::assertSame($expected, (new tensor(M::mock(PHPInfo::class), $os))->getConfigureEnvironment(self::createBuildContext()));
+    }
+
+    /**
+     * @return void
+     */
+    public function testConfigureEnvironmentOnMacOS()
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, "/opt/homebrew\n"]);
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        self::assertSame(['LDFLAGS' => '-L/opt/homebrew/opt/gcc/lib/gcc/current'], (new tensor(M::mock(PHPInfo::class), $os))->getConfigureEnvironment(self::createBuildContext()));
     }
 }

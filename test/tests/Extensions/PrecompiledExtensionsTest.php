@@ -297,11 +297,16 @@ final class PrecompiledExtensionsTest extends TestCase
                 $links[$platform][$architecture] = "{$link}?{$platform}-{$architecture}";
             }
         }
+        foreach (['x86', 'arm'] as $architecture) {
+            $links['mac'][$architecture] = "{$link}?mac-{$architecture}";
+        }
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('getContent')->with('https://app.tideways.io/api/current-versions')->andReturn(JSON::encode(['php' => ['links' => $links]]));
         self::assertStringEndsWith('?linux-', substr((new Extensions\tideways(self::createPHP(), self::createOS(OS\Debian::class, 12), $downloader))->getBinaryArchiveURL(''), 0, strlen($link) + 7));
         self::assertStringContainsString('?linux-alpine-', (new Extensions\tideways(self::createPHP(), self::createOS(OS\Alpine::class, 323), $downloader))->getBinaryArchiveURL(''));
         self::assertStringEndsWith('?linux-', substr((new Extensions\tideways(self::createPHP(), self::createOS(OS\AlmaLinux::class, 9), $downloader))->getBinaryArchiveURL(''), 0, strlen($link) + 7));
+        self::assertSame("{$link}?mac-arm", (new Extensions\tideways(self::createPHP(), self::createOS(OS\MacOS::class, 1500), $downloader))->getBinaryArchiveURL(''));
+        self::assertSame("{$link}?mac-x86", (new Extensions\tideways(self::createPHP(804, false, 64, '', 'x86_64'), self::createOS(OS\MacOS::class, 1500), $downloader))->getBinaryArchiveURL(''));
         self::assertSame('/src/dist/tideways-php-8.4.so', (new Extensions\tideways(self::createPHP(), self::createOS(OS\Debian::class, 12, self::createFilesystem(['/src/dist/tideways-php-8.4.so'])), $downloader))->findBinaryModule('/src', ''));
         self::assertSame('/src/tideways-php-alpine-8.4-zts.so', (new Extensions\tideways(self::createPHP(804, true), self::createOS(OS\Alpine::class, 323, self::createFilesystem(['/src/tideways-php-alpine-8.4-zts.so'])), $downloader))->findBinaryModule('/src', ''));
         $invalid = M::mock(Downloader::class);

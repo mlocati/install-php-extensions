@@ -75,6 +75,12 @@ final class libnode extends SystemDependency
                 ['nodejs-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // The node formula doesn't provide libnode, but the v8 formula provides the same V8 library
+            return new Packages(
+                ['v8']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -4,12 +4,14 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class uuid extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -96,5 +98,22 @@ final class uuid extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libuuid::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, the util-linux formula is keg-only, and configure looks for the library only in /usr/local and /usr.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-uuid=' . $this->os->getSystemPackager()->getFormulaPrefix('util-linux');
+        }
+
+        return $result;
     }
 }

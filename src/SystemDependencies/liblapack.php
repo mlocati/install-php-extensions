@@ -114,6 +114,12 @@ final class liblapack extends SystemDependency
                 ['lapack-devel', 'openblas-devel', 'gcc-gfortran']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // openblas doesn't provide liblapacke
+            return new Packages(
+                ['openblas', 'lapack']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

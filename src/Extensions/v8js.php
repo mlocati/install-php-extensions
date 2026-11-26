@@ -3,6 +3,7 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 /**
@@ -10,7 +11,9 @@ use IPE\SystemDependencies;
  *
  * @see https://github.com/phpv8/v8js
  */
-final class v8js extends Extension\GitHubExtension implements Extension\DeclaresUnsupportedEnvironments
+final class v8js extends Extension\GitHubExtension implements
+    Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesConfigureArguments
 {
     /**
      * @public
@@ -98,5 +101,22 @@ final class v8js extends Extension\GitHubExtension implements Extension\Declares
     protected function getSourceDependencies($version)
     {
         return [SystemDependencies\libnode::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for V8 only in /usr/local and /usr.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-v8js=' . $this->os->getSystemPackager()->getFormulaPrefix('v8');
+        }
+
+        return $result;
     }
 }
