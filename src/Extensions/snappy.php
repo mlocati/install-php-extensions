@@ -78,11 +78,20 @@ final class snappy extends Extension\GitHubExtension implements
     /**
      * {@inheritdoc}
      *
+     * On macOS, the headers are in the prefix of the snappy formula.
+     *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        return ['--with-snappy-includedir=/usr'];
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-snappy-includedir=' . $this->os->getSystemPackager()->getFormulaPrefix('snappy');
+        } else {
+            $result[] = '--with-snappy-includedir=/usr';
+        }
+
+        return $result;
     }
 
     /**

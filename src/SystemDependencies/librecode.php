@@ -63,6 +63,11 @@ final class librecode extends SystemDependency
                 ['recode-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['recode']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

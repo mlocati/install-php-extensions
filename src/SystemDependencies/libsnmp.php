@@ -50,6 +50,11 @@ final class libsnmp extends SystemDependency
                 ['net-snmp-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['net-snmp']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

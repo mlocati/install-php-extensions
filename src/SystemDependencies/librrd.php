@@ -50,6 +50,11 @@ final class librrd extends SystemDependency
                 ['rrdtool-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['rrdtool']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

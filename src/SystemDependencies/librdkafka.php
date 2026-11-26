@@ -50,6 +50,11 @@ final class librdkafka extends SystemDependency
                 ['librdkafka-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['librdkafka']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

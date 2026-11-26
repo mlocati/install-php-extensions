@@ -11,6 +11,7 @@ final class recode extends Extension implements
     Extension\BundledInPHPSource,
     Extension\DeclaresConflicts,
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -105,5 +106,22 @@ final class recode extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\librecode::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for the library only in /usr/local, /usr and /opt.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-recode=' . $this->os->getSystemPackager()->getFormulaPrefix('recode');
+        }
+
+        return $result;
     }
 }
