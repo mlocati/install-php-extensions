@@ -109,7 +109,7 @@ abstract class OracleDatabase extends Extension implements
             throw new Exception\UnsupportedOS(static::getHandle() . " can't be installed on {$this->os->getDisplayName()}");
         }
 
-        return ['--' . $this->getConfigureOptionName() . '=instantclient,' . oracleinstantclient::getLibraryPath($this->php)];
+        return ['--' . $this->getConfigureOptionName() . '=instantclient,' . oracleinstantclient::getLibraryPath($this->php, $this->os)];
     }
 
     /**

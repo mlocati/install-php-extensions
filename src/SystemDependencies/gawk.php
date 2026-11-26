@@ -51,6 +51,13 @@ final class gawk extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                [],
+                ['gawk']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

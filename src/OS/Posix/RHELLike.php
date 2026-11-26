@@ -4,7 +4,6 @@ namespace IPE\OS\Posix;
 
 use IPE\Exception;
 use IPE\Filesystem;
-use IPE\OS\Posix;
 use IPE\Service\Container;
 use IPE\SystemPackager;
 use IPE\Traits;
@@ -12,7 +11,7 @@ use IPE\Traits;
 /**
  * The systems that use RPM packages and dnf (Enterprise Linux, Fedora, Amazon Linux).
  */
-abstract class RHELLike implements Posix
+abstract class RHELLike implements WithOSRelease
 {
     use Traits\OSArchitecture\Posix;
 
@@ -119,7 +118,7 @@ abstract class RHELLike implements Posix
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\OS\Posix::fromOSRelease()
+     * @see \IPE\OS\Posix\WithOSRelease::fromOSRelease()
      */
     public static function fromOSRelease(array $data, Container $app)
     {

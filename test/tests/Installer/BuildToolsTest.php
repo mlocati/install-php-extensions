@@ -7,7 +7,6 @@ use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\Filesystem\VolatileDirectory;
 use IPE\Installer\BuildOptions;
-use IPE\Installer\BuildTools;
 use IPE\PHPInfo;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
@@ -50,7 +49,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/phpize', ['--version'])))->andReturn([0, "Configuring for:\nPHP Api Version:         20230831\nZend Module Api No:      20230831"]);
         $fs->shouldReceive('resolveCommand')->with('phpize')->andReturn('/usr/bin/phpize');
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/bin/phpize', ['--version'])))->andReturn([0, "Configuring for:\nPHP Api Version:         20240924\nZend Module Api No:      20240924"]);
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         self::assertSame('/usr/bin/phpize', $buildTools->getPhpize());
         // The result is cached
         self::assertSame('/usr/bin/phpize', $buildTools->getPhpize());
@@ -64,7 +63,7 @@ final class BuildToolsTest extends TestCase
         $fs = self::createFilesystem();
         $fs->shouldReceive('isFile')->with('/usr/local/bin/phpize')->andReturn(false);
         $fs->shouldReceive('resolveCommand')->with('phpize')->andReturn('');
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         try {
             $buildTools->getPhpize();
             self::fail('Expected exception not thrown');
@@ -83,7 +82,7 @@ final class BuildToolsTest extends TestCase
         $fs = self::createFilesystem();
         $fs->shouldReceive('isFile')->with('/usr/bin/phpize8.4')->andReturn(true);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/bin/phpize8.4', ['--version'])))->andReturn([0, 'PHP Api Version:         20240924']);
-        self::assertSame('/usr/bin/phpize8.4', (new BuildTools(self::createPHPInfo('/usr/bin/php8.4'), $fs, new \IPE\Logger()))->getPhpize());
+        self::assertSame('/usr/bin/phpize8.4', self::createBuildTools(self::createPHPInfo('/usr/bin/php8.4'), $fs)->getPhpize());
 
         // Alpine: the versioned phpize is missing, the one without suffix matches
         $fs = self::createFilesystem();
@@ -91,7 +90,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('phpize84')->andReturn('');
         $fs->shouldReceive('isFile')->with('/usr/bin/phpize')->andReturn(true);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/bin/phpize', ['--version'])))->andReturn([0, 'PHP Api Version:         20240924']);
-        self::assertSame('/usr/bin/phpize', (new BuildTools(self::createPHPInfo('/usr/bin/php84'), $fs, new \IPE\Logger()))->getPhpize());
+        self::assertSame('/usr/bin/phpize', self::createBuildTools(self::createPHPInfo('/usr/bin/php84'), $fs)->getPhpize());
 
         // Every candidate is checked once
         $fs = self::createFilesystem();
@@ -102,7 +101,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/bin/phpize8.3', ['--version'])))->andReturn([0, 'PHP Api Version:         20230831']);
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/bin/phpize', ['--version'])))->andReturn([0, 'PHP Api Version:         20230831']);
         try {
-            (new BuildTools(self::createPHPInfo('/usr/bin/php8.3'), $fs, new \IPE\Logger()))->getPhpize();
+            self::createBuildTools(self::createPHPInfo('/usr/bin/php8.3'), $fs)->getPhpize();
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('20240924', $x->getMessage());
@@ -117,7 +116,7 @@ final class BuildToolsTest extends TestCase
         $fs = self::createFilesystem();
         $fs->shouldReceive('isFile')->with('/usr/bin/php-config8.4')->andReturn(true);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/bin/php-config8.4', ['--version'])))->andReturn([0, "8.4.14\n"]);
-        self::assertSame('/usr/bin/php-config8.4', (new BuildTools(self::createPHPInfo('/usr/bin/php8.4'), $fs, new \IPE\Logger()))->getPhpConfig());
+        self::assertSame('/usr/bin/php-config8.4', self::createBuildTools(self::createPHPInfo('/usr/bin/php8.4'), $fs)->getPhpConfig());
     }
 
     /**
@@ -128,20 +127,20 @@ final class BuildToolsTest extends TestCase
         $fs = self::createFilesystem();
         $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         self::assertSame('/usr/local/bin/php-config', $buildTools->getPhpConfig());
 
         $fs = self::createFilesystem();
         $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.3.27\n"]);
         $fs->shouldReceive('resolveCommand')->with('php-config')->andReturn('/usr/local/bin/php-config');
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         self::assertSame('', $buildTools->getPhpConfig());
 
         $fs = self::createFilesystem();
         $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(false);
         $fs->shouldReceive('resolveCommand')->with('php-config')->andReturn('');
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         self::assertSame('', $buildTools->getPhpConfig());
     }
 
@@ -154,7 +153,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--include-dir'])))->andReturn([0, "/usr/local/include/php\n"]);
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         self::assertSame('/usr/local/include/php', $buildTools->getIncludeDir());
         // The result is cached
         self::assertSame('/usr/local/include/php', $buildTools->getIncludeDir());
@@ -162,7 +161,7 @@ final class BuildToolsTest extends TestCase
         $fs = self::createFilesystem();
         $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(false);
         $fs->shouldReceive('resolveCommand')->with('php-config')->andReturn('');
-        self::assertSame('', (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getIncludeDir());
+        self::assertSame('', self::createBuildTools(self::createPHPInfo(), $fs)->getIncludeDir());
     }
 
     /**
@@ -173,7 +172,7 @@ final class BuildToolsTest extends TestCase
         $fs = self::createFilesystem();
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--build=x86_64-linux-gnu' '--with-libdir=lib/x86_64-linux-gnu' '--enable-fpm'");
-        self::assertSame('lib/x86_64-linux-gnu', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
+        self::assertSame('lib/x86_64-linux-gnu', self::createBuildTools($php, $fs)->getLibdir());
 
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--enable-fpm'");
@@ -182,7 +181,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--configure-options'])))->andReturn([0, "--enable-fpm\n"]);
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('');
-        self::assertSame('', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
+        self::assertSame('', self::createBuildTools($php, $fs)->getLibdir());
     }
 
     /**
@@ -196,7 +195,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('isFile')->with('/usr/local/bin/php-config')->andReturn(true);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--version'])))->andReturn([0, "8.4.14\n"]);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('/usr/local/bin/php-config', ['--configure-options'])))->andReturn([0, "--build=x86_64-redhat-linux --libdir=/usr/lib64 --with-libdir=lib64 --enable-fpm\n"]);
-        self::assertSame('lib64', (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
+        self::assertSame('lib64', self::createBuildTools($php, $fs)->getLibdir());
     }
 
     /**
@@ -231,7 +230,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('php-config')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn($gcc);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('gcc', ['-print-multiarch'])))->andReturn([$rc, $output]);
-        self::assertSame($expected, (new BuildTools($php, $fs, new \IPE\Logger()))->getLibdir());
+        self::assertSame($expected, self::createBuildTools($php, $fs)->getLibdir());
     }
 
     /**
@@ -242,7 +241,7 @@ final class BuildToolsTest extends TestCase
         $php = self::createPHPInfo();
         $php->shouldReceive('getConfigureCommand')->andReturn("'./configure' '--with-libdir=lib64'");
         $php->shouldReceive('getMajorMinorVersion')->andReturn(505);
-        self::assertSame('lib64', (new BuildTools($php, self::createFilesystem(), new \IPE\Logger()))->getLibdir());
+        self::assertSame('lib64', self::createBuildTools($php, self::createFilesystem())->getLibdir());
     }
 
     /**
@@ -253,13 +252,13 @@ final class BuildToolsTest extends TestCase
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('make')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('gmake')->andReturn('/usr/bin/gmake');
-        self::assertSame('/usr/bin/gmake', (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getMake());
+        self::assertSame('/usr/bin/gmake', self::createBuildTools(self::createPHPInfo(), $fs)->getMake());
 
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('make')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('gmake')->andReturn('');
         try {
-            (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getMake();
+            self::createBuildTools(self::createPHPInfo(), $fs)->getMake();
             self::fail('Expected exception not thrown');
         } catch (Exception\IO $x) {
             self::assertStringContainsString('make', $x->getMessage());
@@ -275,7 +274,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('pkg-config')->andReturn('/usr/bin/pkg-config');
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('pkg-config', ['--exists', 'aom'])->withOutput(Command::OUTPUT_DISCARD)))->andReturn([0, '']);
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('pkg-config', ['--exists', 'libavif >= 1.0'])->withOutput(Command::OUTPUT_DISCARD)))->andReturn([1, '']);
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         self::assertTrue($buildTools->hasPkgConfigModule('aom'));
         self::assertFalse($buildTools->hasPkgConfigModule('libavif >= 1.0'));
 
@@ -283,7 +282,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('pkg-config')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('pkgconf')->andReturn('');
         $fs->shouldReceive('isFile')->andReturn(false);
-        self::assertFalse((new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->hasPkgConfigModule('aom'));
+        self::assertFalse(self::createBuildTools(self::createPHPInfo(), $fs)->hasPkgConfigModule('aom'));
     }
 
     /**
@@ -316,7 +315,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('isFile')->with('/usr/local/lib/pkgconfig/libavif.pc')->andReturn(true);
         $fs->shouldReceive('isFile')->andReturn(false);
         $fs->shouldReceive('readFile')->with('/usr/local/lib/pkgconfig/libavif.pc')->andReturn("Name: libavif\nVersion: 1.3.0\nLibs: -lavif\n");
-        self::assertSame($expected, (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->hasPkgConfigModule($module));
+        self::assertSame($expected, self::createBuildTools(self::createPHPInfo(), $fs)->hasPkgConfigModule($module));
     }
 
     /**
@@ -344,7 +343,7 @@ final class BuildToolsTest extends TestCase
             return is_string($content) && strpos($content, '#include <libyuv.h>') === 0;
         }));
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('cc', ['/tmp/x/test.c', '-lyuv', '-o', '/tmp/x/test'])->withOutput(Command::OUTPUT_DISCARD)))->andReturn([$rc, '']);
-        self::assertSame($expected, (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->canLinkLibrary('yuv', 'libyuv.h'));
+        self::assertSame($expected, self::createBuildTools(self::createPHPInfo(), $fs)->canLinkLibrary('yuv', 'libyuv.h'));
     }
 
     /**
@@ -355,7 +354,7 @@ final class BuildToolsTest extends TestCase
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('');
-        self::assertFalse((new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->canLinkLibrary('yuv', 'libyuv.h'));
+        self::assertFalse(self::createBuildTools(self::createPHPInfo(), $fs)->canLinkLibrary('yuv', 'libyuv.h'));
     }
 
     /**
@@ -380,7 +379,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('/usr/bin/cc');
         $fs->shouldReceive('createVolatileDirectory')->once()->andReturn(new VolatileDirectory('/tmp/x', $fs));
         $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('cc', ['-fstack-protector-strong', '-c', '/tmp/x/test.c', '-o', '/tmp/x/test.o'])->withOutput(Command::OUTPUT_DISCARD)))->andReturn([$rc, '']);
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         self::assertSame($expected, $buildTools->getStackProtectorFlag());
         // The result is cached
         self::assertSame($expected, $buildTools->getStackProtectorFlag());
@@ -413,7 +412,7 @@ final class BuildToolsTest extends TestCase
         $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('pkg-config')->andReturn($pkgConfig);
-        self::assertSame($expected, (new BuildTools($php, $fs, new \IPE\Logger()))->getConfigureEnvironment());
+        self::assertSame($expected, self::createBuildTools($php, $fs)->getConfigureEnvironment());
     }
 
     /**
@@ -423,7 +422,7 @@ final class BuildToolsTest extends TestCase
     {
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->once()->with('pkg-config')->andReturn('');
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         self::assertSame('', $buildTools->getPkgConfig());
         self::assertSame('', $buildTools->getPkgConfig());
     }
@@ -436,7 +435,7 @@ final class BuildToolsTest extends TestCase
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('cc')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('gcc')->andReturn('');
-        self::assertSame('-fstack-protector-strong', (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getStackProtectorFlag());
+        self::assertSame('-fstack-protector-strong', self::createBuildTools(self::createPHPInfo(), $fs)->getStackProtectorFlag());
     }
 
     /**
@@ -448,7 +447,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('getconf')->andReturn('/usr/bin/getconf');
         $fs->shouldReceive('run')->with(self::isCommand(Command::create('getconf', ['_NPROCESSORS_ONLN'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT)))->andReturn([0, "8\n"]);
-        self::assertSame(8, (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getProcessorCount());
+        self::assertSame(8, self::createBuildTools(self::createPHPInfo(), $fs)->getProcessorCount());
 
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('');
@@ -461,13 +460,13 @@ final class BuildToolsTest extends TestCase
             3 => 'processor	: 1',
             4 => 'model name	: x',
         ]));
-        self::assertSame(2, (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getProcessorCount());
+        self::assertSame(2, self::createBuildTools(self::createPHPInfo(), $fs)->getProcessorCount());
 
         $fs = self::createFilesystem();
         $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('getconf')->andReturn('');
         $fs->shouldReceive('isFile')->with('/proc/cpuinfo')->andReturn(false);
-        self::assertSame(1, (new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger()))->getProcessorCount());
+        self::assertSame(1, self::createBuildTools(self::createPHPInfo(), $fs)->getProcessorCount());
     }
 
     /**
@@ -479,7 +478,7 @@ final class BuildToolsTest extends TestCase
         $fs->shouldReceive('resolveCommand')->with('nproc')->andReturn('');
         $fs->shouldReceive('resolveCommand')->with('getconf')->andReturn('');
         $fs->shouldReceive('isFile')->with('/proc/cpuinfo')->andReturn(false);
-        $buildTools = new BuildTools(self::createPHPInfo(), $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools(self::createPHPInfo(), $fs);
         self::assertSame(1, $buildTools->getParallelJobs(new BuildOptions()));
         self::assertSame(3, $buildTools->getParallelJobs((new BuildOptions())->withParallelJobs(3)));
     }

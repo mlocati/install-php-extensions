@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class yar extends Extension implements
@@ -127,11 +128,15 @@ final class yar extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        $version = $context->getVersion();
-        if (!self::isVersionAtLeast($version, '1.2.4')) {
-            return [];
+        $result = [];
+        // On macOS, configure looks for libcurl only in /usr and /usr/local
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-curl=' . $this->os->getSystemPackager()->getFormulaPrefix('curl');
+        }
+        if (self::isVersionAtLeast($context->getVersion(), '1.2.4') && in_array(msgpack::HANDLE, $this->php->getInstalledExtensions(), true)) {
+            $result[] = '--enable-msgpack';
         }
 
-        return in_array(msgpack::HANDLE, $this->php->getInstalledExtensions(), true) ? ['--enable-msgpack'] : [];
+        return $result;
     }
 }

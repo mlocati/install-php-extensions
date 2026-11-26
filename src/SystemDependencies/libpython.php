@@ -58,6 +58,12 @@ final class libpython extends SystemDependency
                 ['python3-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // An alias of the most recent versioned formula (like python@3.15)
+            return new Packages(
+                ['python3']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

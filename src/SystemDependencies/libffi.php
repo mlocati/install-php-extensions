@@ -51,6 +51,12 @@ final class libffi extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libffi']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

@@ -8,6 +8,8 @@ use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
 use IPE\SystemDependencies;
+use IPE\SystemPackager\Homebrew;
+use IPE\SystemPackager\Package;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -54,5 +56,43 @@ final class RedisTest extends TestCase
         $redis = new redis($php, $os);
         self::assertSame($expected, $redis->getConfigureArguments(self::createBuildContext($version)));
         self::assertSame(in_array('--with-liblzf', $expected, true), in_array(SystemDependencies\liblzf::HANDLE, $redis->getRequiredSystemDependencies($version, new Values()), true));
+    }
+
+    /**
+     * @return void
+     */
+    public function testLZFOnMacOS()
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(804);
+        $php->shouldReceive('getInstalledExtensions')->andReturn([]);
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, "/opt/homebrew\n"]);
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        self::assertSame(
+            ['--enable-redis-lzf', '--with-liblzf=/opt/homebrew/opt/liblzf', '--enable-redis-zstd', '--enable-redis-lz4', '--with-liblz4'],
+            (new redis($php, $os))->getConfigureArguments(self::createBuildContext('6.3.0'))
+        );
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageNames()
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, (string) json_encode([
+            ['name' => 'shivammathur/extensions', 'installed' => true, 'trusted' => true, 'formula_names' => ['shivammathur/extensions/phpredis@8.4']],
+            ['name' => 'shivammathur/php', 'installed' => true, 'trusted' => true, 'formula_names' => ['shivammathur/php/php@8.4']],
+        ])]);
+        $macOS = M::mock(OS\MacOS::class);
+        $macOS->shouldReceive('getFilesystem')->andReturn($fs);
+        $macOS->shouldReceive('getSystemPackager')->andReturn(new Homebrew($macOS));
+        self::assertSame(['shivammathur/extensions/phpredis@8.4'], (new redis(M::mock(PHPInfo::class), $macOS))->getSystemPackageNames(new Package('php@8.4', '8.4.14_1', 'php@8.4')));
+        self::assertNull((new redis(M::mock(PHPInfo::class), M::mock(OS\Debian::class)))->getSystemPackageNames(new Package('php8.4-cli', '8.4.14-1', 'php8.4')));
     }
 }

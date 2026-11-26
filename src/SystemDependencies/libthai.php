@@ -56,6 +56,11 @@ final class libthai extends CompiledLibrary
                 ['libthai-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libthai']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

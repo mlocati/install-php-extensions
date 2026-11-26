@@ -56,6 +56,9 @@ final class libmcrypt extends SystemDependency
                 ['libmcrypt-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            throw $this->createNotProvidedException();
+        }
 
         throw $this->createUnknownPackagesException();
     }

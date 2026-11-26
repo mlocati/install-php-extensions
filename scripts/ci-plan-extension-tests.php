@@ -12,7 +12,7 @@ declare(strict_types=1);
  * - php scripts/ci-plan-extension-tests.php --monitor <PHP version>
  *   Install the extensions that support one of the two previous PHP versions, but not the specified one (ignoring the supported PHP versions), to find out when they start supporting it
  * Writes to the file specified by the GITHUB_OUTPUT environment variable (if set):
- * - jobs: the JSON array of the jobs, each one with the operating system of the Docker images, the group of the tests, and the PHP version (empty string for all) (empty if there's nothing to test)
+ * - jobs: the JSON array of the jobs, each one with the operating system of the test environments, the group of the tests, the PHP version (empty string for all), and the GitHub Actions runner (empty if there's nothing to test)
  * - tests: the JSON array of the tests, each one with the space-separated extensions, the PHP version, whether PHP is thread-safe, the options of install-php-extensions (if any), and the group (if not the default one)
  */
 
@@ -23,7 +23,10 @@ use IPE\Dev\DockerImage;
 use IPE\Dev\DockerImages;
 use IPE\Dev\ExtensionFactory;
 use IPE\Dev\Git;
+use IPE\Dev\HomebrewFormula;
 use IPE\Dev\SlowExtensions;
+use IPE\Dev\TestEnvironment;
+use IPE\Dev\TestEnvironments;
 use IPE\Extension;
 
 set_error_handler(
@@ -51,7 +54,7 @@ const PATHS_REQUIRING_TESTS_REGEX = [
     '{^scripts/ci-(?:plan|run)-extension-tests\.php$}',
     '{^\.github/workflows/tests\.yml$}',
     '{^test/extensions/_bootstrap\.php$}',
-    '{^src/Dev/(?:DockerImages?|SlowExtensions)\.php$}',
+    '{^src/Dev/(?:DockerImages?|HomebrewFormula|SlowExtensions|TestEnvironments?)\.php$}',
 ];
 
 /**
@@ -76,7 +79,7 @@ const DISTRO_FAMILIES = [
 ];
 
 /**
- * When the Docker images of an operating system install every extension more than these times, its job is split by PHP version (GitHub Actions stops the jobs after 6 hours).
+ * When the test environments of an operating system install every extension more than these times, its job is split by PHP version (GitHub Actions stops the jobs after 6 hours).
  */
 const MAX_INSTALLATIONS_PER_EXTENSION = 8;
 
@@ -180,7 +183,7 @@ function resolveOperatingSystems(string $pattern): array
         return array_merge(...array_map(resolveOperatingSystems(...), $family));
     }
     $regex = '/^' . str_replace('\*', '.*', preg_quote($pattern, '/')) . '$/Di';
-    $result = array_values(array_filter(DockerImages::getOperatingSystems(), static fn (string $os): bool => preg_match($regex, $os) === 1));
+    $result = array_values(array_filter(TestEnvironments::getOperatingSystems(), static fn (string $os): bool => preg_match($regex, $os) === 1));
     if ($result === []) {
         throw new InvalidRequestException(<<<EOT
             Test-Distro: {$pattern} doesn't match any distro.
@@ -379,7 +382,7 @@ function isQuickTestNeeded(?array $commits): bool
 }
 
 /**
- * The most recent Alpine and Debian of the official Docker PHP images.
+ * The most recent Alpine and Debian of the official Docker PHP images, and macOS.
  *
  * @return list<string>
  */
@@ -390,7 +393,7 @@ function getQuickTestOperatingSystems(): array
     $alpine = array_values(array_filter($all, static fn (string $os): bool => str_starts_with($os, 'alpine')));
     $debian = array_values(array_diff($all, $alpine));
 
-    return [$alpine[count($alpine) - 1], $debian[count($debian) - 1]];
+    return [$alpine[count($alpine) - 1], $debian[count($debian) - 1], HomebrewFormula::OS];
 }
 
 /**
@@ -505,7 +508,7 @@ function getOptionVariants(array $classes): array
  * @param list<string> $allPHPVersions sorted from the most recent
  * @param list<string> $operatingSystems
  *
- * @return list<array{extensions: string, options: list<string>, php: string, zts: bool, group: string, os: non-empty-list<string>}> os: the operating systems of the Docker images to be used
+ * @return list<array{extensions: string, options: list<string>, php: string, zts: bool, group: string, os: non-empty-list<string>}> os: the operating systems of the test environments to be used
  */
 function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVersions, array $operatingSystems): array
 {
@@ -548,20 +551,20 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
             echo "  - PHP {$phpVersion}: skipped (no build of PHP supports all the extensions)\n";
             continue;
         }
-        // Use the ZTS image of an operating system only if there's no NTS image (since PHP 8.6 the official images are ZTS)
+        // Use the ZTS environment of an operating system only if there's no NTS one (since PHP 8.6 the official Docker images are ZTS)
         $coveredOperatingSystems = [];
         foreach ($supportedZTS as $zts) {
-            $imageOperatingSystems = array_values(array_diff(array_intersect(array_map(static fn (DockerImage $image): string => $image->getOS(), DockerImages::find($phpVersion, $zts)), $operatingSystems), $coveredOperatingSystems));
-            if ($imageOperatingSystems === []) {
+            $environmentOperatingSystems = array_values(array_diff(array_intersect(array_map(static fn (TestEnvironment $environment): string => $environment->getOS(), TestEnvironments::find($phpVersion, $zts)), $operatingSystems), $coveredOperatingSystems));
+            if ($environmentOperatingSystems === []) {
                 continue;
             }
-            $coveredOperatingSystems = array_merge($coveredOperatingSystems, $imageOperatingSystems);
+            $coveredOperatingSystems = array_merge($coveredOperatingSystems, $environmentOperatingSystems);
             foreach ($optionVariants as $options) {
-                $result[] = ['extensions' => implode(' ', $test->extensions), 'options' => $options, 'php' => $phpVersion, 'zts' => $zts, 'group' => $group, 'os' => $imageOperatingSystems];
+                $result[] = ['extensions' => implode(' ', $test->extensions), 'options' => $options, 'php' => $phpVersion, 'zts' => $zts, 'group' => $group, 'os' => $environmentOperatingSystems];
             }
         }
         if ($coveredOperatingSystems === []) {
-            echo "  - PHP {$phpVersion}: skipped (no Docker image)\n";
+            echo "  - PHP {$phpVersion}: skipped (no test environment)\n";
         }
     }
     if ($result === []) {
@@ -577,18 +580,32 @@ function planTest(RequestedTest $test, array $extensionClasses, array $allPHPVer
 }
 
 /**
- * The operating systems whose Docker images install every extension more than MAX_INSTALLATIONS_PER_EXTENSION times.
+ * The operating systems whose test environments install every extension more than MAX_INSTALLATIONS_PER_EXTENSION times, and macOS (so that every job installs only one PHP formula).
  *
  * @return list<string>
  */
 function getOperatingSystemsToSplit(): array
 {
     $installations = [];
-    foreach (DockerImages::getAll() as $image) {
-        $installations[$image->getOS()][$image->getPHPVersion()] = $image->getInstallationsPerExtension();
+    foreach (TestEnvironments::getAll() as $environment) {
+        $installations[$environment->getOS()][$environment->getPHPVersion()] = $environment->getInstallationsPerExtension();
+    }
+    $result = array_keys(array_filter($installations, static fn (array $perPHPVersion): bool => array_sum($perPHPVersion) > MAX_INSTALLATIONS_PER_EXTENSION));
+
+    return array_values(array_unique(array_merge($result, [HomebrewFormula::OS])));
+}
+
+/**
+ * @return array<string, non-empty-string> the keys are the operating systems, the values are the GitHub Actions runners of their test environments
+ */
+function getRunners(): array
+{
+    $result = [];
+    foreach (TestEnvironments::getAll() as $environment) {
+        $result[$environment->getOS()] = $environment->getRunsOn();
     }
 
-    return array_keys(array_filter($installations, static fn (array $perPHPVersion): bool => array_sum($perPHPVersion) > MAX_INSTALLATIONS_PER_EXTENSION));
+    return $result;
 }
 
 /**
@@ -598,7 +615,7 @@ function getOperatingSystemsToSplit(): array
  * @param list<array{php: string, group: string, os: non-empty-list<string>}> $tests
  * @param list<string> $operatingSystems
  *
- * @return list<array{distro: string, group: string, php: string}>
+ * @return list<array{distro: string, group: string, php: string, runs-on: non-empty-string}>
  */
 function getJobs(array $tests, array $operatingSystems): array
 {
@@ -614,17 +631,18 @@ function getJobs(array $tests, array $operatingSystems): array
     }
     ksort($usedOperatingSystems, SORT_STRING);
     $operatingSystemsToSplit = getOperatingSystemsToSplit();
+    $runners = getRunners();
     $result = [];
     foreach ($usedOperatingSystems as $group => $groupOperatingSystems) {
         foreach (array_intersect($operatingSystems, $groupOperatingSystems) as $os) {
             if ($group !== '' || !in_array($os, $operatingSystemsToSplit, true)) {
-                $result[] = ['distro' => $os, 'group' => $group, 'php' => ''];
+                $result[] = ['distro' => $os, 'group' => $group, 'php' => '', 'runs-on' => $runners[$os]];
                 continue;
             }
             $osPHPVersions = array_values(array_unique($phpVersions[$os]));
             usort($osPHPVersions, static fn (string $a, string $b): int => version_compare($a, $b));
             foreach ($osPHPVersions as $phpVersion) {
-                $result[] = ['distro' => $os, 'group' => $group, 'php' => $phpVersion];
+                $result[] = ['distro' => $os, 'group' => $group, 'php' => $phpVersion, 'runs-on' => $runners[$os]];
             }
         }
     }
@@ -712,13 +730,13 @@ function main(array $argv): int
         if ($monitorPHPVersion !== '') {
             $tests = planMonitorTests($monitorPHPVersion, $extensionClasses, $allPHPVersions);
             $requestedTests = [];
-            $operatingSystems = DockerImages::getOperatingSystems();
+            $operatingSystems = TestEnvironments::getOperatingSystems();
         } elseif ($commits !== null && !$quick) {
             $requestedTests = collectTestsForPullRequest($commits[0], $commits[1], $extensionClasses);
             if ($requestedTests === null) {
                 return 1;
             }
-            $operatingSystems = DockerImages::getOperatingSystems();
+            $operatingSystems = TestEnvironments::getOperatingSystems();
         } else {
             $requestedTests = isQuickTestNeeded($commits) ? [new RequestedTest([QUICK_TEST_EXTENSION], [QUICK_TEST_PHP_VERSION], null, 'quick test')] : [];
             $operatingSystems = getQuickTestOperatingSystems();

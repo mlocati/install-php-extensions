@@ -3,9 +3,11 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Extensions\snappy;
+use IPE\Filesystem;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -42,5 +44,21 @@ final class SnappyTest extends TestCase
         self::assertInstanceOf(OS::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
         self::assertSame($expected, (new snappy($php, $os))->getVendorArchiveVersion('', new Values()));
+    }
+
+    /**
+     * @return void
+     */
+    public function testConfigureArguments()
+    {
+        $php = M::mock(PHPInfo::class);
+        self::assertSame(['--with-snappy-includedir=/usr'], (new snappy($php, M::mock(OS\Debian::class)))->getConfigureArguments(self::createBuildContext()));
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, "/opt/homebrew\n"]);
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        self::assertSame(['--with-snappy-includedir=/opt/homebrew/opt/snappy'], (new snappy($php, $os))->getConfigureArguments(self::createBuildContext()));
     }
 }

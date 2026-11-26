@@ -6,6 +6,7 @@ use IPE\Architecture;
 use IPE\Extension\BuildContext;
 use IPE\Filesystem;
 use IPE\Installer\BuildOptions;
+use IPE\Installer\BuildTools;
 use IPE\Option;
 use IPE\OS;
 use IPE\PHPInfo;
@@ -92,6 +93,16 @@ abstract class TestCaseBase extends MockeryTestCase
     protected static function createBuildContext($version = '', $options = null, $sourceDirectory = '/tmp/ipe/ext', $buildOptions = null)
     {
         return new BuildContext($sourceDirectory, $version, $options === null ? new Option\Values() : $options, $buildOptions === null ? new BuildOptions() : $buildOptions);
+    }
+
+    /**
+     * @param \IPE\OS|null $os NULL for a Linux-like OS
+     *
+     * @return \IPE\Installer\BuildTools
+     */
+    protected static function createBuildTools(PHPInfo $php, Filesystem $fs, $os = null)
+    {
+        return new BuildTools($php, $os === null ? M::mock(OS\Posix::class) : $os, $fs, new \IPE\Logger());
     }
 
     /**

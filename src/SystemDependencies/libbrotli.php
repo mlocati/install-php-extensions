@@ -42,6 +42,9 @@ class libbrotli extends SystemDependency
         if ($os instanceof OS\Ubuntu) {
             return $os->getNumericVersion() > OS\Ubuntu::TRUSTY;
         }
+        if ($os instanceof OS\MacOS) {
+            return true;
+        }
 
         return false;
     }
@@ -78,6 +81,11 @@ class libbrotli extends SystemDependency
             return new Packages(
                 ['libbrotli'],
                 ['brotli-devel']
+            );
+        }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['brotli']
             );
         }
 

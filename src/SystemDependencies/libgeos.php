@@ -50,6 +50,11 @@ final class libgeos extends SystemDependency
                 ['geos-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['geos']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

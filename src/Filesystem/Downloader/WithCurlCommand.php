@@ -77,10 +77,12 @@ final class WithCurlCommand extends WithCommand
     {
         // 22: The requested URL was not found or returned another error with the HTTP error code being 400 or above
         // See https://everything.curl.dev/cmdline/exitcode.html
-        if ($rc === 22 && preg_match('/\b404\b/', $output)) {
+        // The curl 8.7.1 of macOS returns 56 with HTTP/2
+        $httpError = $rc === 22 || ($rc === 56 && strpos($output, 'The requested URL returned error:') !== false);
+        if ($httpError && preg_match('/\b404\b/', $output)) {
             return Exception\IO\NotFound::class;
         }
-        if ($rc === 22 && preg_match('/\b403\b/', $output)) {
+        if ($httpError && preg_match('/\b403\b/', $output)) {
             return Exception\IO\Forbidden::class;
         }
 

@@ -47,6 +47,9 @@ class liblzf extends SystemDependency
             // Enterprise Linux provides it in EPEL
             return true;
         }
+        if ($os instanceof OS\MacOS) {
+            return true;
+        }
 
         return false;
     }
@@ -77,6 +80,11 @@ class liblzf extends SystemDependency
             return new Packages(
                 ['liblzf'],
                 ['liblzf-devel']
+            );
+        }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['liblzf']
             );
         }
 

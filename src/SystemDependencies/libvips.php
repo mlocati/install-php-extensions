@@ -51,6 +51,11 @@ final class libvips extends SystemDependency
                 ['vips-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['vips']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

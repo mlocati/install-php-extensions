@@ -99,7 +99,8 @@ final class stomp extends Extension implements
         if ($this->os instanceof OS\Alpine) {
             return ['--with-openssl-dir=/usr'];
         }
-        if ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
+        // PHP_SETUP_OPENSSL uses pkg-config, which finds the keg-only openssl formula of macOS too
+        if ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike || $this->os instanceof OS\MacOS) {
             return ['--with-openssl-dir=yes'];
         }
 

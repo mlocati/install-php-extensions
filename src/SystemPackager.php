@@ -32,9 +32,43 @@ abstract class SystemPackager
     }
 
     /**
+     * @throws \IPE\Exception\SystemPackager if something that the packager can't install is missing
+     * @throws \IPE\Exception\IO
+     *
      * @return list<non-empty-string>
      */
     public abstract function getPhpizeRequirements();
+
+    /**
+     * The environment variables needed to build with the headers and the libraries of the installed packages.
+     *
+     * @param list<non-empty-string> $packages the packages required by the system dependencies
+     *
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\IO
+     *
+     * @return array<non-empty-string, non-empty-string> PKG_CONFIG_PATH is separated by colons, the other variables by spaces
+     */
+    public function getBuildEnvironment(array $packages)
+    {
+        return [];
+    }
+
+    /**
+     * Make the headers of a PHP extension installed with a system package available to the extensions that we compile.
+     *
+     * @param non-empty-string $packageName the package of the extension
+     * @param non-empty-string $phpIncludeDir the directory of the PHP headers
+     *
+     * @throws \IPE\Exception\InvalidArgument
+     * @throws \IPE\Exception\IO
+     *
+     * @return list<non-empty-string> the created files, to be deleted after the compilation
+     */
+    public function exposeExtensionHeaders($packageName, $phpIncludeDir)
+    {
+        return [];
+    }
 
     /**
      * @param list<non-empty-string> $packages
@@ -212,6 +246,9 @@ abstract class SystemPackager
      *
      * @param \IPE\SystemPackager\Package $phpPackage the package that installed PHP
      * @param non-empty-string $extensionName the handle of the extension, or one of the names it's installed with
+     *
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\IO
      *
      * @return list<non-empty-string> empty array if $extensionName can't be part of the name of a package
      *

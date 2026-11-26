@@ -50,6 +50,12 @@ final class libuuid extends SystemDependency
                 ['libuuid-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // The uuid functions of macOS don't include uuid_type() and uuid_variant()
+            return new Packages(
+                ['util-linux']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

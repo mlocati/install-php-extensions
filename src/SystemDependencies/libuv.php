@@ -64,6 +64,11 @@ final class libuv extends SystemDependency
                 ['libuv-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libuv']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

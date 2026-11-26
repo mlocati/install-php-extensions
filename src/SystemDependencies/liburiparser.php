@@ -54,6 +54,12 @@ final class liburiparser extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['uriparser']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

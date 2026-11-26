@@ -50,6 +50,11 @@ final class libgpgme extends SystemDependency
                 ['gpgme-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['gpgme']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

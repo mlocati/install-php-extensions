@@ -4,12 +4,14 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class solr extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\ProvidesMakeEnvironment,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -101,5 +103,21 @@ final class solr extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libcurl::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libxml2::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesMakeEnvironment::getMakeEnvironment()
+     */
+    public function getMakeEnvironment(Extension\BuildContext $context)
+    {
+        $result = [];
+        // The autoconf of Homebrew compiles in C23, where clang rejects "auto <typedef> <variable>" (fixed after 2.9.3)
+        if ($this->os instanceof OS\MacOS && !self::isVersionAtLeast($context->getVersion(), '2.9.4')) {
+            $result['EXTRA_CFLAGS'] = '-std=gnu17';
+        }
+
+        return $result;
     }
 }

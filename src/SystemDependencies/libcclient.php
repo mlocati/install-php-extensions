@@ -10,6 +10,7 @@ use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
 use IPE\SystemDependency;
+use IPE\SystemPackager\Homebrew;
 use IPE\SystemPackager\Packages;
 
 /**
@@ -116,6 +117,21 @@ final class libcclient extends SystemDependency
             return new Packages(
                 ['libc-client'],
                 ['krb5-devel', 'uw-imap-devel']
+            );
+        }
+        if ($this->os instanceof OS\MacOS) {
+            // homebrew-core doesn't provide c-client
+            try {
+                $formula = $this->os->getSystemPackager()->getExtensionsTapFormula('imap-uw');
+            } catch (Exception\SystemPackager $x) {
+                throw new Exception\UnsupportedOS($x->getMessage());
+            }
+            if ($formula === '') {
+                throw new Exception\UnsupportedOS('The c-client library is only available in the ' . Homebrew::EXTENSIONS_TAP . ' tap of Homebrew (which requires the ' . Homebrew::PHP_TAP . ' tap)');
+            }
+
+            return new Packages(
+                [$formula, 'krb5']
             );
         }
 

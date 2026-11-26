@@ -58,6 +58,11 @@ class libck extends SystemDependency
         if ($this->os instanceof OS\Posix\RHELLike) {
             return new Packages(['ck']);
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['concurrencykit']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

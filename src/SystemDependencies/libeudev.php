@@ -47,6 +47,10 @@ class libeudev extends SystemDependency
             return new Packages(['systemd-libs']);
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            throw $this->createNotProvidedException();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

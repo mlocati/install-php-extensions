@@ -7,7 +7,7 @@ use IPE\Exception;
 use IPE\OS\Posix;
 use IPE\Service\Container;
 
-final class FakeOS implements Posix
+final class FakeOS implements Posix\WithOSRelease
 {
     /**
      * @var string
@@ -45,7 +45,7 @@ final class FakeOS implements Posix
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\OS\Posix::fromOSRelease()
+     * @see \IPE\OS\Posix\WithOSRelease::fromOSRelease()
      */
     public static function fromOSRelease(array $data, Container $app)
     {

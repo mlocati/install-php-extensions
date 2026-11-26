@@ -51,6 +51,12 @@ final class libdb extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['berkeley-db@5']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

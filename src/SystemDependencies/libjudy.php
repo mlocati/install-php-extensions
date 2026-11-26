@@ -53,6 +53,11 @@ final class libjudy extends SystemDependency
                 ['Judy-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['judy']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

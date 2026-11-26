@@ -7,7 +7,8 @@ use IPE\Extension;
 final class inotify extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
-    Extension\DeclaresDefaultVersion
+    Extension\DeclaresDefaultVersion,
+    Extension\DeclaresUnsupportedEnvironments
 {
     /**
      * @public
@@ -33,6 +34,18 @@ final class inotify extends Extension implements
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            'macos' => 'inotify is an API of the Linux kernel',
+        ];
     }
 
     /**

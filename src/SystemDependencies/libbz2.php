@@ -51,6 +51,11 @@ final class libbz2 extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            // The SDK of macOS includes bzip2 (see the bz2 extension)
+            return new Packages();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

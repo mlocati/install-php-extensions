@@ -3,6 +3,7 @@
 namespace IPE\Extensions;
 
 use IPE\Architecture;
+use IPE\Exception;
 use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
@@ -214,7 +215,10 @@ final class swoole extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         // Without zlib, swoole silently disables the HTTP compression (and 5.0.0 doesn't even compile without zlib and brotli)
-        $result = [SystemDependencies\libopenssl::HANDLE, SystemDependencies\libstdcxx::HANDLE, SystemDependencies\libzlib::HANDLE, SystemDependencies\linuxheaders::HANDLE];
+        $result = [SystemDependencies\libopenssl::HANDLE, SystemDependencies\libstdcxx::HANDLE, SystemDependencies\libzlib::HANDLE];
+        if (!$this->os instanceof OS\MacOS) {
+            $result[] = SystemDependencies\linuxheaders::HANDLE;
+        }
         if (self::usesPostgreSQL($version)) {
             $result[] = SystemDependencies\libpq::HANDLE;
         }
@@ -310,7 +314,12 @@ final class swoole extends Extension implements
             $result[] = '--with-swoole-firebird';
         }
         if ($this->usesSSH2($version, $context->getOptionValues())) {
-            $result[] = '--with-swoole-ssh2';
+            if ($this->os instanceof OS\MacOS) {
+                // configure looks for libssh2 only in /usr/local and /usr
+                $result[] = '--with-swoole-ssh2=' . $this->os->getSystemPackager()->getFormulaPrefix('libssh2');
+            } else {
+                $result[] = '--with-swoole-ssh2';
+            }
         }
 
         return $result;
@@ -364,6 +373,9 @@ final class swoole extends Extension implements
         if ($this->os instanceof OS\Posix\RHELLike) {
             return true;
         }
+        if ($this->os instanceof OS\MacOS) {
+            return true;
+        }
 
         throw $this->createUnknownOSException();
     }
@@ -404,6 +416,9 @@ final class swoole extends Extension implements
         if ($this->os instanceof OS\Posix\RHELLike) {
             return false;
         }
+        if ($this->os instanceof OS\MacOS) {
+            return false;
+        }
 
         throw $this->createUnknownOSException();
     }
@@ -411,6 +426,7 @@ final class swoole extends Extension implements
     /**
      * @param string $version
      *
+     * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\UnsupportedOS
      *
      * @return bool
@@ -433,6 +449,14 @@ final class swoole extends Extension implements
         }
         if ($this->os instanceof OS\Posix\RHELLike) {
             return true;
+        }
+        if ($this->os instanceof OS\MacOS) {
+            // Firebird is only available in the extensions tap of Homebrew: we use it only if it's there
+            try {
+                return $this->os->getSystemPackager()->getExtensionsTapFormula(SystemDependencies\libfbclient::getHomebrewFormula($this->php->getMajorMinorVersion())) !== '';
+            } catch (Exception\SystemPackager $x) {
+                throw new Exception\UnsupportedOS($x->getMessage());
+            }
         }
 
         throw $this->createUnknownOSException();

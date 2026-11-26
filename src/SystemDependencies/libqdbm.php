@@ -48,6 +48,12 @@ final class libqdbm extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['qdbm']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

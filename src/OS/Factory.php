@@ -40,6 +40,7 @@ class Factory
             CentOS::class,
             Debian::class,
             Fedora::class,
+            MacOS::class,
             OracleLinux::class,
             RHEL::class,
             RockyLinux::class,
@@ -105,7 +106,31 @@ class Factory
         if ($fs->isFile('/etc/os-release')) {
             return $this->buildFromOSRelease($fs);
         }
+        list($rc, $output) = $fs->run(Command::create('uname', ['-s'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc === 0 && trim($output) === 'Darwin') {
+            return $this->buildMacOS($fs);
+        }
         throw new Exception\UnsupportedOS('Failed to detect the operating system');
+    }
+
+    /**
+     * @throws \IPE\Exception\UnsupportedOS
+     * @throws \IPE\Exception\IO
+     *
+     * @return \IPE\OS\MacOS
+     */
+    private function buildMacOS(Filesystem $fs)
+    {
+        list($rc, $output) = $fs->run(Command::create('sw_vers', ['-productVersion'])->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0) {
+            throw new Exception\UnsupportedOS("Failed to detect the macOS version: sw_vers failed with exit code {$rc}");
+        }
+        $version = trim($output);
+        try {
+            return $this->app->build(MacOS::class, ['version' => $version]);
+        } catch (Exception\InvalidArgument $x) {
+            throw new Exception\UnsupportedOS("Unrecognized macOS version: '{$version}'");
+        }
     }
 
     /**
@@ -239,7 +264,7 @@ class Factory
             throw new Exception\UnsupportedOS("'/etc/os-release' does not define the distribution ID");
         }
         $class = $this->getOSClassByIdentifier($id);
-        if ($class === '' || !is_subclass_of($class, Posix::class)) {
+        if ($class === '' || !is_subclass_of($class, Posix\WithOSRelease::class)) {
             throw new Exception\UnsupportedOS("'/etc/os-release' defines an unsupported distribution ({$id})");
         }
 

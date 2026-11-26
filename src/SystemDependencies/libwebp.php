@@ -66,6 +66,12 @@ final class libwebp extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['webp']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

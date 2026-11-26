@@ -362,7 +362,7 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJSON(needs.plan-extension-tests.outputs.jobs) }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runs-on }}
     steps:
       -
         name: Disable the containerd image store
@@ -375,11 +375,17 @@ jobs:
           printf 'Docker storage driver: %s\n' "$(docker info --format '{{.Driver}}')"
       -
         name: Setup PHP
+        if: runner.os != 'macOS'
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.5"
           tools: none
           coverage: none
+      -
+        name: Install PHP
+        if: runner.os == 'macOS'
+        # Not setup-php: its formulae would conflict with the ones of Homebrew that are tested
+        run: brew install --formula php
       -
         name: Checkout
         uses: actions/checkout@v7

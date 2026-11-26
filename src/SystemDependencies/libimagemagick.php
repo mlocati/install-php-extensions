@@ -84,6 +84,11 @@ final class libimagemagick extends SystemDependency
                 ['ImageMagick-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['imagemagick']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

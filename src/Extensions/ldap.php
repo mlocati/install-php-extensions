@@ -4,10 +4,12 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class ldap extends Extension implements
     Extension\BundledInPHPSource,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -76,5 +78,21 @@ final class ldap extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libldap::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for the library only in /usr/local and /usr (PHP < 8.5 doesn't use pkg-config).
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return ['--with-ldap=' . $this->os->getSystemPackager()->getFormulaPrefix('openldap')];
+        }
+
+        return [];
     }
 }

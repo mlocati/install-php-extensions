@@ -2,6 +2,7 @@
 
 namespace IPE\SystemDependencies;
 
+use IPE\OS;
 use IPE\SystemDependency\CompiledLibrary;
 
 /**
@@ -32,13 +33,23 @@ final class libhattrie extends CompiledLibrary
     }
 
     /**
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string the directory that contains htrie_map.h
+     */
+    public static function getHeadersDirectory(OS $os)
+    {
+        return self::getInstallDirectory($os) . '/include/tsl';
+    }
+
+    /**
      * {@inheritdoc}
      *
      * @see \IPE\SystemDependency\CompiledLibrary::isInstalled()
      */
     protected function isInstalled()
     {
-        return $this->os->getFilesystem()->isFile('/usr/local/include/hat-trie/include/tsl/htrie_map.h');
+        return $this->os->getFilesystem()->isFile(self::getHeadersDirectory($this->os) . '/htrie_map.h');
     }
 
     /**
@@ -78,7 +89,27 @@ final class libhattrie extends CompiledLibrary
      */
     protected function build($sourceDirectory)
     {
-        $this->runBuildStep('mkdir', ['-p', '/usr/local/include/hat-trie'], $sourceDirectory);
-        $this->runBuildStep('cp', ['-R', 'include', '/usr/local/include/hat-trie/'], $sourceDirectory);
+        $installDirectory = self::getInstallDirectory($this->os);
+        $this->runBuildStep('mkdir', ['-p', $installDirectory], $sourceDirectory);
+        $this->runBuildStep('cp', ['-R', 'include', "{$installDirectory}/"], $sourceDirectory);
+    }
+
+    /**
+     * On macOS /usr/local may not be writable.
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string
+     */
+    private static function getInstallDirectory(OS $os)
+    {
+        if ($os instanceof OS\MacOS) {
+            $prefix = $os->getSystemPackager()->getPrefix();
+            if ($prefix !== '') {
+                return "{$prefix}/include/hat-trie";
+            }
+        }
+
+        return '/usr/local/include/hat-trie';
     }
 }

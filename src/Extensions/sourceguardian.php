@@ -59,7 +59,13 @@ final class sourceguardian extends Extension\PrecompiledExtension implements Ext
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        return [libeudev::HANDLE];
+        $result = [];
+        // The Linux loaders link to libudev
+        if (!$this->os instanceof OS\MacOS) {
+            $result[] = libeudev::HANDLE;
+        }
+
+        return $result;
     }
 
     /**
@@ -73,13 +79,20 @@ final class sourceguardian extends Extension\PrecompiledExtension implements Ext
         if (!$this->os instanceof OS\Posix) {
             throw new Exception\UnsupportedOS("SourceGuardian can't be installed on {$this->os->getDisplayName()}");
         }
-        $architecture = $this->php->getArchitecture()->map([
-            Architecture::X86 => 'i386',
-            Architecture::X64 => 'x86_64',
-            Architecture::ARM64 => 'aarch64',
-        ], true);
+        if ($this->os instanceof OS\MacOS) {
+            $platform = $this->php->getArchitecture()->map([
+                Architecture::X64 => 'macosx',
+                Architecture::ARM64 => 'macosx-arm64',
+            ], true);
+        } else {
+            $platform = 'linux-' . $this->php->getArchitecture()->map([
+                Architecture::X86 => 'i386',
+                Architecture::X64 => 'x86_64',
+                Architecture::ARM64 => 'aarch64',
+            ], true);
+        }
 
-        return "https://www.sourceguardian.com/loaders/download/loaders.linux-{$architecture}.tar.gz";
+        return "https://www.sourceguardian.com/loaders/download/loaders.{$platform}.tar.gz";
     }
 
     /**
@@ -90,7 +103,7 @@ final class sourceguardian extends Extension\PrecompiledExtension implements Ext
     public function findBinaryModule($rootDir, $versionRequirements)
     {
         $fs = $this->os->getFilesystem();
-        $suffix = ($this->php->isThreadSafe() ? 'ts' : '') . '.lin';
+        $suffix = ($this->php->isThreadSafe() ? 'ts' : '') . ($this->os instanceof OS\MacOS ? '.dar' : '.lin');
         // Some PHP versions have a loader for a specific patch version
         foreach ([$this->php->getBaseVersion(), self::getPHPMajorDotMinor($this->php)] as $version) {
             $module = $rootDir . $fs->getDirectorySeparator() . "ixed.{$version}{$suffix}";

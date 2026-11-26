@@ -2,7 +2,10 @@
 
 namespace IPE\SystemDependencies;
 
+use IPE\Installer\State;
+use IPE\OS;
 use IPE\SystemDependency\CompiledLibrary;
+use IPE\SystemPackager\Packages;
 
 final class libip2location extends CompiledLibrary
 {
@@ -26,6 +29,36 @@ final class libip2location extends CompiledLibrary
     public static function getHandle()
     {
         return self::HANDLE;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemDependency::getSystemPackages()
+     */
+    public function getSystemPackages(State $state)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['ip2location']
+            );
+        }
+
+        return new Packages();
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\SystemDependency\CompiledLibrary::needsCompilation()
+     */
+    protected function needsCompilation()
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return false;
+        }
+
+        return parent::needsCompilation();
     }
 
     /**

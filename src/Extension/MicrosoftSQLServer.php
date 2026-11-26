@@ -46,6 +46,10 @@ abstract class MicrosoftSQLServer extends Extension implements
         if ($this->os instanceof OS\Posix\RHELLike && !$this->os->getFilesystem()->isFile(msodbcsql::DNF_REPOSITORY_FILE)) {
             return [];
         }
+        // The formulae of the extensions don't depend on the driver, and we install it only when compiling the extensions
+        if ($this->os instanceof OS\MacOS && !msodbcsql::isInstalled($this->os)) {
+            return [];
+        }
 
         return null;
     }

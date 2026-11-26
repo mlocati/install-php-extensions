@@ -10,7 +10,9 @@ final class xdiff extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
-    Extension\RequiresSystemDependencies
+    Extension\RequiresSystemDependencies,
+    Extension\ProvidesConfigureArguments,
+    Extension\ProvidesConfigureEnvironment
 {
     /**
      * @public
@@ -96,5 +98,40 @@ final class xdiff extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libxdiff::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, libxdiff is installed in a directory where configure doesn't look for it.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        $prefix = SystemDependencies\libxdiff::getInstallPrefix($this->os);
+        if ($prefix !== '') {
+            $result[] = "--with-xdiff={$prefix}";
+        }
+
+        return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
+     */
+    public function getConfigureEnvironment(Extension\BuildContext $context)
+    {
+        $result = [];
+        $prefix = SystemDependencies\libxdiff::getInstallPrefix($this->os);
+        if ($prefix !== '') {
+            // Some checks of config.m4 don't use the library directory of --with-xdiff
+            $result['LDFLAGS'] = "-L{$prefix}/lib";
+        }
+
+        return $result;
     }
 }

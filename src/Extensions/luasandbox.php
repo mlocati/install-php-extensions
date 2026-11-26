@@ -48,6 +48,7 @@ final class luasandbox extends Extension implements
     {
         return [
             'amzn2023' => "this system doesn't provide Lua 5.1",
+            'macos' => "Homebrew doesn't provide Lua 5.1",
         ];
     }
 

@@ -7,7 +7,8 @@ use IPE\Extension;
 final class xattr extends Extension implements
     Extension\AvailableAsComposerPackage,
     Extension\AvailableOnPECL,
-    Extension\DeclaresDefaultVersion
+    Extension\DeclaresDefaultVersion,
+    Extension\DeclaresUnsupportedEnvironments
 {
     /**
      * @public
@@ -33,6 +34,19 @@ final class xattr extends Extension implements
     public static function getSupportedPHPVersions()
     {
         return ['5.5', '5.6', '7.0', '7.1', '7.2', '7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            // It uses lgetxattr() and friends, while macOS has getxattr() with the XATTR_NOFOLLOW option
+            'macos' => 'the extension uses functions available only on Linux',
+        ];
     }
 
     /**

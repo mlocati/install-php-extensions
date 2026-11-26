@@ -84,6 +84,12 @@ class libopenssl extends SystemDependency
                 ['openssl-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // An alias of the most recent versioned formula (like openssl@4)
+            return new Packages(
+                ['openssl']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

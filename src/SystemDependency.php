@@ -99,6 +99,18 @@ abstract class SystemDependency implements SystemDependency\DeclaresHandle
     }
 
     /**
+     * Get the environment variables needed to compile the PHP extensions that use this dependency (called after install()).
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return array<non-empty-string, non-empty-string>
+     */
+    public function getBuildEnvironment()
+    {
+        return [];
+    }
+
+    /**
      * Called after the PHP extensions have been compiled and enabled, before the volatile packages are removed: remove here what was needed only to compile.
      *
      * @throws \IPE\Exception\IO

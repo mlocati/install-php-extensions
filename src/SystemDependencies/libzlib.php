@@ -51,6 +51,10 @@ class libzlib extends SystemDependency
                 ['zlib-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // The SDK of macOS includes zlib
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -4,11 +4,13 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class smbclient extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -90,5 +92,22 @@ final class smbclient extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libsmbclient::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for the headers only in /usr/local/include and /usr/include.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-libsmbclient=' . $this->os->getSystemPackager()->getFormulaPrefix('samba');
+        }
+
+        return $result;
     }
 }

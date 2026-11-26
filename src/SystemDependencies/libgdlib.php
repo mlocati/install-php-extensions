@@ -51,6 +51,12 @@ final class libgdlib extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['gd']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

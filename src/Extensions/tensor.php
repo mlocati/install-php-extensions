@@ -110,15 +110,20 @@ final class tensor extends Extension implements
      */
     public function getConfigureEnvironment(Extension\BuildContext $context)
     {
+        $result = [];
         // On Debian Stretch and RHEL-like systems, /usr/include/cblas.h is missing or comes from another BLAS, and doesn't declare the OpenBLAS functions
         if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::STRETCH) {
-            return ['CPPFLAGS' => '-I/usr/include/openblas'];
+            $result['CPPFLAGS'] = '-I/usr/include/openblas';
         }
         if ($this->os instanceof OS\Posix\RHELLike) {
-            return ['CPPFLAGS' => '-I/usr/include/openblas'];
+            $result['CPPFLAGS'] = '-I/usr/include/openblas';
+        }
+        // config.m4 links to libgfortran, which the gcc formula of Homebrew installs in a subdirectory
+        if ($this->os instanceof OS\MacOS) {
+            $result['LDFLAGS'] = '-L' . $this->os->getSystemPackager()->getFormulaPrefix('gcc') . '/lib/gcc/current';
         }
 
-        return [];
+        return $result;
     }
 
     /**

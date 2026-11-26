@@ -9,7 +9,6 @@ use IPE\Extension\Resolved;
 use IPE\Filesystem;
 use IPE\Installer\BinaryInstaller;
 use IPE\Installer\BuildOptions;
-use IPE\Installer\BuildTools;
 use IPE\Installer\Compiler;
 use IPE\Installer\Enabler;
 use IPE\Installer\ExtensionsInstaller;
@@ -107,7 +106,7 @@ final class ExtensionsInstallerTest extends TestCase
         $registry->registerDependency($this->tool);
         $registry->registerDependency(new FakeLibrary($this->php, $os, new Values()));
         $registry->registerDependency(new FakeThirdPartyLibrary($this->php, $os, new Values()));
-        $buildTools = new BuildTools($this->php, $fs, new \IPE\Logger());
+        $buildTools = self::createBuildTools($this->php, $fs);
         $buildOptions = new BuildOptions();
         $this->resolver = M::mock(Extension\Asked\Resolver::class);
 
@@ -122,6 +121,7 @@ final class ExtensionsInstallerTest extends TestCase
             $this->resolver,
             new PHPSystemPackage($this->php, $os),
             new GitSubmodules($fs, M::mock(\IPE\Filesystem\Downloader::class), new BuildOptions(), new \IPE\Logger()),
+            $buildTools,
             new \IPE\Logger()
         );
     }
@@ -169,6 +169,28 @@ final class ExtensionsInstallerTest extends TestCase
         self::assertSame(['install', 'finalize'], $this->tool->log);
         self::assertContains('remove fake-tool-pkg', $this->packager->log);
         self::assertContains('delete-cache', $this->packager->log);
+    }
+
+    /**
+     * @return void
+     */
+    public function testBuildEnvironmentOfTheSystemPackager()
+    {
+        $fs = $this->createFilesystem();
+        $fs->shouldReceive('run')->andReturn([0, "[PHP Modules]\nvendor\n"]);
+        $installer = $this->createInstaller($fs);
+        $this->packager->buildEnvironment = ['IPE_TEST_BUILD_FLAGS' => '-Ifake'];
+        putenv('IPE_TEST_BUILD_FLAGS=-Iuser');
+        try {
+            $state = new State($this->php, $fs);
+            $installer->install([self::createResolvedVendorInstaller()], $state);
+            self::assertContains('build-environment fake-tool-pkg', $this->packager->log);
+            self::assertSame('-Iuser -Ifake', getenv('IPE_TEST_BUILD_FLAGS'));
+            $state->shutdown(new \IPE\Logger());
+            self::assertSame('-Iuser', getenv('IPE_TEST_BUILD_FLAGS'));
+        } finally {
+            putenv('IPE_TEST_BUILD_FLAGS');
+        }
     }
 
     /**

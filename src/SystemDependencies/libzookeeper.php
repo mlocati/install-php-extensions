@@ -67,6 +67,11 @@ final class libzookeeper extends CompiledLibrary
                 ['automake', 'hostname', 'libtool', 'maven']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['zookeeper']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

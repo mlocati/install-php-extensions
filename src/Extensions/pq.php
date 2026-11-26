@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class pq extends Extension implements
@@ -11,6 +12,7 @@ final class pq extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresPriority,
     Extension\DependsOnExtensions,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -107,6 +109,23 @@ final class pq extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libpq::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, the libpq formula is keg-only, so pg_config is not in the PATH.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-pq=' . $this->os->getSystemPackager()->getFormulaPrefix('libpq');
+        }
+
+        return $result;
     }
 
     /**

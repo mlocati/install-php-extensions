@@ -4,11 +4,13 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class snmp extends Extension implements
     Extension\BundledInPHPSource,
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -94,5 +96,22 @@ final class snmp extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libsnmp::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, the net-snmp formula is keg-only, and PHP < 8.4 looks only for its net-snmp-config in the PATH.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-snmp=' . $this->os->getSystemPackager()->getFormulaPrefix('net-snmp');
+        }
+
+        return $result;
     }
 }

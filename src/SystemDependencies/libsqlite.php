@@ -50,6 +50,11 @@ class libsqlite extends SystemDependency
                 ['sqlite-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['sqlite']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

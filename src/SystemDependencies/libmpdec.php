@@ -71,6 +71,11 @@ final class libmpdec extends CompiledLibrary
                 ['mpdecimal-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['mpdecimal']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
@@ -88,7 +93,7 @@ final class libmpdec extends CompiledLibrary
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() <= OS\Ubuntu::JAMMY) {
             return false;
         }
-        if ($this->os instanceof OS\Posix\RHELLike) {
+        if ($this->os instanceof OS\Posix\RHELLike || $this->os instanceof OS\MacOS) {
             return false;
         }
 

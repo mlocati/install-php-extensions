@@ -43,6 +43,11 @@ final class tar extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            // macOS includes tar
+            return new Packages();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

@@ -50,6 +50,11 @@ class libevent extends SystemDependency
                 ['libevent-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libevent']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

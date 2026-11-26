@@ -7,7 +7,6 @@ use IPE\Extensions\cassandra;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\Installer\BuildOptions;
-use IPE\Installer\BuildTools;
 use IPE\OS;
 use IPE\PHPInfo;
 use IPE\Test\Support\TestCase;
@@ -60,7 +59,7 @@ final class CassandraTest extends TestCase
         $php->shouldReceive('getExtensionDir')->andReturn('/ext');
         $buildOptions = (new BuildOptions())->withType($buildType)->withParallelJobs(2);
         $extension = new cassandra($php, $os);
-        self::assertSame('/ext/cassandra.so', $extension->buildModule(self::createBuildContext('', null, '/src', $buildOptions), new BuildTools($php, $fs, new \IPE\Logger())));
+        self::assertSame('/ext/cassandra.so', $extension->buildModule(self::createBuildContext('', null, '/src', $buildOptions), self::createBuildTools($php, $fs)));
         self::assertSame('cmake', $commands[0]->getCommand());
         self::assertContains("-DCMAKE_BUILD_TYPE={$expected}", $commands[0]->getArguments());
         self::assertSame(['--build', 'cmake-build', '--parallel', '2'], $commands[2]->getArguments());
@@ -96,7 +95,7 @@ final class CassandraTest extends TestCase
         $os = M::mock(OS\Debian::class);
         $os->shouldReceive('getFilesystem')->andReturn($fs);
         $buildOptions = (new BuildOptions())->withParallelJobs(2);
-        self::assertSame('/ext/cassandra.so', (new cassandra($php, $os))->buildModule(self::createBuildContext('', null, '/src', $buildOptions), new BuildTools($php, $fs, new \IPE\Logger())));
+        self::assertSame('/ext/cassandra.so', (new cassandra($php, $os))->buildModule(self::createBuildContext('', null, '/src', $buildOptions), self::createBuildTools($php, $fs)));
         self::assertSame('./configure', $commands[1]->getCommand());
         self::assertSame(['--with-php-config=/usr/local/bin/php-config'], $commands[1]->getArguments());
         self::assertSame(['SED' => 'sed', 'PKG_CONFIG' => '/usr/bin/pkg-config'], $commands[1]->getEnvironment());

@@ -5,6 +5,7 @@ namespace IPE\Extensions;
 use IPE\Architecture;
 use IPE\Exception;
 use IPE\Extension;
+use IPE\Filesystem\Command;
 use IPE\Option;
 use IPE\OS;
 use IPE\SystemDependencies;
@@ -65,6 +66,7 @@ final class relay extends Extension\PrecompiledExtension implements
             'el8-zts' => $noBuild,
             'el9-zts' => $noHiredis,
             'fedora45..46' => 'the vendor builds require OpenSSL 3, but this system uses OpenSSL 4',
+            'macos-zts' => $noBuild,
         ];
     }
 
@@ -138,20 +140,20 @@ final class relay extends Extension\PrecompiledExtension implements
     {
         // The module is published with its debug symbols
         $result = [SystemDependencies\binutils::HANDLE];
-        // The builds for Alpine and for the RHEL-like systems link to these libraries
+        // The builds for Alpine, for the RHEL-like systems and for macOS link to these libraries
         if ($this->os instanceof OS\Alpine) {
             $result[] = SystemDependencies\liblz4::HANDLE;
             $result[] = SystemDependencies\libzstd::HANDLE;
             if ($this->os->getNumericVersion() >= 317) {
                 $result[] = SystemDependencies\libopenssl::HANDLE;
             }
-        } elseif ($this->os instanceof OS\Posix\RHELLike) {
+        } elseif ($this->os instanceof OS\Posix\RHELLike || $this->os instanceof OS\MacOS) {
             $result[] = SystemDependencies\libopenssl::HANDLE;
         } elseif (!$this->os instanceof OS\Posix\DebianLike) {
             throw $this->createUnknownOSException();
         }
-        // The ZTS builds link to these libraries
-        if ($this->php->isThreadSafe()) {
+        // The ZTS builds and the builds for macOS link to these libraries
+        if ($this->php->isThreadSafe() || $this->os instanceof OS\MacOS) {
             $result[] = SystemDependencies\libhiredis::HANDLE;
             $result[] = SystemDependencies\libck::HANDLE;
         }
@@ -180,14 +182,26 @@ final class relay extends Extension\PrecompiledExtension implements
         } elseif ($this->os instanceof OS\Fedora) {
             // The vendor doesn't publish builds for Fedora
             $build = 'el10';
+        } elseif ($this->os instanceof OS\MacOS) {
+            $build = 'darwin';
         } else {
             throw new Exception\UnsupportedOS("Relay can't be installed on {$this->os->getDisplayName()}");
         }
         $version = $versionRequirements === '' ? ltrim(trim($this->downloader->getContent('https://builds.r2.relay.so/meta/latest')), 'v') : $versionRequirements;
-        $architecture = $this->php->getArchitecture()->map([
-            Architecture::X64 => 'x86-64',
-            Architecture::ARM64 => 'aarch64',
-        ], true);
+        if ($this->os instanceof OS\MacOS) {
+            if (!self::isVersionAtLeast($version, '0.60.0')) {
+                throw new Exception\UnsupportedOS("Relay {$version} can't be installed on {$this->os->getDisplayName()}: it requires OpenSSL 3, but the hiredis library of Homebrew uses OpenSSL 4");
+            }
+            $architectures = [
+                Architecture::ARM64 => 'arm64',
+            ];
+        } else {
+            $architectures = [
+                Architecture::X64 => 'x86-64',
+                Architecture::ARM64 => 'aarch64',
+            ];
+        }
+        $architecture = $this->php->getArchitecture()->map($architectures, true);
         list($distro, $flags) = explode('+', "{$build}+");
         $flags = $flags === '' ? '' : "+{$flags}";
 
@@ -202,7 +216,12 @@ final class relay extends Extension\PrecompiledExtension implements
     public function findBinaryModule($rootDir, $versionRequirements)
     {
         $fs = $this->os->getFilesystem();
-        $module = $rootDir . $fs->getDirectorySeparator() . ($this->php->isThreadSafe() ? 'relay-zts.so' : 'relay-pkg.so');
+        if ($this->os instanceof OS\MacOS) {
+            $name = 'relay.so';
+        } else {
+            $name = $this->php->isThreadSafe() ? 'relay-zts.so' : 'relay-pkg.so';
+        }
+        $module = $rootDir . $fs->getDirectorySeparator() . $name;
 
         return $fs->isFile($module) ? $module : '';
     }
@@ -215,9 +234,12 @@ final class relay extends Extension\PrecompiledExtension implements
     public function postProcessBinaryModule($modulePath)
     {
         $fs = $this->os->getFilesystem();
+        $module = $fs->readFile($modulePath);
         // Every installation must have its own ID: it's stored in the module as a placeholder
-        $uuid = trim($fs->readFile('/proc/sys/kernel/random/uuid'));
-        $fs->writeFile($modulePath, str_replace('00000000-0000-0000-0000-000000000000', $uuid, $fs->readFile($modulePath)));
+        $fs->writeFile($modulePath, str_replace('00000000-0000-0000-0000-000000000000', $this->generateUUID(), $module));
+        if ($this->os instanceof OS\MacOS) {
+            $this->relinkLibraries($this->os, $modulePath, $module);
+        }
     }
 
     /**
@@ -231,5 +253,57 @@ final class relay extends Extension\PrecompiledExtension implements
         $file = $context->getSourceDirectory() . $fs->getDirectorySeparator() . 'relay.ini';
 
         return $fs->isFile($file) ? (string) preg_replace('/^[ \t]*extension[ \t]*=.*$\r?\n?/m', '', $fs->readFile($file)) : '';
+    }
+
+    /**
+     * @throws \IPE\Exception\IO
+     *
+     * @return string
+     */
+    private function generateUUID()
+    {
+        $fs = $this->os->getFilesystem();
+        if (!$this->os instanceof OS\MacOS) {
+            return trim($fs->readFile('/proc/sys/kernel/random/uuid'));
+        }
+        list($rc, $output) = $fs->run(Command::create('uuidgen')->withOutput(Command::OUTPUT_CAPTURE_STDOUT));
+        if ($rc !== 0) {
+            throw new Exception\IO("uuidgen failed with exit code {$rc}");
+        }
+
+        return strtolower(trim($output));
+    }
+
+    /**
+     * The builds for macOS link to versioned libraries in the default prefix of Homebrew, which only keeps their latest versions.
+     *
+     * @param \IPE\OS\MacOS $os
+     * @param non-empty-string $modulePath
+     * @param string $module the original contents of the module
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    private function relinkLibraries(OS\MacOS $os, $modulePath, $module)
+    {
+        $prefix = $os->getSystemPackager()->getPrefix();
+        $matches = null;
+        preg_match_all('#/opt/homebrew((?:/[\w.@+-]+)*/[\w@+-]+)(?:\.\d+)+\.dylib(?=\x00)#', $module, $matches, PREG_SET_ORDER);
+        $arguments = [];
+        foreach ($matches as $match) {
+            if (!in_array($match[0], $arguments, true)) {
+                array_push($arguments, '-change', $match[0], "{$prefix}{$match[1]}.dylib");
+            }
+        }
+        if ($arguments === []) {
+            return;
+        }
+        $arguments[] = $modulePath;
+        // install_name_tool also updates the linker signature of the module, which then covers the UUID too
+        list($rc) = $os->getFilesystem()->run(Command::create('install_name_tool', $arguments)->withOutput(Command::OUTPUT_SHOW));
+        if ($rc !== 0) {
+            throw new Exception\IO("install_name_tool failed with exit code {$rc}");
+        }
     }
 }

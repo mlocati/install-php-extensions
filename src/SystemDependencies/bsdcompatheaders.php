@@ -47,6 +47,10 @@ final class bsdcompatheaders extends SystemDependency
         if ($this->os instanceof OS\Posix\RHELLike) {
             return new Packages();
         }
+        if ($this->os instanceof OS\MacOS) {
+            // The SDK of macOS includes the BSD headers
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }

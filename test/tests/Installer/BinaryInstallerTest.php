@@ -9,7 +9,6 @@ use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\Installer\BinaryInstaller;
 use IPE\Installer\BuildOptions;
-use IPE\Installer\BuildTools;
 use IPE\Installer\CompiledExtension;
 use IPE\Option\Values;
 use IPE\OS;
@@ -22,15 +21,16 @@ final class BinaryInstallerTest extends TestCase
 {
     /**
      * @param string $buildType
+     * @param \IPE\OS|null $os NULL for a Linux-like OS
      *
      * @return \IPE\Installer\BinaryInstaller
      */
-    private static function createInstaller(Filesystem $fs, $buildType = BuildOptions::TYPE_OPTIMIZED)
+    private static function createInstaller(Filesystem $fs, $buildType = BuildOptions::TYPE_OPTIMIZED, $os = null)
     {
         $php = M::mock(PHPInfo::class);
         $php->shouldReceive('getExtensionDir')->andReturn('/ext');
 
-        return new BinaryInstaller($php, $fs, new BuildTools($php, $fs, new \IPE\Logger()), (new BuildOptions())->withType($buildType));
+        return new BinaryInstaller($php, $fs, self::createBuildTools($php, $fs, $os), (new BuildOptions())->withType($buildType));
     }
 
     /**
@@ -62,13 +62,14 @@ final class BinaryInstallerTest extends TestCase
     /**
      * @param \IPE\Filesystem&\Mockery\MockInterface $fs
      * @param non-empty-string $modulePath
+     * @param non-empty-string $flag
      *
      * @return void
      */
-    private static function expectStrip($fs, $modulePath)
+    private static function expectStrip($fs, $modulePath, $flag = '--strip-all')
     {
         $fs->shouldReceive('getFileSize')->with($modulePath)->andReturn(300000, 100000);
-        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/bin/strip', ['--strip-all', $modulePath])->withWorkingDirectory('/src')->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
+        $fs->shouldReceive('run')->once()->with(self::isCommand(Command::create('/usr/bin/strip', [$flag, $modulePath])->withWorkingDirectory('/src')->withOutput(Command::OUTPUT_SHOW)))->andReturn([0, '']);
     }
 
     /**
@@ -98,6 +99,18 @@ final class BinaryInstallerTest extends TestCase
         self::expectStrip($fs, '/ext/fakebinary.so');
         $resolved = self::createResolved($fs);
         self::assertInstanceOf(CompiledExtension::class, self::createInstaller($fs)->install($resolved));
+    }
+
+    /**
+     * @return void
+     */
+    public function testStripOnMacOS()
+    {
+        $fs = self::createFilesystem('/usr/bin/strip');
+        $fs->shouldReceive('copyFile')->once()->with('/src/module-file.so', '/ext/fakebinary.so');
+        self::expectStrip($fs, '/ext/fakebinary.so', '-x');
+        $resolved = self::createResolved($fs);
+        self::assertInstanceOf(CompiledExtension::class, self::createInstaller($fs, BuildOptions::TYPE_OPTIMIZED, M::mock(OS\MacOS::class))->install($resolved));
     }
 
     /**

@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class pdo_odbc extends Extension implements
@@ -87,6 +88,10 @@ final class pdo_odbc extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
+        if ($this->os instanceof OS\MacOS) {
+            return ['--with-pdo-odbc=unixODBC,' . $this->os->getSystemPackager()->getFormulaPrefix('unixodbc')];
+        }
+
         return ['--with-pdo-odbc=unixODBC,/usr'];
     }
 

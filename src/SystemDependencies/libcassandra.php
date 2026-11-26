@@ -82,6 +82,11 @@ final class libcassandra extends CompiledLibrary
                 ['cmake', 'gcc-c++', 'libuv-devel', 'zlib-devel', 'gmp-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['cassandra-cpp-driver', 'gmp']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

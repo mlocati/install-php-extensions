@@ -72,6 +72,14 @@ final class msodbcsql extends SystemDependency
     const DNF_REPOSITORY_FILE = '/etc/yum.repos.d/mssql-release.repo';
 
     /**
+     * The tap of Homebrew where Microsoft publishes the driver.
+     *
+     * @public
+     * @var string
+     */
+    const HOMEBREW_TAP = 'microsoft/mssql-release';
+
+    /**
      * @var \IPE\Filesystem\Downloader
      */
     private $downloader;
@@ -143,6 +151,11 @@ final class msodbcsql extends SystemDependency
                 ['unixODBC-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['unixodbc']
+            );
+        }
 
         throw new Exception\UnsupportedOS("The Microsoft ODBC Driver for SQL Server can't be installed on {$this->os->getDisplayName()}");
     }
@@ -154,7 +167,7 @@ final class msodbcsql extends SystemDependency
      */
     public function install(State $state)
     {
-        if ($this->isInstalled()) {
+        if (self::isInstalled($this->os)) {
             return;
         }
         $this->logger->info('Installing the Microsoft ODBC Driver for SQL Server');
@@ -178,6 +191,11 @@ final class msodbcsql extends SystemDependency
 
             return;
         }
+        if ($this->os instanceof OS\MacOS) {
+            $this->installOnMacOS($this->os);
+
+            return;
+        }
 
         throw new Exception\UnsupportedOS("The Microsoft ODBC Driver for SQL Server can't be installed on {$this->os->getDisplayName()}");
     }
@@ -189,11 +207,48 @@ final class msodbcsql extends SystemDependency
      *
      * @return bool
      */
-    private function isInstalled()
+    public static function isInstalled(OS\Posix $os)
     {
-        $fs = $this->os->getFilesystem();
+        $fs = $os->getFilesystem();
+        $file = '/etc/odbcinst.ini';
+        if ($os instanceof OS\MacOS) {
+            $file = $os->getSystemPackager()->getPrefix() . '/etc/odbcinst.ini';
+        }
+        if (!$fs->isFile($file)) {
+            return false;
+        }
+        // The registration outlives the driver (for example, uninstalling the formula of Homebrew doesn't remove it)
+        $matches = null;
+        preg_match_all('/^\[ODBC Driver \d+ for SQL Server\][^\[]*?^Driver\s*=\s*(\S.*?)\s*$/ms', $fs->readFile($file), $matches);
+        foreach ($matches[1] as $library) {
+            if ($fs->isFile($library)) {
+                return true;
+            }
+        }
 
-        return $fs->isFile('/etc/odbcinst.ini') && preg_match('/^\[ODBC Driver \d+ for SQL Server\]/m', $fs->readFile('/etc/odbcinst.ini')) === 1;
+        return false;
+    }
+
+    /**
+     * Microsoft publishes the driver for macOS only in its tap of Homebrew.
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return void
+     */
+    private function installOnMacOS(OS\MacOS $os)
+    {
+        $packager = $os->getSystemPackager();
+        $packager->addTap(self::HOMEBREW_TAP, 'https://github.com/Microsoft/homebrew-mssql-release');
+        // Otherwise the formula asks to accept the license interactively
+        $previous = getenv('HOMEBREW_ACCEPT_EULA');
+        putenv('HOMEBREW_ACCEPT_EULA=Y');
+        try {
+            $packager->installPackages([self::HOMEBREW_TAP . '/' . ($this->needsDriver17() ? 'msodbcsql17' : 'msodbcsql18')]);
+        } finally {
+            putenv($previous === false ? 'HOMEBREW_ACCEPT_EULA' : "HOMEBREW_ACCEPT_EULA={$previous}");
+        }
     }
 
     /**

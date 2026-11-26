@@ -51,6 +51,13 @@ final class automake extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                [],
+                ['automake']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

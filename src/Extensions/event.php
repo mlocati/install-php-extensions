@@ -124,7 +124,12 @@ final class event extends Extension implements
         if (!self::isVersionAtLeast($version, '1.3.0')) {
             return [];
         }
-        $result = ['--with-event-libevent-dir=/usr', '--with-event-pthreads', '--with-event-extra'];
+        $libeventDir = '/usr';
+        if ($this->os instanceof OS\MacOS) {
+            // Before 3.2.0, configure looks for libevent only in /usr/local, /usr, /opt and /opt/local
+            $libeventDir = $this->os->getSystemPackager()->getFormulaPrefix('libevent');
+        }
+        $result = ["--with-event-libevent-dir={$libeventDir}", '--with-event-pthreads', '--with-event-extra'];
         $sslLibrary = $this->php->getSSLLibrary();
         // The PHP 5 of the Docker images of Debian Stretch uses OpenSSL 1.0, libevent uses OpenSSL 1.1: mixing them crashes the SSL classes of event
         if ($this->os instanceof OS\Debian && $this->os->getNumericVersion() === OS\Debian::STRETCH && $sslLibrary !== null && $sslLibrary->getType() === SSLLibrary::TYPE_OPENSSL && $sslLibrary->getMajorMinorVersion() === '1.0') {

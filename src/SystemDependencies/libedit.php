@@ -51,6 +51,12 @@ final class libedit extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libedit']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

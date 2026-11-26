@@ -22,6 +22,9 @@ final class SlowExtensionsTest extends TestCase
             ['cassandra', 'alpine3.24-apk', '8.4', true],
             ['cassandra', 'almalinux9-remi', '7.4', false],
             ['grpc', 'almalinux10-dnf', '8.4', true],
+            ['grpc', 'macos', '8.5', false],
+            ['phalcon', 'macos', '8.5', true],
+            ['cassandra', 'macos', '8.4', true],
             ['redis', 'trixie-apt', '8.4', false],
         ];
     }

@@ -60,6 +60,11 @@ class libzstd extends SystemDependency
                 ['libzstd-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['zstd']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

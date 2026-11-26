@@ -45,6 +45,10 @@ class libstdcxx extends SystemDependency
                 ['libstdc++']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // macOS includes libc++
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }

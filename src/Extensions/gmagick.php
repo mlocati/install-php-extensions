@@ -4,12 +4,14 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class gmagick extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresConflicts,
     Extension\DeclaresDefaultVersion,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -86,6 +88,22 @@ final class gmagick extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libgraphicsmagick::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for GraphicsMagick-config only in /usr/local and /usr.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return ['--with-gmagick=' . $this->os->getSystemPackager()->getFormulaPrefix('graphicsmagick')];
+        }
+
+        return [];
     }
 
     /**

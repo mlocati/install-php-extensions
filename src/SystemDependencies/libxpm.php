@@ -51,6 +51,12 @@ final class libxpm extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libxpm']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

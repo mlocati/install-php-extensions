@@ -4,10 +4,13 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class php_trie extends Extension implements
     Extension\AvailableOnPECL,
+    Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -34,6 +37,19 @@ final class php_trie extends Extension implements
     public static function getSupportedPHPVersions()
     {
         return ['7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4'];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\DeclaresUnsupportedEnvironments::getUnsupportedEnvironments()
+     */
+    public static function getUnsupportedEnvironments()
+    {
+        return [
+            // The code uses long variables where zend_long is required, but zend_long is long long on macOS
+            'macos' => "the extension can't be compiled with the compiler or the libraries of this system",
+        ];
     }
 
     /**
@@ -74,5 +90,22 @@ final class php_trie extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         return [SystemDependencies\libstdcxx::HANDLE, SystemDependencies\libhattrie::HANDLE];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, the headers of hat-trie are not in a directory where configure looks for them.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            $result[] = '--with-hattrie=' . SystemDependencies\libhattrie::getHeadersDirectory($this->os);
+        }
+
+        return $result;
     }
 }

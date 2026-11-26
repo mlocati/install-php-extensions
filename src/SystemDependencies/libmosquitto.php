@@ -63,6 +63,11 @@ final class libmosquitto extends SystemDependency
                 ['mosquitto-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['mosquitto']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

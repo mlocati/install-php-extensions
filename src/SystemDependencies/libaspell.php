@@ -77,6 +77,12 @@ final class libaspell extends SystemDependency
                 ['aspell-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // The formula includes the dictionaries
+            return new Packages(
+                ['aspell']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

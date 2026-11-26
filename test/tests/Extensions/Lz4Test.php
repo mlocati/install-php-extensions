@@ -3,9 +3,11 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Extensions\lz4;
+use IPE\Filesystem;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -46,5 +48,21 @@ final class Lz4Test extends TestCase
         self::assertInstanceOf(OS::class, $os);
         $os->shouldReceive('getNumericVersion')->andReturn($osVersion);
         self::assertSame($expected, (new lz4($php, $os))->getVendorArchiveVersion('', new Values()));
+    }
+
+    /**
+     * @return void
+     */
+    public function testConfigureArguments()
+    {
+        $php = M::mock(PHPInfo::class);
+        self::assertSame(['--with-lz4-includedir=/usr'], (new lz4($php, M::mock(OS\Debian::class)))->getConfigureArguments(self::createBuildContext()));
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, "/opt/homebrew\n"]);
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        self::assertSame(['--with-lz4-includedir=/opt/homebrew/opt/lz4'], (new lz4($php, $os))->getConfigureArguments(self::createBuildContext()));
     }
 }

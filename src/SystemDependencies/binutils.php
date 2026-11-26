@@ -41,6 +41,10 @@ final class binutils extends SystemDependency
                 ['binutils']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // The Command Line Tools of Xcode provide strip
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }

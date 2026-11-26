@@ -32,6 +32,7 @@ final class RegistryTest extends TestCase
     {
         $app = self::createApp();
         $app->instance(PHPInfo::class, M::mock(PHPInfo::class));
+        $app->instance(OS::class, $os);
         $app->instance(OS\Posix::class, $os);
         $app->instance(Filesystem::class, M::mock(Filesystem::class));
         $app->instance(Filesystem\Downloader::class, M::mock(Filesystem\Downloader::class));
@@ -175,6 +176,39 @@ final class RegistryTest extends TestCase
         self::assertSame(['libmcrypt'], $packages->getPersistent());
         self::assertSame(['libmcrypt-dev'], $packages->getVolatile());
         self::assertTrue($registry->collectSystemPackages($registry->resolveDependencies([]), M::mock(State::class))->isEmpty());
+    }
+
+    /**
+     * Extensions not supported directly may require any system dependency.
+     *
+     * @return void
+     */
+    public function testEveryDependencyHandlesMacOS()
+    {
+        $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
+        $fs->shouldReceive('resolveCommand')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->andReturnUsing(static function (Filesystem\Command $command) {
+            return [0, $command->getArguments() === ['--prefix'] ? "/opt/homebrew\n" : ''];
+        });
+        $php = M::mock(PHPInfo::class)->shouldIgnoreMissing();
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(805);
+        $php->shouldReceive('isThreadSafe')->andReturn(false);
+        $app = self::createApp();
+        $os = new OS\MacOS('15.7', $fs, $app);
+        $app = self::createContainer($os);
+        $app->instance(Filesystem::class, $fs);
+        $app->instance(PHPInfo::class, $php);
+        $registry = (new Registry($app, new Validator(new \IPE\Logger()), new \IPE\Logger()))->registerDefaultDependencies();
+        $state = M::mock(State::class)->shouldIgnoreMissing();
+        foreach ($registry->getDependencyClasses() as $class) {
+            $dependency = $registry->getDependencyByHandle($class::getHandle());
+            self::assertNotNull($dependency);
+            try {
+                $dependency->getSystemPackages($state);
+            } catch (Exception\UnsupportedOS $x) {
+                self::assertStringNotContainsString('are not known', $x->getMessage());
+            }
+        }
     }
 
     /**

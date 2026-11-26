@@ -51,6 +51,12 @@ final class libgdbm extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['gdbm']
+            );
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

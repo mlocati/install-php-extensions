@@ -105,6 +105,8 @@ final class blackfire extends Extension\PrecompiledExtension implements
             $distro = 'alpine';
         } elseif ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
             $distro = 'linux';
+        } elseif ($this->os instanceof OS\MacOS) {
+            $distro = 'darwin';
         } else {
             throw new Exception\UnsupportedOS("The Blackfire probe can't be installed on {$this->os->getDisplayName()}");
         }
@@ -125,9 +127,9 @@ final class blackfire extends Extension\PrecompiledExtension implements
     public function findBinaryModule($rootDir, $versionRequirements)
     {
         $fs = $this->os->getFilesystem();
-        // The file name contains the PHP API version
+        // On Linux the file name contains the PHP API version
         foreach ($fs->listDirectoryContents($rootDir) as $item) {
-            if (preg_match('/^blackfire-.+\.so$/D', basename($item))) {
+            if (preg_match('/^blackfire(-.+)?\.so$/D', basename($item))) {
                 return $rootDir . $fs->getDirectorySeparator() . basename($item);
             }
         }
@@ -142,6 +144,13 @@ final class blackfire extends Extension\PrecompiledExtension implements
      */
     public function getBinaryIniSettings(Extension\BuildContext $context)
     {
+        if ($this->os instanceof OS\MacOS) {
+            $prefix = $this->os->getSystemPackager()->getPrefix();
+
+            // The socket of the agent installed with Homebrew: the default of the probe is in /usr/local
+            return $prefix === '' ? '' : "blackfire.agent_socket=unix://{$prefix}/var/run/blackfire-agent.sock\n";
+        }
+
         return "blackfire.agent_socket=tcp://blackfire:8307\n";
     }
 

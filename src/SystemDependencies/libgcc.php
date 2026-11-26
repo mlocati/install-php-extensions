@@ -64,6 +64,10 @@ class libgcc extends SystemDependency
                 ['libgcc']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            // clang links its runtime library (compiler-rt) statically, and the unwinder is in libSystem
+            return new Packages();
+        }
 
         throw $this->createUnknownPackagesException();
     }

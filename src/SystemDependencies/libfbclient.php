@@ -2,11 +2,13 @@
 
 namespace IPE\SystemDependencies;
 
+use IPE\Exception;
 use IPE\Filesystem\Command;
 use IPE\Installer\State;
 use IPE\OS;
 use IPE\Service\Regex;
 use IPE\SystemDependency\CompiledLibrary;
+use IPE\SystemPackager\Homebrew;
 use IPE\SystemPackager\Packages;
 
 /**
@@ -40,6 +42,19 @@ final class libfbclient extends CompiledLibrary
     public static function getHandle()
     {
         return self::HANDLE;
+    }
+
+    /**
+     * Get the name of the formula of the Homebrew extensions tap that provides the library.
+     *
+     * @param int $phpMajorMinorVersion
+     *
+     * @return non-empty-string
+     */
+    public static function getHomebrewFormula($phpMajorMinorVersion)
+    {
+        // The tap builds pdo_firebird for PHP < 8.4 with Firebird 3
+        return $phpMajorMinorVersion < 804 ? 'firebird-client@3' : 'firebird-client';
     }
 
     /**
@@ -78,6 +93,21 @@ final class libfbclient extends CompiledLibrary
             return new Packages(
                 ['libfbclient2'],
                 ['firebird-devel']
+            );
+        }
+        if ($this->os instanceof OS\MacOS) {
+            // homebrew-core doesn't provide Firebird
+            try {
+                $formula = $this->os->getSystemPackager()->getExtensionsTapFormula(self::getHomebrewFormula($this->php->getMajorMinorVersion()));
+            } catch (Exception\SystemPackager $x) {
+                throw new Exception\UnsupportedOS($x->getMessage());
+            }
+            if ($formula === '') {
+                throw new Exception\UnsupportedOS('The Firebird client library is only available in the ' . Homebrew::EXTENSIONS_TAP . ' tap of Homebrew (which requires the ' . Homebrew::PHP_TAP . ' tap)');
+            }
+
+            return new Packages(
+                [$formula]
             );
         }
 

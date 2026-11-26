@@ -50,6 +50,11 @@ final class libpq extends SystemDependency
                 ['libpq-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libpq']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

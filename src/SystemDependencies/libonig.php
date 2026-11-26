@@ -50,6 +50,11 @@ final class libonig extends SystemDependency
                 ['oniguruma-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['oniguruma']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

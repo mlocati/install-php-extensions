@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class openswoole extends Extension implements
@@ -132,7 +133,10 @@ final class openswoole extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        $result = [SystemDependencies\libcurl::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libpq::HANDLE, SystemDependencies\libstdcxx::HANDLE, SystemDependencies\linuxheaders::HANDLE];
+        $result = [SystemDependencies\libcurl::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libpq::HANDLE, SystemDependencies\libstdcxx::HANDLE];
+        if (!$this->os instanceof OS\MacOS) {
+            $result[] = SystemDependencies\linuxheaders::HANDLE;
+        }
         // The configure script always uses brotli when it finds it (for example, libcurl-devel depends on brotli-devel on EL 10)
         if (SystemDependencies\libbrotli::isProvidedByOS($this->os)) {
             $result[] = SystemDependencies\libbrotli::HANDLE;
@@ -155,7 +159,12 @@ final class openswoole extends Extension implements
             $result[] = '--enable-sockets';
         }
         if (self::isVersionAtLeast($version, '4.8.0')) {
-            $result[] = '--with-postgres';
+            if ($this->os instanceof OS\MacOS) {
+                // configure looks for pg_config only in /usr/local/pgsql/bin, /usr/local/bin and /usr/bin
+                $result[] = '--with-postgres=' . $this->os->getSystemPackager()->getFormulaPrefix('libpq');
+            } else {
+                $result[] = '--with-postgres';
+            }
         }
         if (self::isVersionAtLeast($version, '22.0.0')) {
             $result[] = '--enable-hook-curl';

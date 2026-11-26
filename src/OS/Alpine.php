@@ -8,7 +8,7 @@ use IPE\Service\Container;
 use IPE\SystemPackager;
 use IPE\Traits;
 
-class Alpine implements Posix
+class Alpine implements Posix\WithOSRelease
 {
     use Traits\OSArchitecture\Posix;
 
@@ -90,7 +90,7 @@ class Alpine implements Posix
     /**
      * {@inheritdoc}
      *
-     * @see \IPE\OS\Posix::fromOSRelease()
+     * @see \IPE\OS\Posix\WithOSRelease::fromOSRelease()
      */
     public static function fromOSRelease(array $data, Container $app)
     {

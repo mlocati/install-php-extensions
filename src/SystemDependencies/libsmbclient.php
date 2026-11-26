@@ -50,6 +50,11 @@ final class libsmbclient extends SystemDependency
                 ['libsmbclient-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['samba']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

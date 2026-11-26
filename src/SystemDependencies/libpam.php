@@ -85,6 +85,11 @@ final class libpam extends SystemDependency
             );
         }
 
+        if ($this->os instanceof OS\MacOS) {
+            // macOS includes PAM
+            return new Packages();
+        }
+
         throw $this->createUnknownPackagesException();
     }
 }

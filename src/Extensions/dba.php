@@ -84,7 +84,7 @@ final class dba extends Extension implements
             $result[] = SystemDependencies\liblmdb::HANDLE;
         }
         // Alpine doesn't provide Tokyo Cabinet
-        if ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
+        if ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike || $this->os instanceof OS\MacOS) {
             $result[] = SystemDependencies\libtokyocabinet::HANDLE;
         }
         // QDBM and GDBM can't be used together
@@ -104,19 +104,31 @@ final class dba extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        $result = ['--with-db4'];
-        // Not every system provides every library (see getRequiredSystemDependencies())
-        $fs = $this->os->getFilesystem();
-        if ($this->php->getMajorMinorVersion() >= 702 && $fs->isFile('/usr/include/lmdb.h')) {
-            $result[] = '--with-lmdb';
-        }
-        if ($fs->isFile('/usr/include/tcadb.h')) {
-            $result[] = '--with-tcadb';
-        }
-        if ($this->php->getMajorMinorVersion() >= 704 && $fs->isFile('/usr/include/qdbm/depot.h')) {
-            $result[] = '--with-qdbm';
-        } elseif ($fs->isFile('/usr/include/gdbm.h')) {
-            $result[] = '--with-gdbm';
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            // configure looks for the headers only in /usr/local and /usr
+            $homebrew = $this->os->getSystemPackager();
+            $result[] = '--with-db4=' . $homebrew->getFormulaPrefix('berkeley-db@5');
+            if ($this->php->getMajorMinorVersion() >= 702) {
+                $result[] = '--with-lmdb=' . $homebrew->getFormulaPrefix('lmdb');
+            }
+            $result[] = '--with-tcadb=' . $homebrew->getFormulaPrefix('tokyo-cabinet');
+            $result[] = '--with-gdbm=' . $homebrew->getFormulaPrefix('gdbm');
+        } else {
+            $result[] = '--with-db4';
+            // Not every system provides every library (see getRequiredSystemDependencies())
+            $fs = $this->os->getFilesystem();
+            if ($this->php->getMajorMinorVersion() >= 702 && $fs->isFile('/usr/include/lmdb.h')) {
+                $result[] = '--with-lmdb';
+            }
+            if ($fs->isFile('/usr/include/tcadb.h')) {
+                $result[] = '--with-tcadb';
+            }
+            if ($this->php->getMajorMinorVersion() >= 704 && $fs->isFile('/usr/include/qdbm/depot.h')) {
+                $result[] = '--with-qdbm';
+            } elseif ($fs->isFile('/usr/include/gdbm.h')) {
+                $result[] = '--with-gdbm';
+            }
         }
 
         return $result;
@@ -144,6 +156,10 @@ final class dba extends Extension implements
         // Among the RHEL-like systems, QDBM is provided by Fedora and by Remi (qdbm-devel only by its remi repository)
         if ($this->os instanceof OS\Posix\RHELLike) {
             return $this->os->getSystemPackager()->findAvailablePackage('qdbm') !== null;
+        }
+        // Homebrew deprecated QDBM
+        if ($this->os instanceof OS\MacOS) {
+            return false;
         }
 
         throw $this->createUnknownOSException();

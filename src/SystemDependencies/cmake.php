@@ -38,6 +38,12 @@ final class cmake extends SystemDependency
                 ['cmake']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                [],
+                ['cmake']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -56,6 +56,11 @@ final class libmemcached extends SystemDependency
                 ['libmemcached-awesome-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libmemcached']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

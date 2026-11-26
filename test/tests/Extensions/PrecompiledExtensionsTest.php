@@ -9,7 +9,6 @@ use IPE\Extensions;
 use IPE\Filesystem;
 use IPE\Filesystem\Command;
 use IPE\Filesystem\Downloader;
-use IPE\Installer\BuildTools;
 use IPE\Installer\State;
 use IPE\Option\Values;
 use IPE\OS;
@@ -18,6 +17,7 @@ use IPE\Service\Container;
 use IPE\Service\JSON;
 use IPE\Service\PHPScript;
 use IPE\SystemDependencies;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -119,6 +119,24 @@ final class PrecompiledExtensionsTest extends TestCase
         self::assertSame('', $extension->findBinaryModule('/src', ''));
         self::assertSame("blackfire.agent_socket=tcp://blackfire:8307\n", $extension->getBinaryIniSettings(self::createBuildContext('', null, '/src')));
         self::assertFalse($extension->isZendExtension());
+    }
+
+    /**
+     * @return void
+     */
+    public function testBlackfireOnMacOS()
+    {
+        $fs = self::createFilesystem(['/src/blackfire.so']);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->once()->andReturn([0, "/opt/homebrew\n"]);
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getDisplayName')->andReturn('The OS');
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        $extension = new Extensions\blackfire(self::createPHP(), $os, M::mock(Downloader::class));
+        self::assertMatchesRegularExpression('#^https://blackfire\.io/api/v1/releases/probe/php/darwin/\w+/84$#', $extension->getBinaryArchiveURL(''));
+        self::assertSame('/src/blackfire.so', $extension->findBinaryModule('/src', ''));
+        self::assertSame("blackfire.agent_socket=unix:///opt/homebrew/var/run/blackfire-agent.sock\n", $extension->getBinaryIniSettings(self::createBuildContext('', null, '/src')));
     }
 
     /**
@@ -255,6 +273,21 @@ final class PrecompiledExtensionsTest extends TestCase
     /**
      * @return void
      */
+    public function testSourceGuardianOnMacOS()
+    {
+        $downloader = M::mock(Downloader::class);
+        $os = self::createOS(OS\MacOS::class, 1500, self::createFilesystem(['/src/ixed.8.4.dar', '/src/ixed.8.4ts.dar']));
+        $extension = new Extensions\sourceguardian(self::createPHP(), $os, $downloader);
+        self::assertSame('https://www.sourceguardian.com/loaders/download/loaders.macosx-arm64.tar.gz', $extension->getBinaryArchiveURL(''));
+        self::assertSame('https://www.sourceguardian.com/loaders/download/loaders.macosx.tar.gz', (new Extensions\sourceguardian(self::createPHP(804, false, 64, '', 'x86_64'), $os, $downloader))->getBinaryArchiveURL(''));
+        self::assertSame('/src/ixed.8.4.dar', $extension->findBinaryModule('/src', ''));
+        self::assertSame('/src/ixed.8.4ts.dar', (new Extensions\sourceguardian(self::createPHP(804, true), $os, $downloader))->findBinaryModule('/src', ''));
+        self::assertSame([], $extension->getRequiredSystemDependencies('', new Values()));
+    }
+
+    /**
+     * @return void
+     */
     public function testTideways()
     {
         $link = 'https://example.com/tideways.tar.gz';
@@ -264,11 +297,16 @@ final class PrecompiledExtensionsTest extends TestCase
                 $links[$platform][$architecture] = "{$link}?{$platform}-{$architecture}";
             }
         }
+        foreach (['x86', 'arm'] as $architecture) {
+            $links['mac'][$architecture] = "{$link}?mac-{$architecture}";
+        }
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('getContent')->with('https://app.tideways.io/api/current-versions')->andReturn(JSON::encode(['php' => ['links' => $links]]));
         self::assertStringEndsWith('?linux-', substr((new Extensions\tideways(self::createPHP(), self::createOS(OS\Debian::class, 12), $downloader))->getBinaryArchiveURL(''), 0, strlen($link) + 7));
         self::assertStringContainsString('?linux-alpine-', (new Extensions\tideways(self::createPHP(), self::createOS(OS\Alpine::class, 323), $downloader))->getBinaryArchiveURL(''));
         self::assertStringEndsWith('?linux-', substr((new Extensions\tideways(self::createPHP(), self::createOS(OS\AlmaLinux::class, 9), $downloader))->getBinaryArchiveURL(''), 0, strlen($link) + 7));
+        self::assertSame("{$link}?mac-arm", (new Extensions\tideways(self::createPHP(), self::createOS(OS\MacOS::class, 1500), $downloader))->getBinaryArchiveURL(''));
+        self::assertSame("{$link}?mac-x86", (new Extensions\tideways(self::createPHP(804, false, 64, '', 'x86_64'), self::createOS(OS\MacOS::class, 1500), $downloader))->getBinaryArchiveURL(''));
         self::assertSame('/src/dist/tideways-php-8.4.so', (new Extensions\tideways(self::createPHP(), self::createOS(OS\Debian::class, 12, self::createFilesystem(['/src/dist/tideways-php-8.4.so'])), $downloader))->findBinaryModule('/src', ''));
         self::assertSame('/src/tideways-php-alpine-8.4-zts.so', (new Extensions\tideways(self::createPHP(804, true), self::createOS(OS\Alpine::class, 323, self::createFilesystem(['/src/tideways-php-alpine-8.4-zts.so'])), $downloader))->findBinaryModule('/src', ''));
         $invalid = M::mock(Downloader::class);
@@ -362,6 +400,7 @@ final class PrecompiledExtensionsTest extends TestCase
             [OS\AlmaLinux::class, 10, false],
             [OS\AmazonLinux::class, 2023, true],
             [OS\Fedora::class, 44, false],
+            [OS\MacOS::class, 1500, true],
         ];
     }
 
@@ -437,6 +476,56 @@ final class PrecompiledExtensionsTest extends TestCase
         $fs->shouldReceive('writeFile')->once()->with('/ext/relay.so', 'a11111111-2222-3333-4444-555555555555b');
         (new Extensions\relay(self::createPHP(), self::createOS(OS\Debian::class, 12, $fs), M::mock(Downloader::class)))->postProcessBinaryModule('/ext/relay.so');
         $this->addToAssertionCount(1);
+    }
+
+    /**
+     * @return void
+     */
+    public function testRelayOnMacOS()
+    {
+        $module = "a00000000-0000-0000-0000-000000000000b\x00/opt/homebrew/opt/hiredis/lib/libhiredis.1.5.0.dylib\x00/opt/homebrew/opt/openssl@4/lib/libssl.4.dylib\x00/opt/homebrew/lib/libck.0.dylib\x00/opt/homebrew/lib\x00/opt/homebrew/lib/libck.0.dylib\x00";
+        $commands = [];
+        $fs = self::createFilesystem(['/src/relay.so']);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/usr/local/bin/brew');
+        $fs->shouldReceive('run')->andReturnUsing(static function (Command $command) use (&$commands) {
+            $commands[] = array_merge([$command->getCommand()], $command->getArguments());
+            if ($command->getCommand() === 'uuidgen') {
+                return [0, "11111111-2222-3333-4444-AAAAAAAAAAAA\n"];
+            }
+
+            return [0, $command->getArguments() === ['--prefix'] ? "/usr/local\n" : ''];
+        });
+        $fs->shouldReceive('readFile')->with('/ext/relay.so')->andReturn($module);
+        $fs->shouldReceive('writeFile')->once()->with('/ext/relay.so', str_replace('00000000-0000-0000-0000-000000000000', '11111111-2222-3333-4444-aaaaaaaaaaaa', $module));
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getDisplayName')->andReturn('The OS');
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        $downloader = M::mock(Downloader::class);
+        $downloader->shouldReceive('getContent')->with('https://builds.r2.relay.so/meta/latest')->andReturn("v0.62.0\n");
+        $extension = new Extensions\relay(self::createPHP(), $os, $downloader);
+        self::assertSame('https://builds.r2.relay.so/v0.62.0/relay-v0.62.0-php8.4-darwin-arm64.tar.gz', $extension->getBinaryArchiveURL(''));
+        self::assertSame('/src/relay.so', $extension->findBinaryModule('/src', ''));
+        self::assertSame(
+            [SystemDependencies\binutils::HANDLE, SystemDependencies\libopenssl::HANDLE, SystemDependencies\libhiredis::HANDLE, SystemDependencies\libck::HANDLE],
+            $extension->getRequiredSystemDependencies('', new Values())
+        );
+        $extension->postProcessBinaryModule('/ext/relay.so');
+        self::assertContains(
+            [
+                'install_name_tool',
+                '-change', '/opt/homebrew/opt/hiredis/lib/libhiredis.1.5.0.dylib', '/usr/local/opt/hiredis/lib/libhiredis.dylib',
+                '-change', '/opt/homebrew/opt/openssl@4/lib/libssl.4.dylib', '/usr/local/opt/openssl@4/lib/libssl.dylib',
+                '-change', '/opt/homebrew/lib/libck.0.dylib', '/usr/local/lib/libck.dylib',
+                '/ext/relay.so',
+            ],
+            $commands
+        );
+        $state = M::mock(State::class);
+        self::assertSame(['hiredis'], (new SystemDependencies\libhiredis(self::createPHP(), $os, new Values()))->getSystemPackages($state)->getPersistent());
+        self::assertSame(['concurrencykit'], (new SystemDependencies\libck(self::createPHP(), $os, new Values()))->getSystemPackages($state)->getPersistent());
+        $this->expectException(Exception\UnsupportedOS::class);
+        $extension->getBinaryArchiveURL('0.50.2');
     }
 
     /**
@@ -595,6 +684,7 @@ final class PrecompiledExtensionsTest extends TestCase
                     return [0, ''];
             }
         });
+        $fs->shouldReceive('isDirectory')->once()->with(dirname(Extensions\pdo_snowflake::CACERT_FILE))->andReturn(false);
         $fs->shouldReceive('createDirectory')->once();
         $fs->shouldReceive('copyFile')->once()->with('/src/libsnowflakeclient/cacert.pem', Extensions\pdo_snowflake::CACERT_FILE);
         $php = M::mock(PHPInfo::class);
@@ -602,7 +692,7 @@ final class PrecompiledExtensionsTest extends TestCase
         $php->shouldReceive('getVersion')->andReturn('8.4.27');
         $php->shouldReceive('getMajorMinorVersion')->andReturn($phpVersion);
         $pdoSnowflake = new Extensions\pdo_snowflake($php, self::createOS(OS\Debian::class, 12, $fs));
-        self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), new BuildTools($php, $fs, new \IPE\Logger())));
+        self::assertSame('/src/modules/pdo_snowflake.so', $pdoSnowflake->buildModule(self::createBuildContext($version, null, '/src'), self::createBuildTools($php, $fs)));
         self::assertCount($needsPlatform ? 2 : 1, $commands);
         $build = $commands[count($commands) - 1];
         self::assertSame('bash', $build->getCommand());

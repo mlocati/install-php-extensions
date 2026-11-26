@@ -161,6 +161,9 @@ final class PHPSystemPackage
      *
      * @param \IPE\SystemPackager\Package $phpPackage the system package that installed PHP
      *
+     * @throws \IPE\Exception\SystemPackager
+     * @throws \IPE\Exception\IO
+     *
      * @return list<non-empty-string>
      */
     public static function getExtensionPackageCandidates(SystemPackager $packager, Package $phpPackage, Extension $extension)

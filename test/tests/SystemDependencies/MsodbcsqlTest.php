@@ -37,6 +37,11 @@ final class MsodbcsqlTest extends TestCase
     private $downloads = [];
 
     /**
+     * @var list<string|false> the values of HOMEBREW_ACCEPT_EULA when brew runs
+     */
+    private $acceptEula = [];
+
+    /**
      * @param class-string<\IPE\OS\Posix> $osClass
      * @param int $osVersion
      * @param int $phpVersion
@@ -50,6 +55,7 @@ final class MsodbcsqlTest extends TestCase
     {
         $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
         $fs->shouldReceive('isFile')->with('/etc/odbcinst.ini')->andReturn($odbcinst !== '');
+        $fs->shouldReceive('isFile')->with('/opt/microsoft/msodbcsql18/lib64/libmsodbcsql-18.so')->andReturn(true);
         $fs->shouldReceive('readFile')->with('/etc/odbcinst.ini')->andReturn($odbcinst);
         $fs->shouldReceive('writeFile')->andReturnUsing(function ($path, $content) {
             if (is_string($path) && is_string($content)) {
@@ -200,13 +206,86 @@ final class MsodbcsqlTest extends TestCase
     }
 
     /**
+     * @param string $odbcinst the content of the odbcinst.ini of unixODBC (empty string if it doesn't exist)
+     *
+     * @return \IPE\OS\MacOS&\Mockery\MockInterface
+     */
+    private function createMacOS($odbcinst = '')
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('isFile')->with('/opt/homebrew/etc/odbcinst.ini')->andReturn($odbcinst !== '');
+        $fs->shouldReceive('readFile')->with('/opt/homebrew/etc/odbcinst.ini')->andReturn($odbcinst);
+        $fs->shouldReceive('isFile')->with('/opt/homebrew/lib/libmsodbcsql.18.dylib')->andReturn(true);
+        $fs->shouldReceive('isFile')->with('/opt/homebrew/lib/libmsodbcsql.17.dylib')->andReturn(false);
+        $fs->shouldReceive('run')->andReturnUsing(function (Command $command) {
+            $arguments = $command->getArguments();
+            if ($arguments === ['--prefix']) {
+                return [0, "/opt/homebrew\n"];
+            }
+            if ($arguments === ['tap-info', '--json', msodbcsql::HOMEBREW_TAP]) {
+                return [0, (string) json_encode([['name' => msodbcsql::HOMEBREW_TAP, 'installed' => true]])];
+            }
+            $this->commands[] = $command;
+            $this->acceptEula[] = getenv('HOMEBREW_ACCEPT_EULA');
+
+            return [0, ''];
+        });
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new SystemPackager\Homebrew($os));
+
+        return $os;
+    }
+
+    /**
+     * @return void
+     */
+    public function testInstallOnMacOS()
+    {
+        $os = $this->createMacOS();
+        $php = self::mockPHPInfo($os, 64);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(804);
+        $dependency = new msodbcsql($php, $os, new Values(), M::mock(Downloader::class), new \IPE\Logger());
+        self::assertSame(['unixodbc'], $dependency->getSystemPackages(M::mock(State::class))->getPersistent());
+        $dependency->install(M::mock(State::class));
+        self::assertCount(1, $this->commands);
+        self::assertSame(['install', '--formula', 'microsoft/mssql-release/msodbcsql18'], $this->commands[0]->getArguments());
+        // The license is accepted only while installing the driver
+        self::assertSame(['Y'], $this->acceptEula);
+        self::assertFalse(getenv('HOMEBREW_ACCEPT_EULA'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testSystemPackageNamesOnMacOS()
+    {
+        $php = M::mock(PHPInfo::class);
+        $phpPackage = new SystemPackager\Package('php@8.4', '8.4.27', 'php@8.4');
+        self::assertSame([], (new sqlsrv($php, $this->createMacOS()))->getSystemPackageNames($phpPackage));
+        self::assertNull((new pdo_sqlsrv($php, $this->createMacOS("[ODBC Driver 18 for SQL Server]\nDescription=x\nDriver=/opt/homebrew/lib/libmsodbcsql.18.dylib\n")))->getSystemPackageNames($phpPackage));
+        // The registration of a driver that has been uninstalled
+        self::assertSame([], (new pdo_sqlsrv($php, $this->createMacOS("[ODBC Driver 17 for SQL Server]\nDriver=/opt/homebrew/lib/libmsodbcsql.17.dylib\n")))->getSystemPackageNames($phpPackage));
+    }
+
+    /**
      * @return void
      */
     public function testAlreadyInstalled()
     {
-        $this->createDependency(OS\Debian::class, OS\Debian::TRIXIE, 804, "[Other]\nDriver=x\n\n[ODBC Driver 18 for SQL Server]\nDriver=y\n")->install(M::mock(State::class));
+        $this->createDependency(OS\Debian::class, OS\Debian::TRIXIE, 804, "[Other]\nDriver=x\n\n[ODBC Driver 18 for SQL Server]\nDescription=Microsoft ODBC Driver 18 for SQL Server\nDriver = /opt/microsoft/msodbcsql18/lib64/libmsodbcsql-18.so \nUsageCount=1\n")->install(M::mock(State::class));
         self::assertSame([], $this->commands);
         self::assertSame([], $this->downloads);
+    }
+
+    /**
+     * @return void
+     */
+    public function testRegisteredButMissing()
+    {
+        $this->createDependency(OS\Debian::class, OS\Debian::TRIXIE, 804, "[ODBC Driver 18 for SQL Server]\nDriver=/opt/microsoft/msodbcsql18/lib64/missing.so\n\n[Other]\nDriver=/opt/microsoft/msodbcsql18/lib64/libmsodbcsql-18.so\n")->install(self::createState());
+        self::assertNotSame([], $this->commands);
     }
 
     /**

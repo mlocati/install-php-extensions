@@ -50,6 +50,11 @@ final class libsnappy extends SystemDependency
                 ['snappy-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['snappy']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -6,6 +6,7 @@ use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
 use IPE\SystemDependencies;
+use IPE\SystemPackager;
 
 final class redis extends Extension implements
     Extension\AvailableAsComposerPackage,
@@ -13,6 +14,7 @@ final class redis extends Extension implements
     Extension\DeclaresDefaultVersion,
     Extension\DependsOnExtensions,
     Extension\ProvidesConfigureArguments,
+    Extension\ProvidesSystemPackageNames,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -145,6 +147,20 @@ final class redis extends Extension implements
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return $this->os->getSystemPackager()->getExtensionFormulae($phpPackage, ['phpredis']);
+        }
+
+        return null;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
     public function getConfigureArguments(Extension\BuildContext $context)
@@ -154,7 +170,12 @@ final class redis extends Extension implements
         $result = [];
         if ($this->usesSystemLZF($version)) {
             $result[] = '--enable-redis-lzf';
-            $result[] = '--with-liblzf';
+            if ($this->os instanceof OS\MacOS) {
+                // The formula has no pkg-config file, and config.m4 looks for the headers only in /usr/local and /usr
+                $result[] = '--with-liblzf=' . $this->os->getSystemPackager()->getFormulaPrefix('liblzf');
+            } else {
+                $result[] = '--with-liblzf';
+            }
         } elseif ($this->os->getFilesystem()->isFile($context->getSourceDirectory() . '/liblzf/lzf.h')) {
             // liblzf is a git submodule: the PECL archives include it, the GitHub archives (used by Packagist) don't
             $result[] = '--enable-redis-lzf';
@@ -213,6 +234,9 @@ final class redis extends Extension implements
             return $this->os->getNumericVersion() > OS\Ubuntu::XENIAL;
         }
         if ($this->os instanceof OS\Posix\RHELLike) {
+            return true;
+        }
+        if ($this->os instanceof OS\MacOS) {
             return true;
         }
 

@@ -50,6 +50,11 @@ class liblz4 extends SystemDependency
                 ['lz4-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['lz4']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

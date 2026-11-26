@@ -64,6 +64,11 @@ final class libcapstone extends SystemDependency
                 ['capstone-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['capstone']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

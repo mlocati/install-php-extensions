@@ -50,6 +50,11 @@ final class libyaml extends SystemDependency
                 ['libyaml-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libyaml']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
