@@ -50,6 +50,11 @@ class libssh2 extends SystemDependency
                 ['libssh2-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libssh2']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

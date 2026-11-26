@@ -3,6 +3,7 @@
 namespace IPE\Test\Extensions;
 
 use IPE\Architecture;
+use IPE\Dev\ExtensionFactory;
 use IPE\Exception;
 use IPE\Extension\UnsupportedEnvironment;
 use IPE\Extensions\swoole;
@@ -11,6 +12,7 @@ use IPE\OS;
 use IPE\PHPInfo;
 use IPE\Service\Container;
 use IPE\SystemDependencies;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -269,6 +271,47 @@ final class SwooleTest extends TestCase
         self::assertNotContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(700, OS\Debian::class, OS\Debian::BUSTER)->getRequiredSystemDependencies('4.0.4', new Values()));
         self::assertNotContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(704, OS\Debian::class, OS\Debian::STRETCH)->getRequiredSystemDependencies('4.8.13', new Values()));
         self::assertContains(SystemDependencies\libbrotli::HANDLE, self::createExtension(704, OS\Debian::class, OS\Debian::BUSTER)->getRequiredSystemDependencies('4.8.13', new Values()));
+    }
+
+    /**
+     * @return void
+     */
+    public function testMacOS()
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(804);
+        $php->shouldReceive('isThreadSafe')->andReturn(false);
+        $php->shouldReceive('getBits')->andReturn(64);
+        $php->shouldReceive('getInstalledExtensions')->andReturn([]);
+        $withTap = new swoole($php, self::createMacOS(['shivammathur/extensions/firebird-client']));
+        self::assertSame(
+            ['--enable-mysqlnd', '--enable-swoole-pgsql', '--enable-swoole-curl', '--enable-cares', '--enable-brotli', '--enable-swoole-sqlite', '--enable-zstd', '--with-swoole-firebird', '--with-swoole-ssh2=/opt/homebrew/opt/libssh2'],
+            $withTap->getConfigureArguments(self::createBuildContext('6.2.0'))
+        );
+        $dependencies = $withTap->getRequiredSystemDependencies('6.2.0', new Values());
+        self::assertContains(SystemDependencies\libfbclient::HANDLE, $dependencies);
+        self::assertNotContains(SystemDependencies\linuxheaders::HANDLE, $dependencies);
+        self::assertNotContains(SystemDependencies\liburing::HANDLE, $dependencies);
+        $withoutTap = new swoole($php, self::createMacOS([]));
+        self::assertNotContains('--with-swoole-firebird', $withoutTap->getConfigureArguments(self::createBuildContext('6.2.0')));
+        self::assertNotContains(SystemDependencies\libfbclient::HANDLE, $withoutTap->getRequiredSystemDependencies('6.2.0', new Values()));
+    }
+
+    /**
+     * @param list<string> $extensionsTapFormulae
+     *
+     * @return \IPE\OS\MacOS
+     */
+    private static function createMacOS(array $extensionsTapFormulae)
+    {
+        $os = ExtensionFactory::createMacOSWithExtensionsTapFormulae($extensionsTapFormulae);
+        $property = new \ReflectionProperty(Homebrew::class, 'prefix');
+        if (PHP_VERSION_ID < 80100) {
+            $property->setAccessible(true);
+        }
+        $property->setValue($os->getSystemPackager(), '/opt/homebrew');
+
+        return $os;
     }
 
     /**

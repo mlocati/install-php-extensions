@@ -50,6 +50,11 @@ class libcares extends SystemDependency
                 ['c-ares-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['c-ares']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
