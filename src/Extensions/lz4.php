@@ -98,6 +98,10 @@ final class lz4 extends Extension\GitHubExtension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
+        if ($this->os instanceof OS\MacOS) {
+            return ['--with-lz4-includedir=' . $this->os->getSystemPackager()->getFormulaPrefix('lz4')];
+        }
+
         return ['--with-lz4-includedir=/usr'];
     }
 

@@ -64,6 +64,11 @@ final class libmaxminddb extends SystemDependency
                 ['libmaxminddb-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['libmaxminddb']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

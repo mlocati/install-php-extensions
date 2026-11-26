@@ -49,6 +49,7 @@ final class mcrypt extends Extension implements
         return [
             'el10' => "this system doesn't provide the mcrypt library",
             'amzn2023' => "this system doesn't provide the mcrypt library",
+            'macos' => "Homebrew doesn't provide the mcrypt library",
         ];
     }
 

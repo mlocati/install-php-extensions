@@ -89,6 +89,11 @@ final class libldap extends SystemDependency
                 ['openldap-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['openldap']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }
