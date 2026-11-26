@@ -190,6 +190,7 @@ final class ExtensionsInstaller
             }
             foreach ($dependencies as $dependency) {
                 $dependency->install($state);
+                self::addToEnvironment($dependency->getBuildEnvironment(), $state);
                 if ($dependency instanceof SystemDependency\CompiledLibrary && $dependency->getCompiledSourceURL() !== '') {
                     $compiledLibraries[] = new Report\CompiledLibrary($dependency::getHandle(), $dependency->getCompiledVersion(), $dependency->getCompiledSourceURL());
                 }

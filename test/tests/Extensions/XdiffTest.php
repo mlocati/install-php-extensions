@@ -25,6 +25,8 @@ final class XdiffTest extends TestCase
         $os = M::mock(OS\MacOS::class);
         $os->shouldReceive('getFilesystem')->andReturn($fs);
         $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
-        self::assertSame(['--with-xdiff=/opt/homebrew/libxdiff'], (new xdiff($php, $os))->getConfigureArguments(self::createBuildContext()));
+        $xdiff = new xdiff($php, $os);
+        self::assertSame(['--with-xdiff=/opt/homebrew/libxdiff'], $xdiff->getConfigureArguments(self::createBuildContext()));
+        self::assertSame(['LDFLAGS' => '-L/opt/homebrew/libxdiff/lib'], $xdiff->getConfigureEnvironment(self::createBuildContext()));
     }
 }

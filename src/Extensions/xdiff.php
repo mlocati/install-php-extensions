@@ -11,7 +11,8 @@ final class xdiff extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\RequiresSystemDependencies,
-    Extension\ProvidesConfigureArguments
+    Extension\ProvidesConfigureArguments,
+    Extension\ProvidesConfigureEnvironment
 {
     /**
      * @public
@@ -112,6 +113,23 @@ final class xdiff extends Extension implements
         $prefix = SystemDependencies\libxdiff::getInstallPrefix($this->os);
         if ($prefix !== '') {
             $result[] = "--with-xdiff={$prefix}";
+        }
+
+        return $result;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
+     */
+    public function getConfigureEnvironment(Extension\BuildContext $context)
+    {
+        $result = [];
+        $prefix = SystemDependencies\libxdiff::getInstallPrefix($this->os);
+        if ($prefix !== '') {
+            // Some checks of config.m4 don't use the library directory of --with-xdiff
+            $result['LDFLAGS'] = "-L{$prefix}/lib";
         }
 
         return $result;
