@@ -16,6 +16,7 @@ use IPE\OS;
 use IPE\SystemDependencies\dtrace;
 use IPE\SystemDependencies\oracleinstantclient;
 use IPE\SystemDependencies\unzip;
+use IPE\SystemPackager\Homebrew;
 use IPE\SystemPackager\Package;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
@@ -123,10 +124,14 @@ final class OracleinstantclientTest extends TestCase
                 $this->deletedFiles[] = $path;
             }
         });
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
         $fs->shouldReceive('run')->andReturnUsing(function (Command $command) {
             $this->commands[] = $command->getCommand();
             if ($command->getCommand() === 'gcc') {
                 return [0, "x86_64-linux-gnu\n"];
+            }
+            if ($command->getCommand() === '/opt/homebrew/bin/brew') {
+                return [0, "/opt/homebrew\n"];
             }
 
             return [0, ''];
@@ -137,10 +142,11 @@ final class OracleinstantclientTest extends TestCase
 
     /**
      * @param bool $basic
+     * @param \IPE\PHPInfo|null $php
      *
      * @return \IPE\SystemDependencies\oracleinstantclient
      */
-    private function createDependency(OS\Posix $os, $basic = false)
+    private function createDependency(OS\Posix $os, $basic = false, $php = null)
     {
         $downloader = M::mock(Downloader::class);
         $downloader->shouldReceive('saveAs')->andReturnUsing(function ($url) {
@@ -151,16 +157,23 @@ final class OracleinstantclientTest extends TestCase
         $extractor = M::mock(Filesystem\ArchiveExtractor::class);
         $extractor->shouldReceive('extractTo')->andReturn('/extracted');
 
-        return new oracleinstantclient(self::createPHP(), $os, new Values([], $basic ? [oracleinstantclient::OPTION_BASIC => true] : []), $downloader, $extractor, new \IPE\Logger());
+        return new oracleinstantclient($php === null ? self::createPHP() : $php, $os, new Values([], $basic ? [oracleinstantclient::OPTION_BASIC => true] : []), $downloader, $extractor, new \IPE\Logger());
     }
 
     /**
+     * @param list<\Closure> $shutdownCallbacks receives the registered shutdown callbacks
+     *
      * @return \IPE\Installer\State
      */
-    private static function createState()
+    private static function createState(array &$shutdownCallbacks = [])
     {
         $state = M::mock(State::class);
         $state->shouldReceive('getVolatileDir')->andReturn(new VolatileDirectory('/tmp/ipe', M::mock(Filesystem::class)->shouldIgnoreMissing()));
+        $state->shouldReceive('registerShutdownCallback')->andReturnUsing(static function (\Closure $callback) use (&$shutdownCallbacks, $state) {
+            $shutdownCallbacks[] = $callback;
+
+            return $state;
+        });
 
         return $state;
     }
@@ -176,6 +189,7 @@ final class OracleinstantclientTest extends TestCase
         self::assertSame(['^libaio[0-9]*$'], $this->createDependency(self::createOS(OS\Debian::class, OS\Debian::TRIXIE - 1))->getSystemPackages($state)->getPersistent());
         self::assertSame(['libaio'], $this->createDependency(self::createOS(OS\AlmaLinux::class, 9))->getSystemPackages($state)->getPersistent());
         self::assertSame([unzip::HANDLE], $this->createDependency(self::createOS(OS\Debian::class))->getRequiredDependencies());
+        self::assertTrue($this->createDependency(self::createOS(OS\MacOS::class))->getSystemPackages($state)->isEmpty());
         $this->expectException(Exception\UnsupportedOS::class);
         $this->createDependency(M::mock(OS\Posix::class)->shouldIgnoreMissing())->getSystemPackages($state);
     }
@@ -196,9 +210,9 @@ final class OracleinstantclientTest extends TestCase
      */
     public function testLibraryPath()
     {
-        self::assertSame(self::LIBRARY_PATH, oracleinstantclient::getLibraryPath(self::createPHP()));
-        self::assertSame('/usr/lib/oracle/19.10/client64/lib', oracleinstantclient::getLibraryPath(self::createPHP(64, 804, 'aarch64')));
-        self::assertSame('/usr/lib/oracle/19.9/client/lib', oracleinstantclient::getLibraryPath(self::createPHP(32)));
+        self::assertSame(self::LIBRARY_PATH, oracleinstantclient::getLibraryPath(self::createPHP(), self::createOS(OS\Debian::class)));
+        self::assertSame('/usr/lib/oracle/19.10/client64/lib', oracleinstantclient::getLibraryPath(self::createPHP(64, 804, 'aarch64'), self::createOS(OS\Debian::class)));
+        self::assertSame('/usr/lib/oracle/19.9/client/lib', oracleinstantclient::getLibraryPath(self::createPHP(32), self::createOS(OS\Debian::class)));
     }
 
     /**
@@ -206,10 +220,10 @@ final class OracleinstantclientTest extends TestCase
      */
     public function testUnsupportedArchitecture()
     {
-        self::assertSame('/usr/lib/oracle/19.9/client/lib', oracleinstantclient::getLibraryPath(self::createPHP(32)));
+        self::assertSame('/usr/lib/oracle/19.9/client/lib', oracleinstantclient::getLibraryPath(self::createPHP(32), self::createOS(OS\Debian::class)));
         $this->expectException(Exception\UnsupportedOS::class);
         $this->expectExceptionMessage('not available for riscv64');
-        oracleinstantclient::getLibraryPath(self::createPHP(64, 804, 'riscv64'));
+        oracleinstantclient::getLibraryPath(self::createPHP(64, 804, 'riscv64'), self::createOS(OS\Debian::class));
     }
 
     /**
@@ -220,8 +234,8 @@ final class OracleinstantclientTest extends TestCase
         $directory = '/usr/lib/x86_64-linux-gnu';
         $os = self::createOS(OS\Debian::class, OS\Debian::TRIXIE, $this->createFilesystem(["{$directory}/libaio.so.1t64"]));
         $dependency = $this->createDependency($os);
-        $state = self::createState();
-        $dependency->install($state);
+        $shutdownCallbacks = [];
+        $dependency->install(self::createState($shutdownCallbacks));
         $base = 'https://download.oracle.com/otn_software/linux/instantclient/211000/';
         self::assertSame([
             "{$base}instantclient-basiclite-linux.x64-21.1.0.0.0.zip",
@@ -234,8 +248,51 @@ final class OracleinstantclientTest extends TestCase
         ], $this->symlinks);
         self::assertSame(['/etc/ld.so.conf.d/oracle-instantclient.conf' => self::LIBRARY_PATH . "\n"], $this->writtenFiles);
         $this->deletedFiles = [];
-        $dependency->finalize($state);
+        self::assertCount(1, $shutdownCallbacks);
+        $shutdownCallbacks[0]();
         self::assertSame([self::LIBRARY_PATH . '/sdk'], $this->deletedFiles);
+    }
+
+    /**
+     * @return \IPE\OS\MacOS&\Mockery\MockInterface
+     */
+    private function createMacOS()
+    {
+        $os = self::createOS(OS\MacOS::class, 26, $this->createFilesystem());
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        self::assertInstanceOf(OS\MacOS::class, $os);
+
+        return $os;
+    }
+
+    /**
+     * @return void
+     */
+    public function testLibraryPathOnMacOS()
+    {
+        self::assertSame('/opt/homebrew/oracle-instantclient/23.26', oracleinstantclient::getLibraryPath(self::createPHP(64, 804, 'arm64'), $this->createMacOS()));
+        self::assertSame('/opt/homebrew/oracle-instantclient/19.16', oracleinstantclient::getLibraryPath(self::createPHP(), $this->createMacOS()));
+    }
+
+    /**
+     * @return void
+     */
+    public function testInstallOnMacOS()
+    {
+        $os = $this->createMacOS();
+        $dependency = $this->createDependency($os, false, self::createPHP(64, 804, 'arm64'));
+        $state = self::createState();
+        $dependency->install($state);
+        $base = 'https://download.oracle.com/otn_software/mac/instantclient/2326300/';
+        self::assertSame([
+            "{$base}instantclient-basiclite-macos.arm64-23.26.3.0.0.dmg",
+            "{$base}instantclient-sdk-macos.arm64-23.26.3.0.0.dmg",
+        ], $this->downloads);
+        self::assertSame(['/opt/homebrew/bin/brew', 'hdiutil', 'cp', 'hdiutil', 'mv', 'hdiutil', 'cp', 'hdiutil'], $this->commands);
+        self::assertSame([], $this->writtenFiles);
+        self::assertCount(1, $this->symlinks);
+        self::assertArrayHasKey('/opt/homebrew/oracle-instantclient/23.26/sdk', $this->symlinks);
+        self::assertStringEndsWith('/sdk', $this->symlinks['/opt/homebrew/oracle-instantclient/23.26/sdk']);
     }
 
     /**
@@ -256,10 +313,9 @@ final class OracleinstantclientTest extends TestCase
     {
         $configuration = '/etc/ld.so.conf.d/oracle-instantclient.conf';
         $os = self::createOS(OS\Debian::class, 0, $this->createFilesystem([self::LIBRARY_PATH, self::LIBRARY_PATH . '/sdk', $configuration]));
-        $dependency = $this->createDependency($os);
-        $state = self::createState();
-        $dependency->install($state);
-        $dependency->finalize($state);
+        $shutdownCallbacks = [];
+        $this->createDependency($os)->install(self::createState($shutdownCallbacks));
+        self::assertSame([], $shutdownCallbacks);
         self::assertSame([], $this->downloads);
         self::assertSame([], $this->commands);
         self::assertSame([], $this->writtenFiles);

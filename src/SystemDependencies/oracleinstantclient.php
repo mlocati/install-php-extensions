@@ -50,11 +50,6 @@ final class oracleinstantclient extends SystemDependency
      */
     private $archiveExtractor;
 
-    /**
-     * @var bool
-     */
-    private $sdkLinked = false;
-
     public function __construct(PHPInfo $php, OS\Posix $os, Values $options, Downloader $downloader, ArchiveExtractor $archiveExtractor, \IPE\Logger $logger)
     {
         $this->logger = $logger;
@@ -81,9 +76,16 @@ final class oracleinstantclient extends SystemDependency
      *
      * @return non-empty-string
      */
-    public static function getLibraryPath(PHPInfo $php)
+    public static function getLibraryPath(PHPInfo $php, OS $os)
     {
-        list($version, $client) = self::getRelease($php);
+        list($version, $client) = self::getRelease($php, $os);
+        if ($os instanceof OS\MacOS) {
+            $prefix = $os->getSystemPackager()->getPrefix();
+            if ($prefix !== '') {
+                // /usr/lib is read-only
+                return "{$prefix}/oracle-instantclient/{$version}";
+            }
+        }
 
         return "/usr/lib/oracle/{$version}/{$client}/lib";
     }
@@ -135,6 +137,9 @@ final class oracleinstantclient extends SystemDependency
         if ($this->os instanceof OS\Posix\RHELLike) {
             return new Packages(['libaio']);
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages();
+        }
 
         throw new Exception\UnsupportedOS("The Oracle Instant Client can't be installed on {$this->os->getDisplayName()}");
     }
@@ -153,7 +158,7 @@ final class oracleinstantclient extends SystemDependency
         if ($this->os instanceof OS\Ubuntu && $this->os->getNumericVersion() >= OS\Ubuntu::NOBLE) {
             $this->linkDebianLibaio();
         }
-        $libraryPath = self::getLibraryPath($this->php);
+        $libraryPath = self::getLibraryPath($this->php, $this->os);
         if (!$fs->exists($libraryPath)) {
             $parent = dirname($libraryPath);
             if (!$fs->isDirectory($parent)) {
@@ -168,27 +173,17 @@ final class oracleinstantclient extends SystemDependency
         $sdkPath = "{$libraryPath}/sdk";
         if (!$fs->exists($sdkPath) && !$fs->isSymlink($sdkPath)) {
             $fs->createSymlink($this->download('sdk', $state) . '/sdk', $sdkPath);
-            $this->sdkLinked = true;
+            // The SDK is needed only to compile: it's in the volatile directory
+            $state->registerShutdownCallback(static function () use ($fs, $sdkPath) {
+                $fs->deleteFile($sdkPath);
+            });
         }
+        // On macOS the modules find the libraries through their rpath
         if ($this->os instanceof OS\Alpine) {
             $this->configureAlpineLoader($libraryPath);
-        } elseif (!$fs->exists('/etc/ld.so.conf.d/oracle-instantclient.conf')) {
+        } elseif (!$this->os instanceof OS\MacOS && !$fs->exists('/etc/ld.so.conf.d/oracle-instantclient.conf')) {
             $fs->writeFile('/etc/ld.so.conf.d/oracle-instantclient.conf', "{$libraryPath}\n");
             $fs->run(Command::create('ldconfig')->withOutput(Command::OUTPUT_DISCARD));
-        }
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \IPE\SystemDependency::finalize()
-     */
-    public function finalize(State $state)
-    {
-        if ($this->sdkLinked) {
-            // The SDK is needed only to compile: it's in the volatile directory
-            $this->os->getFilesystem()->deleteFile(self::getLibraryPath($this->php) . '/sdk');
-            $this->sdkLinked = false;
         }
     }
 
@@ -198,14 +193,23 @@ final class oracleinstantclient extends SystemDependency
      *
      * @return array{non-empty-string, non-empty-string, non-empty-string} the version, the name of its directory, and the template of the URLs of its packages
      */
-    private static function getRelease(PHPInfo $php)
+    private static function getRelease(PHPInfo $php, OS $os)
     {
-        $base = 'https://download.oracle.com/otn_software/linux/instantclient/';
-        $release = $php->getArchitecture()->map([
-            Architecture::X86 => ['19.9', 'client', "{$base}199000/instantclient-%s-linux-19.9.0.0.0dbru.zip"],
-            Architecture::X64 => ['21.1', 'client64', "{$base}211000/instantclient-%s-linux.x64-21.1.0.0.0.zip"],
-            Architecture::ARM64 => ['19.10', 'client64', "{$base}191000/instantclient-%s-linux.arm64-19.10.0.0.0dbru.zip"],
-        ]);
+        if ($os instanceof OS\MacOS) {
+            // Oracle provides the packages for macOS only as disk images
+            $base = 'https://download.oracle.com/otn_software/mac/instantclient/';
+            $release = $php->getArchitecture()->map([
+                Architecture::X64 => ['19.16', 'client64', "{$base}1916000/instantclient-%s-macos.x64-19.16.0.0.0dbru.dmg"],
+                Architecture::ARM64 => ['23.26', 'client64', "{$base}2326300/instantclient-%s-macos.arm64-23.26.3.0.0.dmg"],
+            ]);
+        } else {
+            $base = 'https://download.oracle.com/otn_software/linux/instantclient/';
+            $release = $php->getArchitecture()->map([
+                Architecture::X86 => ['19.9', 'client', "{$base}199000/instantclient-%s-linux-19.9.0.0.0dbru.zip"],
+                Architecture::X64 => ['21.1', 'client64', "{$base}211000/instantclient-%s-linux.x64-21.1.0.0.0.zip"],
+                Architecture::ARM64 => ['19.10', 'client64', "{$base}191000/instantclient-%s-linux.arm64-19.10.0.0.0dbru.zip"],
+            ]);
+        }
         if ($release === null) {
             throw new Exception\UnsupportedOS('The Oracle Instant Client is not available for ' . $php->describeArchitecture());
         }
@@ -224,14 +228,49 @@ final class oracleinstantclient extends SystemDependency
      */
     private function download($package, State $state)
     {
-        list(, , $urlTemplate) = self::getRelease($this->php);
+        list(, , $urlTemplate) = self::getRelease($this->php, $this->os);
         $this->logger->info("Installing the package {$package} of the Oracle Instant Client");
-        $archive = $state->getVolatileDir()->createSubdir() . '/instantclient.zip';
-        $this->downloader->saveAs(sprintf($urlTemplate, $package), $archive);
-        $rootDir = $this->archiveExtractor->extractTo($archive, $state->getVolatileDir()->createSubdir(), ArchiveFormat::ZIP);
+        $volatileDir = $state->getVolatileDir();
+        if ($this->os instanceof OS\MacOS) {
+            $archive = $volatileDir->createSubdir() . '/instantclient.dmg';
+            $this->downloader->saveAs(sprintf($urlTemplate, $package), $archive);
+            $rootDir = $this->copyDiskImage($archive, $volatileDir->createSubdir(), $volatileDir->createSubdir());
+        } else {
+            $archive = $volatileDir->createSubdir() . '/instantclient.zip';
+            $this->downloader->saveAs(sprintf($urlTemplate, $package), $archive);
+            $rootDir = $this->archiveExtractor->extractTo($archive, $volatileDir->createSubdir(), ArchiveFormat::ZIP);
+        }
         $this->os->getFilesystem()->deleteFile($archive);
 
         return $rootDir;
+    }
+
+    /**
+     * @param non-empty-string $image
+     * @param non-empty-string $mountPoint
+     * @param non-empty-string $destination
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string $destination
+     */
+    private function copyDiskImage($image, $mountPoint, $destination)
+    {
+        $fs = $this->os->getFilesystem();
+        list($rc, $output) = $fs->run(Command::create('hdiutil', ['attach', '-nobrowse', '-readonly', '-noautoopen', '-mountpoint', $mountPoint, $image]));
+        if ($rc !== 0) {
+            throw new Exception\IO("Failed to mount the disk image of the Oracle Instant Client:\n{$output}");
+        }
+        try {
+            list($rc, $output) = $fs->run(Command::create('cp', ['-R', "{$mountPoint}/.", $destination]));
+        } finally {
+            $fs->run(Command::create('hdiutil', ['detach', $mountPoint])->withOutput(Command::OUTPUT_DISCARD));
+        }
+        if ($rc !== 0) {
+            throw new Exception\IO("Failed to copy the Oracle Instant Client:\n{$output}");
+        }
+
+        return $destination;
     }
 
     /**
