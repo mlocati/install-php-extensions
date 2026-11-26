@@ -8,6 +8,7 @@ use IPE\Filesystem;
 use IPE\Option\Values;
 use IPE\OS;
 use IPE\PHPInfo;
+use IPE\SystemPackager\Homebrew;
 use IPE\Test\Support\TestCase;
 use Mockery as M;
 
@@ -154,6 +155,51 @@ EOT;
         $extension = new Extensions\saxon(self::createPHP(), $os, self::createDownloader());
         $this->expectException(Exception\UnsupportedOS::class);
         $extension->getVendorArchiveURL('13.1.1', self::createOptions('HE'));
+    }
+
+    /**
+     * @return void
+     */
+    public function testMacOS()
+    {
+        $commands = [];
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('resolveCommand')->with('brew')->andReturn('/opt/homebrew/bin/brew');
+        $fs->shouldReceive('run')->andReturnUsing(static function (Filesystem\Command $command) use (&$commands) {
+            $commands[] = array_merge([$command->getCommand()], $command->getArguments());
+
+            return [0, $command->getArguments() === ['--prefix'] ? "/opt/homebrew\n" : ''];
+        });
+        $fs->shouldReceive('isDirectory')->with('/opt/homebrew/saxonc/lib')->andReturn(false);
+        $fs->shouldReceive('createDirectory')->once()->with('/opt/homebrew/saxonc/lib');
+        $fs->shouldReceive('isDirectory')->with('/src/php/src')->andReturn(true);
+        $os = M::mock(OS\MacOS::class);
+        $os->shouldReceive('getDisplayName')->andReturn('The OS');
+        $os->shouldReceive('getFilesystem')->andReturn($fs);
+        $os->shouldReceive('getSystemPackager')->andReturn(new Homebrew($os));
+        $page = <<<'EOT'
+<a href="https://downloads.saxonica.com/SaxonC/HE/13/SaxonCHE-linux-arm64-13-1-1.zip" />
+<a href="https://downloads.saxonica.com/SaxonC/HE/13/SaxonCHE-macos-arm64-13-0-0.zip" />
+EOT;
+        $options = self::createOptions('HE');
+        $extension = new Extensions\saxon(self::createPHP(64, 'arm64'), $os, self::createDownloader($page));
+        self::assertSame('13.0.0', $extension->getVendorArchiveVersion('', $options));
+        $base = 'https://downloads.saxonica.com/SaxonC/HE/';
+        self::assertSame("{$base}13/SaxonCHE-macos-arm64-13-1-1.zip", $extension->getVendorArchiveURL('13.1.1', $options));
+        self::assertSame("{$base}12/SaxonCHE-macos-aarch64-12-8-0.zip", $extension->getVendorArchiveURL('12.8.0', $options));
+        $context = self::createBuildContext('12.10.1', $options, '/src');
+        self::assertSame(['EXTRA_LDFLAGS' => '-Wl,-rpath,/opt/homebrew/saxonc/lib'], $extension->getConfigureEnvironment($context));
+        self::assertSame('/src/php/src', $extension->prepareVendorSource($context));
+        self::assertSame(
+            [
+                ['/opt/homebrew/bin/brew', '--prefix'],
+                ['find', '/src', '(', '-type', 'f', '-o', '-type', 'l', ')', '-name', 'libsaxonc-*.dylib', '-exec', 'cp', '-R', '{}', '/opt/homebrew/saxonc/lib/', ';'],
+                ['find', '/src', '-type', 'f', '-name', 'php8_XsltExecutable.cpp', '-exec', 'sed', '-i', '', 's/Z_TYPE_P(val) != NULL/Z_TYPE_P(val) != IS_NULL/g', '{}', ';'],
+            ],
+            $commands
+        );
+        $this->expectException(Exception\UnsupportedOS::class);
+        $extension->getVendorArchiveURL('12.3', $options);
     }
 
     /**

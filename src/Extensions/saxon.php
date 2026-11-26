@@ -21,6 +21,7 @@ final class saxon extends Extension implements
     Extension\DeclaresUnsupportedEnvironments,
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresOptions,
+    Extension\ProvidesConfigureEnvironment,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -83,6 +84,7 @@ final class saxon extends Extension implements
     {
         return [
             'alpine-php7' => 'the source code of SaxonC does not compile (int64_t is not defined)',
+            'macos-php7' => 'the versions of SaxonC that support PHP 7 are not compatible with this system',
         ];
     }
 
@@ -152,13 +154,14 @@ final class saxon extends Extension implements
             return $versionRequirements;
         }
         $edition = self::getEdition($options);
-        $architecture = $this->getLinuxArchitectureName([
+        $platform = $this->getPlatformName();
+        $architecture = $this->php->getArchitecture()->map([
             Architecture::X64 => 'x86_64',
             Architecture::ARM64 => '(?:arm64|aarch64)',
-        ]);
+        ], true);
         $page = $this->downloader->getContent(self::DOWNLOAD_PAGE);
         $matches = null;
-        preg_match_all("#/SaxonC{$edition}-linux-{$architecture}-(\\d+(?:-\\d+)+)\\.zip\\b#", $page, $matches);
+        preg_match_all("#/SaxonC{$edition}-{$platform}-{$architecture}-(\\d+(?:-\\d+)+)\\.zip\\b#", $page, $matches);
         $latest = '';
         foreach ($matches[1] as $match) {
             $version = str_replace('-', '.', $match);
@@ -167,7 +170,7 @@ final class saxon extends Extension implements
             }
         }
         if ($latest === '') {
-            if (strpos($page, "/SaxonC{$edition}-linux-") !== false) {
+            if (strpos($page, "/SaxonC{$edition}-{$platform}-") !== false) {
                 throw new Exception\IO\NotFound("SaxonC is not available for {$architecture}");
             }
             throw new Exception\IO('Failed to determine the latest version of SaxonC from ' . self::DOWNLOAD_PAGE);
@@ -184,13 +187,18 @@ final class saxon extends Extension implements
     public function getVendorArchiveURL($version, Option\Values $options)
     {
         $edition = self::getEdition($options);
-        $architecture = $this->getLinuxArchitectureName([
+        $platform = $this->getPlatformName();
+        $architecture = $this->php->getArchitecture()->map([
             Architecture::X64 => 'x86_64',
             Architecture::ARM64 => version_compare($version, '12.6') >= 0 && version_compare($version, '12.9') < 0 ? 'aarch64' : 'arm64',
-        ]);
+        ], true);
         $base = 'https://downloads.saxonica.com/SaxonC/' . $edition . '/' . strtok($version, '.') . '/';
         if (version_compare($version, '12.6') >= 0) {
-            return "{$base}SaxonC{$edition}-linux-{$architecture}-" . str_replace('.', '-', $version) . '.zip';
+            return "{$base}SaxonC{$edition}-{$platform}-{$architecture}-" . str_replace('.', '-', $version) . '.zip';
+        }
+        if ($this->os instanceof OS\MacOS) {
+            // The older libraries for macOS are linked to their path on the machine of the vendor, or they need a Java runtime
+            throw new Exception\UnsupportedOS("SaxonC {$version} can't be installed on {$this->os->getDisplayName()}: the minimum supported version is 12.6");
         }
         // The name of the old archives for x86_64 doesn't contain the architecture
         if (version_compare($version, '12.0') < 0 && $architecture === 'x86_64') {
@@ -210,12 +218,23 @@ final class saxon extends Extension implements
         $rootDir = $context->getSourceDirectory();
         $version = $context->getVersion();
         $fs = $this->os->getFilesystem();
-        // The -P option is here because the archives contain the symbolic links of the shared libraries
-        self::runFind($fs, $rootDir, ['(', '-type', 'f', '-o', '-type', 'l', ')', '(', '-name', 'libsaxonc-*.so*', '-o', '-name', 'libsaxon-*.so*', ')', '-exec', 'cp', '-P', '{}', '/usr/lib/', ';']);
-        // Some systems don't have ldconfig, and they don't need it
-        $fs->run(Command::create('ldconfig', []));
+        if ($this->os instanceof OS\MacOS) {
+            $libraryDir = self::getMacOSLibraryDirectory($this->os);
+            if (!$fs->isDirectory($libraryDir)) {
+                $fs->createDirectory($libraryDir);
+            }
+            // With -R, the cp of macOS copies the symbolic links of the libraries instead of following them
+            self::runFind($fs, $rootDir, ['(', '-type', 'f', '-o', '-type', 'l', ')', '-name', 'libsaxonc-*.dylib', '-exec', 'cp', '-R', '{}', "{$libraryDir}/", ';']);
+            $sedInPlace = ['-i', ''];
+        } else {
+            // The -P option is here because the archives contain the symbolic links of the shared libraries
+            self::runFind($fs, $rootDir, ['(', '-type', 'f', '-o', '-type', 'l', ')', '(', '-name', 'libsaxonc-*.so*', '-o', '-name', 'libsaxon-*.so*', ')', '-exec', 'cp', '-P', '{}', '/usr/lib/', ';']);
+            // Some systems don't have ldconfig, and they don't need it
+            $fs->run(Command::create('ldconfig', []));
+            $sedInPlace = ['-i'];
+        }
         if (version_compare($version, '13.0.0') < 0) {
-            self::runFind($fs, $rootDir, ['-type', 'f', '-name', 'php8_XsltExecutable.cpp', '-exec', 'sed', '-i', 's/Z_TYPE_P(val) != NULL/Z_TYPE_P(val) != IS_NULL/g', '{}', ';']);
+            self::runFind($fs, $rootDir, array_merge(['-type', 'f', '-name', 'php8_XsltExecutable.cpp', '-exec', 'sed'], $sedInPlace, ['s/Z_TYPE_P(val) != NULL/Z_TYPE_P(val) != IS_NULL/g', '{}', ';']));
         }
         $sourceDir = $fs->isDirectory("{$rootDir}/php/src") ? "{$rootDir}/php/src" : "{$rootDir}/Saxon.C.API";
         if (version_compare($version, '13.0.0') === 0) {
@@ -244,6 +263,54 @@ final class saxon extends Extension implements
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesConfigureEnvironment::getConfigureEnvironment()
+     */
+    public function getConfigureEnvironment(Extension\BuildContext $context)
+    {
+        $result = [];
+        if ($this->os instanceof OS\MacOS) {
+            // The libraries are referenced via @rpath, and config.m4 overwrites LDFLAGS
+            $result['EXTRA_LDFLAGS'] = '-Wl,-rpath,' . self::getMacOSLibraryDirectory($this->os);
+        }
+
+        return $result;
+    }
+
+    /**
+     * The libraries of macOS can't be copied to /usr/lib (which is protected by SIP).
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return non-empty-string
+     */
+    private static function getMacOSLibraryDirectory(OS\MacOS $os)
+    {
+        $prefix = $os->getSystemPackager()->getPrefix();
+
+        // Unlike the prefix of Homebrew, /usr/local may not be writable
+        return ($prefix === '' ? '/usr/local' : "{$prefix}/saxonc") . '/lib';
+    }
+
+    /**
+     * @throws \IPE\Exception\UnsupportedOS
+     *
+     * @return non-empty-string
+     */
+    private function getPlatformName()
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return 'macos';
+        }
+        if ($this->os instanceof OS\Posix) {
+            return 'linux';
+        }
+
+        throw new Exception\UnsupportedOS("SaxonC can't be installed on {$this->os->getDisplayName()}");
+    }
+
+    /**
      * @throws \IPE\Exception\InvalidOptionValues
      *
      * @return non-empty-string
@@ -256,23 +323,6 @@ final class saxon extends Extension implements
         }
 
         return $edition;
-    }
-
-    /**
-     * @param array<\IPE\Architecture::*, non-empty-string> $names
-     *
-     * @throws \IPE\Exception\UnsupportedOS
-     * @throws \IPE\Exception\IO
-     *
-     * @return non-empty-string
-     */
-    private function getLinuxArchitectureName(array $names)
-    {
-        if (!$this->os instanceof OS\Posix) {
-            throw new Exception\UnsupportedOS("SaxonC can't be installed on {$this->os->getDisplayName()}");
-        }
-
-        return $this->php->getArchitecture()->map($names, true);
     }
 
     /**
