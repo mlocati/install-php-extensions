@@ -353,8 +353,8 @@ function runTest(string $description, TestEnvironment $environment, string $phar
             $extensions,
         ));
         if ($rc !== 0) {
-            printGroup('Installation output', $output);
             printError('Installation failed', "{$description} ({$name})");
+            printGroup('Installation output', $output);
 
             return RESULT_FAILED;
         }
@@ -509,8 +509,8 @@ function main(array $argv): int
                 [$rc, $output, $command] = prepareEnvironment($test['environment']);
                 $preparedEnvironments[$environment] = $rc === 0;
                 if ($rc !== 0) {
-                    printGroup("{$command} output", $output);
                     printError("{$command} failed", "{$description} ({$environment})");
+                    printGroup("{$command} output", $output);
                 }
             }
             if ($preparedEnvironments[$environment]) {
