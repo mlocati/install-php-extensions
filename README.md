@@ -192,7 +192,7 @@ Below the handles there are the Composer package names that can be used to speci
 | dom<br><sub>php/dom</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ds<br><sub>php-ds/ext-ds</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | ecma_intl[&#x24D8;](#ecma_intl) |  |  |  | &check; | &check; |  |  |  |  |  |  |  |  |  |
-| enchant<br><sub>php/enchant</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| enchant[&#x24D8;](#enchant)<br><sub>php/enchant</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ev<br><sub>osmanov/pecl-ev</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | event<br><sub>osmanov/pecl-event</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | excimer<br><sub>wikimedia/excimer</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
@@ -201,7 +201,7 @@ Below the handles there are the Composer package names that can be used to speci
 | ftp<br><sub>php/ftp</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | gd[&#x24D8;](#gd)<br><sub>php/gd</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | gearman |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| geoip |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| geoip[&#x24D8;](#geoip) |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | geos[&#x24D8;](#geos) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | geospatial<br><sub>php-geospatial/geospatial</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | gettext<br><sub>php/gettext</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -213,7 +213,7 @@ Below the handles there are the Composer package names that can be used to speci
 | igbinary<br><sub>igbinary/igbinary</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | imagick<br><sub>imagick/imagick</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | imap[&#x24D8;](#imap)<br><sub>php/imap</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| inotify<br><sub>arnaud-lb/inotify</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| inotify[&#x24D8;](#inotify)<br><sub>arnaud-lb/inotify</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | interbase[&#x24D8;](#interbase)<br><sub>php/interbase</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
 | intl<br><sub>php/intl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ion |  | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |
@@ -269,7 +269,7 @@ Below the handles there are the Composer package names that can be used to speci
 | pdo_sqlsrv[&#x24D8;](#pdo_sqlsrv)<br><sub>microsoft/pdo_sqlsrv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | pgsql<br><sub>php/pgsql</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | phalcon<br><sub>phalcon/cphalcon</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |
-| php_trie |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
+| php_trie[&#x24D8;](#php_trie) |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
 | phpy[&#x24D8;](#phpy) |  | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |
 | pkcs11<br><sub>gamringer/pkcs11</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
 | pq<br><sub>m6w6/ext-pq</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
@@ -325,7 +325,7 @@ Below the handles there are the Composer package names that can be used to speci
 | vld<br><sub>derickr/vld</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | wddx<br><sub>php/wddx</sub> |  |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; |
 | wikidiff2[&#x24D8;](#wikidiff2)<br><sub>wikimedia/wikidiff2</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
-| xattr<br><sub>pecl/xattr</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| xattr[&#x24D8;](#xattr)<br><sub>pecl/xattr</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xdebug<br><sub>xdebug/xdebug</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xdiff<br><sub>pecl/xdiff</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xhprof | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -367,7 +367,7 @@ These options apply to all the extensions (the options of specific extensions ar
 | `--show-options` | Show the options that can be specified for the extensions (including the ones declared by their source code), without installing them |  |
 | `--ignore-unknown-extensions` | Ignore unknown extensions instead of aborting |  |
 | `--unsupported-extensions[=]<abort\|force\|skip>` | What to do with extensions that are known not to work in the current environment. | `abort` |
-| `--system-packages[=]<auto\|never\|only>` | When PHP has been installed by the system packager (APT, APK), install the extensions from its packages: when available (auto), never, or only from them (only). | `auto` |
+| `--system-packages[=]<auto\|never\|only>` | When PHP has been installed by the system packager (APT, APK, DNF or Homebrew), install the extensions from its packages: when available (auto), never, or only from them (only). | `auto` |
 | `--build-type[=]<optimized\|with-symbols\|debug>` | How to compile the extensions: optimized (debug symbols stripped), with-symbols (optimized, keeping the debug symbols), debug (no optimizations, with debug symbols) | `optimized` |
 | `--cpus[=]value` | Number of parallel processors to be used while compiling (0: all the available ones) | all the available ones |
 | `--git-submodules` | Fetch the git submodules missing from the source code of the extensions |  |
@@ -376,7 +376,7 @@ These options apply to all the extensions (the options of specific extensions ar
 | `--enable[=]value` | Enable the extension loaded by this ini file, by uncommenting its extension= and zend_extension= lines, or with phpenmod for the files in the mods-available directory of Debian and Ubuntu (can be specified multiple times) |  |
 | `--disable[=]value` | Disable the extension loaded by this ini file, by commenting out its extension= and zend_extension= lines, or with phpdismod for the files in the mods-available directory of Debian and Ubuntu (can be specified multiple times) |  |
 | `--ini-basename[=]value` | The name of the ini files that enable the extensions (without .ini): use the {priority} and {name} placeholders, or compat for the names used by the official Docker PHP images (see https://github.com/mlocati/install-php-extensions#names-of-the-ini-files) | compat in the official Docker PHP images, {priority}-{name} otherwise |
-| `--keep-systempackager-cache[=]<yes\|no>` | Keep the system packager (APT/APK) cache after installing PHP extensions | no in the official Docker PHP images, yes otherwise |
+| `--keep-systempackager-cache[=]<yes\|no>` | Keep the system packager (APT, APK, DNF or Homebrew) cache after installing PHP extensions | no in the official Docker PHP images, yes otherwise |
 | `--apt-debian-fix-archived[=]<yes\|no>` | Update the APT repositories for archived Debian systems | yes in the official Docker PHP images, no otherwise |
 | `--apt-debian-archiveurl-default[=]value` | The URL for APT for archived Debian systems | `http://archive.debian.org/debian` |
 | `--apt-debian-archiveurl-security[=]value` | The security URL for APT for archived Debian systems | `http://archive.debian.org/debian-security` |
@@ -459,7 +459,10 @@ Not available on Debian 8 to 9 (the extension can't be compiled with the compile
 
 ### ddtrace
 
-Not available on Debian 8 (the extension can't be installed on this system)
+Not available on:
+
+- Debian 8 (the extension can't be installed on this system)
+- macOS (Datadog doesn't provide the extension for this system)
 
 Command line options:
 
@@ -478,6 +481,13 @@ Not available on:
 - Enterprise Linux 8 to 9 (the extension is not compatible with the version of the ICU library of this system)
 - Amazon Linux 2023 (the extension is not compatible with the version of the ICU library of this system)
 
+### enchant
+
+Not available on:
+
+- macOS with PHP 5 (Homebrew doesn't provide enchant 1)
+- macOS with PHP 7 (Homebrew doesn't provide enchant 1)
+
 ### gd
 
 Command line options:
@@ -485,6 +495,10 @@ Command line options:
 | Option | Description | Default |
 |---|---|---|
 | `--gd:without-avif` | Skip the AVIF support if it would require compiling libaom, libyuv and libavif |  |
+
+### geoip
+
+Not available on macOS (Homebrew doesn't provide the GeoIP library)
 
 ### geos
 
@@ -501,6 +515,10 @@ Not available on:
 - Enterprise Linux 9 to 10 (this system doesn't provide the c-client library)
 - Fedora (this system doesn't provide the c-client library)
 
+### inotify
+
+Not available on macOS (inotify is an API of the Linux kernel)
+
 ### interbase
 
 Not available on Amazon Linux 2023 (this system doesn't provide the Firebird client library)
@@ -514,7 +532,10 @@ Not available on:
 
 ### luasandbox
 
-Not available on Amazon Linux 2023 (this system doesn't provide Lua 5.1)
+Not available on:
+
+- Amazon Linux 2023 (this system doesn't provide Lua 5.1)
+- macOS (Homebrew doesn't provide Lua 5.1)
 
 ### lz4
 
@@ -530,6 +551,7 @@ Not available on:
 
 - Enterprise Linux 10 (this system doesn't provide the mcrypt library)
 - Amazon Linux 2023 (this system doesn't provide the mcrypt library)
+- macOS (Homebrew doesn't provide the mcrypt library)
 
 ### memprof
 
@@ -546,7 +568,10 @@ Not available on Amazon Linux 2023 (this system doesn't provide the Mosquitto li
 
 ### newrelic
 
-Not available on thread-safe (ZTS) builds of PHP
+Not available on:
+
+- thread-safe (ZTS) builds of PHP
+- macOS (New Relic doesn't provide the agent for this system)
 
 Command line options:
 
@@ -607,6 +632,10 @@ Not available on:
 - Amazon Linux (Microsoft doesn't publish the ODBC Driver for this system)
 - Fedora (Microsoft doesn't publish the ODBC Driver for this system)
 
+### php_trie
+
+Not available on macOS (the extension can't be compiled with the compiler or the libraries of this system)
+
 ### phpy
 
 Not available on:
@@ -639,10 +668,14 @@ Not available on:
 - Enterprise Linux 8 with PHP ZTS (the vendor doesn't publish ZTS builds for this system)
 - Enterprise Linux 9 with PHP ZTS (the ZTS build requires libhiredis 1.1.0, which is not available)
 - Fedora 45 to 46 (the vendor builds require OpenSSL 3, but this system uses OpenSSL 4)
+- macOS with PHP ZTS (the vendor doesn't publish ZTS builds for this system)
 
 ### saxon
 
-Not available on Alpine with PHP 7 (the source code of SaxonC does not compile (int64_t is not defined))
+Not available on:
+
+- Alpine with PHP 7 (the source code of SaxonC does not compile (int64_t is not defined))
+- macOS with PHP 7 (the versions of SaxonC that support PHP 7 are not compatible with this system)
 
 Command line options:
 
@@ -737,6 +770,7 @@ Not available on:
 - Debian 10 to 11 (the version of the V8 library of this system is too old)
 - Ubuntu 20.04 to 22.04 (the version of the V8 library of this system is too old)
 - Alpine 3.12 to 3.18 (the version of the V8 library of this system is too old)
+- macOS (the version of the V8 library of this system is too recent)
 
 ### vips
 
@@ -750,6 +784,10 @@ Not available on:
 ### wikidiff2
 
 Not available on Debian 8 to 9 (the extension can't be compiled with the compiler or the libraries of this system)
+
+### xattr
+
+Not available on macOS (the extension uses functions available only on Linux)
 
 ### xpass
 
