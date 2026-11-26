@@ -385,7 +385,7 @@ function runTest(string $description, TestEnvironment $environment, string $phar
             }
             [$rc, $output] = execute($environment, [$php, "{$testDir}/{$handle}.php"], $bindNow + ['TEST_IPE_OPTIONS' => json_encode($options, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), 'TEST_IPE_REPORT' => $report]);
             if ($rc !== 0) {
-                printError('Test failed', "{$handle} in {$description} ({$name})");
+                printError('Test failed', count($extensions) === 1 ? "{$description} ({$name})" : "{$handle} in {$description} ({$name})");
                 printGroup('Test output', $output);
                 $result = RESULT_FAILED;
             } else {
