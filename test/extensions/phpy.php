@@ -6,7 +6,7 @@ echo 'Checking phpy... ';
 
 $uname = PyCore::import('os')->uname();
 $sysname = (string) $uname[0];
-if ($sysname !== 'Linux') {
+if ($sysname !== php_uname('s')) {
     throw new TestFailedException('os.uname()[0] returned an unexpected value: ' . $sysname);
 }
 

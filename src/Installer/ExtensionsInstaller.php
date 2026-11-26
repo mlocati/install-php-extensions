@@ -73,6 +73,11 @@ final class ExtensionsInstaller
      */
     private $gitSubmodules;
 
+    /**
+     * @var \IPE\Installer\BuildTools
+     */
+    private $buildTools;
+
     public function __construct(
         OS\Posix $os,
         PHPInfo $php,
@@ -84,9 +89,11 @@ final class ExtensionsInstaller
         Extension\Asked\Resolver $resolver,
         PHPSystemPackage $phpSystemPackage,
         GitSubmodules $gitSubmodules,
+        BuildTools $buildTools,
         \IPE\Logger $logger
     ) {
         $this->gitSubmodules = $gitSubmodules;
+        $this->buildTools = $buildTools;
         $this->logger = $logger;
         $this->os = $os;
         $this->php = $php;
@@ -168,6 +175,19 @@ final class ExtensionsInstaller
         $moduleNames = [];
         try {
             self::addToEnvironment($systemPackager->getBuildEnvironment($dependencyPackages), $state);
+            if ($extensionPackages !== [] && $needsPhpize) {
+                $includeDir = $this->buildTools->getIncludeDir();
+                if ($includeDir !== '') {
+                    $fs = $this->os->getFilesystem();
+                    foreach ($extensionPackages as $extensionPackage) {
+                        foreach ($systemPackager->exposeExtensionHeaders($extensionPackage, $includeDir) as $createdFile) {
+                            $state->registerShutdownCallback(static function () use ($fs, $createdFile) {
+                                $fs->deleteFile($createdFile);
+                            });
+                        }
+                    }
+                }
+            }
             foreach ($dependencies as $dependency) {
                 $dependency->install($state);
                 if ($dependency instanceof SystemDependency\CompiledLibrary && $dependency->getCompiledSourceURL() !== '') {

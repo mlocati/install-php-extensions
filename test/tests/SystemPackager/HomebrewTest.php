@@ -288,6 +288,31 @@ final class HomebrewTest extends TestCase
     /**
      * @return void
      */
+    public function testExposeExtensionHeaders()
+    {
+        $fs = self::createFilesystem();
+        self::expectBrew($fs, ['--prefix'], 0, "/opt/homebrew\n");
+        $headersDir = '/opt/homebrew/opt/phpredis@8.4/include/php/ext';
+        $fs->shouldReceive('isDirectory')->once()->with($headersDir)->andReturn(true);
+        $fs->shouldReceive('listDirectoryContents')->once()->with($headersDir)->andReturn(['other', 'redis@8.4']);
+        $fs->shouldReceive('exists')->once()->with('/php/include/ext/redis')->andReturn(false);
+        $fs->shouldReceive('isSymlink')->once()->with('/php/include/ext/redis')->andReturn(false);
+        $fs->shouldReceive('createSymlink')->once()->with("{$headersDir}/redis@8.4", '/php/include/ext/redis');
+        $homebrew = self::createHomebrew($fs);
+        self::assertSame(['/php/include/ext/redis'], $homebrew->exposeExtensionHeaders('shivammathur/extensions/phpredis@8.4', '/php/include'));
+        // Not a formula of the extensions tap
+        self::assertSame([], $homebrew->exposeExtensionHeaders('liblzf', '/php/include'));
+        $fs->shouldReceive('isDirectory')->once()->with('/opt/homebrew/opt/raphf@8.4/include/php/ext')->andReturn(false);
+        self::assertSame([], $homebrew->exposeExtensionHeaders('shivammathur/extensions/raphf@8.4', '/php/include'));
+        $fs->shouldReceive('isDirectory')->once()->with('/opt/homebrew/opt/igbinary@8.4/include/php/ext')->andReturn(true);
+        $fs->shouldReceive('listDirectoryContents')->once()->with('/opt/homebrew/opt/igbinary@8.4/include/php/ext')->andReturn(['igbinary@8.4']);
+        $fs->shouldReceive('exists')->once()->with('/php/include/ext/igbinary')->andReturn(true);
+        self::assertSame([], $homebrew->exposeExtensionHeaders('shivammathur/extensions/igbinary@8.4', '/php/include'));
+    }
+
+    /**
+     * @return void
+     */
     public function testWithoutHomebrew()
     {
         $fs = self::createFilesystem('');

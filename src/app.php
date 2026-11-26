@@ -33,6 +33,8 @@ function createApp()
     $app->singleton(Installer\BuildOptions::class);
     $app->singleton(Installer\Enabler\Options::class);
     $app->singleton(Extension\Asked\Resolver\Options::class);
+    // It caches the paths of the build tools
+    $app->singleton(Installer\BuildTools::class);
     // Git hosts
     $app->singleton(GitHost\Registry::class, static function (Container $app) {
         return $app->build(GitHost\Registry::class)->registerDefaultHosts();

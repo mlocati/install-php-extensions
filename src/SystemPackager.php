@@ -55,6 +55,22 @@ abstract class SystemPackager
     }
 
     /**
+     * Make the headers of a PHP extension installed with a system package available to the extensions that we compile.
+     *
+     * @param non-empty-string $packageName the package of the extension
+     * @param non-empty-string $phpIncludeDir the directory of the PHP headers
+     *
+     * @throws \IPE\Exception\InvalidArgument
+     * @throws \IPE\Exception\IO
+     *
+     * @return list<non-empty-string> the created files, to be deleted after the compilation
+     */
+    public function exposeExtensionHeaders($packageName, $phpIncludeDir)
+    {
+        return [];
+    }
+
+    /**
      * @param list<non-empty-string> $packages
      *
      * @throws \IPE\Exception\InvalidArgument

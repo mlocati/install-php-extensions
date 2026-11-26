@@ -139,6 +139,45 @@ final class Homebrew extends SystemPackager
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * The formulae of EXTENSIONS_TAP install the headers in <prefix>/include/php/ext/<extension>@<PHP version>, but the extensions include them from <PHP include dir>/ext/<extension>.
+     *
+     * @see \IPE\SystemPackager::exposeExtensionHeaders()
+     */
+    public function exposeExtensionHeaders($packageName, $phpIncludeDir)
+    {
+        $result = [];
+        if (strpos($packageName, self::EXTENSIONS_TAP . '/') !== 0) {
+            return $result;
+        }
+        $prefix = $this->getFormulaPrefix($packageName);
+        if ($prefix === '') {
+            return $result;
+        }
+        $fs = $this->os->getFilesystem();
+        $headersDir = "{$prefix}/include/php/ext";
+        if (!$fs->isDirectory($headersDir)) {
+            return $result;
+        }
+        foreach ($fs->listDirectoryContents($headersDir) as $name) {
+            $matches = null;
+            if (!preg_match('/^(.+)@\d+\.\d+$/', $name, $matches)) {
+                continue;
+            }
+            $link = "{$phpIncludeDir}/ext/{$matches[1]}";
+            // Like the headers installed by a compiled extension
+            if ($fs->exists($link) || $fs->isSymlink($link)) {
+                continue;
+            }
+            $fs->createSymlink("{$headersDir}/{$name}", $link);
+            $result[] = $link;
+        }
+
+        return $result;
+    }
+
+    /**
      * The opt directory of a formula, which exists also for the keg-only formulae.
      *
      * @param non-empty-string $name
