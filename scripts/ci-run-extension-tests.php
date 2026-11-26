@@ -378,20 +378,22 @@ function runTest(string $description, TestEnvironment $environment, string $phar
         if ($installed === []) {
             return RESULT_SKIPPED;
         }
+        $result = RESULT_PASSED;
         foreach ($installed as $handle) {
             if (!is_file(ROOT_DIR . "/test/extensions/{$handle}.php")) {
                 continue;
             }
             [$rc, $output] = execute($environment, [$php, "{$testDir}/{$handle}.php"], $bindNow + ['TEST_IPE_OPTIONS' => json_encode($options, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES), 'TEST_IPE_REPORT' => $report]);
-            printIndented($output);
             if ($rc !== 0) {
                 printError('Test failed', "{$handle} in {$description} ({$name})");
-
-                return RESULT_FAILED;
+                printGroup('Test output', $output);
+                $result = RESULT_FAILED;
+            } else {
+                printIndented($output);
             }
         }
 
-        return RESULT_PASSED;
+        return $result;
     } finally {
         if ($environment instanceof DockerImage) {
             // The files created by the container are owned by root
