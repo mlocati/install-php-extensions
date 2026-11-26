@@ -16,10 +16,11 @@ final class Compiler
 {
     /**
      * Warnings that only add noise to the logs, for both C and C++.
+     * clang warns about the GCC-only flags, and that breaks the configure checks that use -Werror.
      *
      * @var string
      */
-    const WARNING_FLAGS = '-Wno-unused-variable -Wno-unused-but-set-variable';
+    const WARNING_FLAGS = '-Wno-unknown-warning-option -Wno-unused-variable -Wno-unused-but-set-variable';
 
     /**
      * Warnings that only add noise to the logs, only for C.
