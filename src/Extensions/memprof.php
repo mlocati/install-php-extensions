@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class memprof extends Extension implements
@@ -12,6 +13,7 @@ final class memprof extends Extension implements
     Extension\DeclaresDefaultVersion,
     Extension\DeclaresThreadSafetySupport,
     Extension\DeclaresUnsupportedEnvironments,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -137,5 +139,21 @@ final class memprof extends Extension implements
     public function supportsNTS()
     {
         return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for the Judy library only in /usr/local and /usr.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            return ['--with-judy-dir=' . $this->os->getSystemPackager()->getFormulaPrefix('judy')];
+        }
+
+        return [];
     }
 }

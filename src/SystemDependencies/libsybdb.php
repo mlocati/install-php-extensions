@@ -50,6 +50,11 @@ final class libsybdb extends SystemDependency
                 ['freetds-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['freetds']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

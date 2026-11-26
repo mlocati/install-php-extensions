@@ -134,6 +134,8 @@ final class memcached extends Extension implements
     /**
      * {@inheritdoc}
      *
+     * On macOS, configure looks for zlib only in /usr/local and /usr.
+     *
      * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
      */
     public function getConfigureArguments(Extension\BuildContext $context)
@@ -149,6 +151,12 @@ final class memcached extends Extension implements
         }
         $installed = $this->php->getInstalledExtensions();
         $result = ['--enable-memcached-json'];
+        if ($this->os instanceof OS\MacOS) {
+            $sdkPath = $this->os->getSDKPath();
+            if ($sdkPath !== '') {
+                $result[] = "--with-zlib-dir={$sdkPath}/usr";
+            }
+        }
         if (in_array(igbinary::HANDLE, $installed, true)) {
             $result[] = '--enable-memcached-igbinary';
         }

@@ -50,6 +50,11 @@ final class libsasl extends SystemDependency
                 ['cyrus-sasl-devel']
             );
         }
+        if ($this->os instanceof OS\MacOS) {
+            return new Packages(
+                ['cyrus-sasl']
+            );
+        }
 
         throw $this->createUnknownPackagesException();
     }

@@ -4,12 +4,14 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class memcache extends Extension implements
     Extension\AvailableOnPECL,
     Extension\DeclaresDefaultVersion,
     Extension\DependsOnExtensions,
+    Extension\ProvidesConfigureArguments,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -111,6 +113,25 @@ final class memcache extends Extension implements
      */
     public function getOptionalExtensions($version)
     {
+        return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * On macOS, configure looks for zlib only in /usr/local and /usr.
+     *
+     * @see \IPE\Extension\ProvidesConfigureArguments::getConfigureArguments()
+     */
+    public function getConfigureArguments(Extension\BuildContext $context)
+    {
+        if ($this->os instanceof OS\MacOS) {
+            $sdkPath = $this->os->getSDKPath();
+            if ($sdkPath !== '') {
+                return ["--with-zlib-dir={$sdkPath}/usr"];
+            }
+        }
+
         return [];
     }
 }
