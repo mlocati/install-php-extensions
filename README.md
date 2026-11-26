@@ -19,7 +19,7 @@ It works on:
 - Amazon Linux 2023, with PHP installed from the Amazon Linux packages;
 - macOS, with PHP installed with [Homebrew](https://brew.sh) (see [macOS](#macos)).
 
-When PHP has been installed by the system packager (APT, APK or DNF), IPE may install the extensions from its packages whenever they are available (see the `--system-packages` option).
+When PHP has been installed by the system packager (APT, APK, DNF or Homebrew), IPE may install the extensions from its packages whenever they are available (see the `--system-packages` option).
 
     install-php-extensions gd xdebug
 

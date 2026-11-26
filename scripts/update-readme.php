@@ -228,6 +228,7 @@ function describeEnvironment(string $environment): string
         'debian' => 'Debian',
         'el' => 'Enterprise Linux',
         'fedora' => 'Fedora',
+        'macos' => 'macOS',
         'ol' => 'Oracle Linux',
         'posix' => 'POSIX systems',
         'rhel' => 'RHEL',
