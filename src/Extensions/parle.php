@@ -4,6 +4,7 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
 
 final class parle extends Extension implements
@@ -108,8 +109,14 @@ final class parle extends Extension implements
      */
     public function getConfigureArguments(Extension\BuildContext $context)
     {
-        $version = $context->getVersion();
+        $result = [];
+        if (self::isVersionAtLeast($context->getVersion(), '0.8.4')) {
+            // libc++ doesn't provide std::ctype<char32_t>
+            if (!$this->os instanceof OS\MacOS) {
+                $result[] = '--enable-parle-utf32';
+            }
+        }
 
-        return self::isVersionAtLeast($version, '0.8.4') ? ['--enable-parle-utf32'] : [];
+        return $result;
     }
 }
