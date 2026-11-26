@@ -294,6 +294,38 @@ final class Homebrew extends SystemPackager
     }
 
     /**
+     * Tap a repository (if it's not tapped yet) and trust it (if Homebrew requires it).
+     *
+     * @param non-empty-string $name
+     * @param non-empty-string $url
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return void
+     *
+     * @example addTap('microsoft/mssql-release', 'https://github.com/Microsoft/homebrew-mssql-release')
+     */
+    public function addTap($name, $url)
+    {
+        $tap = $this->getTapInfo($name);
+        if (!isset($tap['installed']) || $tap['installed'] !== true) {
+            list($rc) = $this->runBrew(['tap', $name, $url], Command::OUTPUT_SHOW);
+            if ($rc !== 0) {
+                throw new Exception\SystemPackager("brew tap {$name} failed");
+            }
+            $tap = $this->getTapInfo($name);
+        }
+        // See isTapUsable()
+        if (isset($tap['trusted']) && $tap['trusted'] === false) {
+            list($rc) = $this->runBrew(['trust', $name], Command::OUTPUT_SHOW);
+            if ($rc !== 0) {
+                throw new Exception\SystemPackager("brew trust {$name} failed");
+            }
+        }
+    }
+
+    /**
      * {@inheritdoc}
      *
      * @see \IPE\SystemPackager::doInstallPackages()
@@ -654,6 +686,22 @@ final class Homebrew extends SystemPackager
             && $tap['installed'] === true
             && is_array($tap['formula_names'])
             && (!isset($tap['trusted']) || $tap['trusted'] === true);
+    }
+
+    /**
+     * @param non-empty-string $name
+     *
+     * @throws \IPE\Exception\IO
+     * @throws \IPE\Exception\SystemPackager
+     *
+     * @return array<mixed> the item of the output of brew tap-info --json (empty if brew doesn't know the tap)
+     */
+    private function getTapInfo($name)
+    {
+        list($rc, $output) = $this->runBrew(['tap-info', '--json', $name], Command::OUTPUT_CAPTURE_STDOUT);
+        $data = $rc === 0 ? json_decode($output, true) : null;
+
+        return is_array($data) && isset($data[0]) && is_array($data[0]) ? $data[0] : [];
     }
 
     /**

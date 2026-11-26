@@ -320,6 +320,31 @@ final class HomebrewTest extends TestCase
     /**
      * @return void
      */
+    public function testAddTap()
+    {
+        $name = 'microsoft/mssql-release';
+        $url = 'https://github.com/Microsoft/homebrew-mssql-release';
+        $fs = self::createFilesystem();
+        self::expectBrew($fs, ['tap-info', '--json', $name], 0, (string) json_encode([['name' => $name, 'installed' => false]]));
+        self::expectBrew($fs, ['tap', $name, $url], 0, '', Command::OUTPUT_SHOW);
+        self::expectBrew($fs, ['tap-info', '--json', $name], 0, (string) json_encode([['name' => $name, 'installed' => true, 'trusted' => false]]));
+        self::expectBrew($fs, ['trust', $name], 0, '', Command::OUTPUT_SHOW);
+        self::createHomebrew($fs)->addTap($name, $url);
+    }
+
+    /**
+     * @return void
+     */
+    public function testAddTrustedTap()
+    {
+        $fs = self::createFilesystem();
+        self::expectBrew($fs, ['tap-info', '--json', 'microsoft/mssql-release'], 0, (string) json_encode([['name' => 'microsoft/mssql-release', 'installed' => true, 'trusted' => true]]));
+        self::createHomebrew($fs)->addTap('microsoft/mssql-release', 'https://github.com/Microsoft/homebrew-mssql-release');
+    }
+
+    /**
+     * @return void
+     */
     public function testWithoutHomebrew()
     {
         $fs = self::createFilesystem('');
