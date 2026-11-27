@@ -47,21 +47,23 @@ final class WithTarCommand extends FormatExtractor
             if ($rc !== 0) {
                 continue;
             }
+            // The tar of Windows and the one of BusyBox decompress by themselves (Wolfi has no xz command, for example)
+            $decompressesByItself = $fs->getDirectorySeparator() === '\\' || preg_match('/^\s*BusyBox\b/', $output);
             if ($format === ArchiveFormat::TAR_BZ) {
                 if (preg_match('#(^|\s|,)-j($|\s|,)#', $output)) {
-                    if ($fs->getDirectorySeparator() === '\\' || $fs->resolveCommand('bzip2') !== '') {
+                    if ($decompressesByItself || $fs->resolveCommand('bzip2') !== '') {
                         $commandsAndOptions[$command] = '-xj';
                     }
                 }
             } elseif ($format === ArchiveFormat::TAR_GZ) {
                 if (preg_match('#(^|\s|,)-z($|\s|,)#', $output)) {
-                    if ($fs->getDirectorySeparator() === '\\' || $fs->resolveCommand('gzip') !== '') {
+                    if ($decompressesByItself || $fs->resolveCommand('gzip') !== '') {
                         $commandsAndOptions[$command] = '-xz';
                     }
                 }
             } elseif ($format === ArchiveFormat::TAR_XZ) {
                 if (preg_match('#(^|\s|,)-J($|\s|,)#', $output)) {
-                    if ($fs->getDirectorySeparator() === '\\' || $fs->resolveCommand('xz') !== '') {
+                    if ($decompressesByItself || $fs->resolveCommand('xz') !== '') {
                         $commandsAndOptions[$command] = '-xJ';
                     }
                 }

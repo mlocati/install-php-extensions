@@ -553,21 +553,22 @@ final class ArchiveExtractorTest extends TestCase
                 if ($format === ArchiveFormat::TAR) {
                     return true;
                 }
+                $decompressesByItself = \DIRECTORY_SEPARATOR === '\\' || preg_match('/^\s*BusyBox\b/', self::$tarOutput);
                 if ($format === ArchiveFormat::TAR_BZ) {
                     if (preg_match('#(^|\s|,)-j($|\s|,)#', self::$tarOutput . "\n" . self::$bsdtarOutput)) {
-                        if (\DIRECTORY_SEPARATOR === '\\' || self::$fs->resolveCommand('bzip2') !== '') {
+                        if ($decompressesByItself || self::$fs->resolveCommand('bzip2') !== '') {
                             return true;
                         }
                     }
                 } elseif ($format === ArchiveFormat::TAR_GZ) {
                     if (preg_match('#(^|\s|,)-z($|\s|,)#', self::$tarOutput . "\n" . self::$bsdtarOutput)) {
-                        if (\DIRECTORY_SEPARATOR === '\\' || self::$fs->resolveCommand('gzip') !== '') {
+                        if ($decompressesByItself || self::$fs->resolveCommand('gzip') !== '') {
                             return true;
                         }
                     }
                 } elseif ($format === ArchiveFormat::TAR_XZ) {
                     if (preg_match('#(^|\s|,)-J($|\s|,)#', self::$tarOutput . "\n" . self::$bsdtarOutput)) {
-                        if (\DIRECTORY_SEPARATOR === '\\' || self::$fs->resolveCommand('xz') !== '') {
+                        if ($decompressesByItself || self::$fs->resolveCommand('xz') !== '') {
                             return true;
                         }
                     }
