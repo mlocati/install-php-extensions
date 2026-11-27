@@ -38,7 +38,7 @@ class libzstd extends SystemDependency
                 ['zstd-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['libzstd1'],
                 ['zstd-dev']

@@ -38,7 +38,7 @@ final class librrd extends SystemDependency
                 ['rrdtool-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['rrdtool'],
                 ['rrdtool-dev']

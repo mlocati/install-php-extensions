@@ -47,7 +47,7 @@ class liblzf extends SystemDependency
             // Enterprise Linux provides it in EPEL
             return true;
         }
-        if ($os instanceof OS\MacOS || $os instanceof OS\Wolfi) {
+        if ($os instanceof OS\MacOS || $os instanceof OS\Posix\WolfiLike) {
             return true;
         }
 

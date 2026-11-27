@@ -212,11 +212,27 @@ final class RegistryTest extends TestCase
     }
 
     /**
+     * @return list<array{0: class-string<\IPE\OS\Posix\WolfiLike>, 1: string}>
+     */
+    public static function provideWolfiLikeCases()
+    {
+        return [
+            [OS\Wolfi::class, '20230201'],
+            [OS\Chainguard::class, '20230214'],
+        ];
+    }
+
+    /**
      * Extensions not supported directly may require any system dependency.
+     *
+     * @dataProvider provideWolfiLikeCases
+     *
+     * @param class-string<\IPE\OS\Posix\WolfiLike> $osClass
+     * @param string $osVersion
      *
      * @return void
      */
-    public function testEveryDependencyHandlesWolfi()
+    public function testEveryDependencyHandlesWolfiLike($osClass, $osVersion)
     {
         $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
@@ -225,7 +241,7 @@ final class RegistryTest extends TestCase
         $php->shouldReceive('getMajorMinorVersion')->andReturn(805);
         $php->shouldReceive('isThreadSafe')->andReturn(false);
         $app = self::createApp();
-        $os = new OS\Wolfi('20230201', $fs, $app);
+        $os = new $osClass($osVersion, $fs, $app);
         $app = self::createContainer($os);
         $app->instance(Filesystem::class, $fs);
         $app->instance(PHPInfo::class, $php);

@@ -105,7 +105,7 @@ final class mysqlnd extends Extension implements
     public static function hasBrokenSystemPackage(PHPInfo $php, OS $os)
     {
         // The module of the Wolfi package isn't linked to OpenSSL (see patchSourceCode()), so it doesn't load
-        return $os instanceof OS\Wolfi && $php->getMajorMinorVersion() < 804;
+        return $os instanceof OS\Posix\WolfiLike && $php->getMajorMinorVersion() < 804;
     }
 
     /**

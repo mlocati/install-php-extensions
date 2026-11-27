@@ -225,6 +225,7 @@ function describeEnvironment(string $environment): string
         'alpine' => 'Alpine',
         'amzn' => 'Amazon Linux',
         'centos' => 'CentOS',
+        'chainguard' => 'Chainguard',
         'debian' => 'Debian',
         'el' => 'Enterprise Linux',
         'fedora' => 'Fedora',
@@ -237,6 +238,7 @@ function describeEnvironment(string $environment): string
         'ubuntu' => 'Ubuntu',
         'windows' => 'Windows',
         'wolfi' => 'Wolfi',
+        'wolfilike' => 'Wolfi and Chainguard',
     ];
     if (!preg_match('/^(?<os>[a-z]+)(?:(?<osVersion>\d+(?:\.\d+)*)(?:\.\.(?<osVersionTo>\d+(?:\.\d+)*))?)?(?:-php(?<php>\d+(?:\.\d+)?))?(?:-(?<threadSafety>nts|zts))?(?:-(?<bits>32|64)bit)?$/D', $environment, $match) || !isset($osNames[$match['os']])) {
         throw new \RuntimeException("Unrecognized environment: {$environment}");

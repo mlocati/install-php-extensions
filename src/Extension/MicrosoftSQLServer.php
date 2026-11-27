@@ -32,7 +32,7 @@ abstract class MicrosoftSQLServer extends Extension implements
             'alpine3.7..3.8' => 'the Microsoft ODBC Driver requires unixODBC 2.3.6 or later',
             'amzn' => $noDriver,
             'fedora' => $noDriver,
-            'wolfi' => $noDriver,
+            'wolfilike' => $noDriver,
         ];
     }
 
@@ -52,7 +52,7 @@ abstract class MicrosoftSQLServer extends Extension implements
             return [];
         }
         // Wolfi has the packages of the extensions, but not the driver (see getUnsupportedEnvironments())
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return [];
         }
 

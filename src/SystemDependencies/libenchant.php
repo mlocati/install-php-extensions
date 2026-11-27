@@ -58,7 +58,7 @@ final class libenchant extends CompiledLibrary
                 ['glib-dev', 'aspell-dev', 'hunspell-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             throw $this->createNotProvidedException();
         }
         if ($this->os instanceof OS\Posix\DebianLike) {

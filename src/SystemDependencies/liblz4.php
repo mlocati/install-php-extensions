@@ -38,7 +38,7 @@ class liblz4 extends SystemDependency
                 ['lz4-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['liblz4-1'],
                 ['lz4-dev']

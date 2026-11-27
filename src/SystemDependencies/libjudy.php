@@ -38,7 +38,7 @@ final class libjudy extends SystemDependency
                 ['judy-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['libjudy'],
                 ['libjudy-dev']

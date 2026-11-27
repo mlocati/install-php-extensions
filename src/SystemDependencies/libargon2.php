@@ -42,7 +42,7 @@ final class libargon2 extends SystemDependency
                 ['argon2-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['argon2'],
                 ['argon2-dev']

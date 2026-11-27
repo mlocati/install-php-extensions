@@ -38,7 +38,7 @@ final class libbz2 extends SystemDependency
                 ['bzip2-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['libbz2-1'],
                 ['bzip2-dev']

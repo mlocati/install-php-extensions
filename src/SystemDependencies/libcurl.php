@@ -44,7 +44,7 @@ class libcurl extends SystemDependency
                 ['curl-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['libcurl-openssl4'],
                 ['curl-dev']

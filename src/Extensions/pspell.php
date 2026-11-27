@@ -48,7 +48,7 @@ final class pspell extends Extension implements
     public static function getUnsupportedEnvironments()
     {
         return [
-            'wolfi' => "this system doesn't provide the Aspell library",
+            'wolfilike' => "this system doesn't provide the Aspell library",
         ];
     }
 

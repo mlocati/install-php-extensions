@@ -288,6 +288,44 @@ final class UnsupportedEnvironmentTest extends TestCase
     }
 
     /**
+     * @return array<array{string, bool, bool}> the environment, and if it matches PHP 8.5 on Wolfi and on Chainguard
+     */
+    public static function provideWolfiLikeCases()
+    {
+        return [
+            ['wolfi', true, false],
+            ['chainguard', false, true],
+            ['wolfilike', true, true],
+            ['wolfilike-php8.5', true, true],
+            ['wolfilike-php8.4', false, false],
+            ['alpine', false, false],
+        ];
+    }
+
+    /**
+     * @dataProvider provideWolfiLikeCases
+     *
+     * @param string $environment
+     * @param bool $onWolfi
+     * @param bool $onChainguard
+     *
+     * @return void
+     */
+    public function testWolfiLike($environment, $onWolfi, $onChainguard)
+    {
+        $php = M::mock(PHPInfo::class);
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(805);
+        $wolfi = M::mock(OS\Wolfi::class);
+        $wolfi->shouldReceive('getNumericVersion')->andReturn(20230201);
+        $chainguard = M::mock(OS\Chainguard::class);
+        $chainguard->shouldReceive('getNumericVersion')->andReturn(20230214);
+        $subject = new UnsupportedEnvironment(new OS\Factory(new Container(), new \IPE\Logger()));
+        self::assertTrue($subject->isValid($environment));
+        self::assertSame($onWolfi, $subject->matches($environment, $php, $wolfi));
+        self::assertSame($onChainguard, $subject->matches($environment, $php, $chainguard));
+    }
+
+    /**
      * @return void
      */
     public function testPosixDoesNotMatchWindows()

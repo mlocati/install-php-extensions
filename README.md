@@ -14,7 +14,7 @@ It works on:
 - Debian 9 (Stretch) or later, with PHP installed from the Debian packages or from the [repository of Ondřej Surý](https://packages.sury.org/php/);
 - Ubuntu 16.04 or later, with PHP installed from the Ubuntu packages or from the packages of Ondřej Surý (his [PPA](https://launchpad.net/~ondrej/+archive/ubuntu/php) or his [repository](https://packages.sury.org/php/));
 - Alpine Linux 3.15 or later, with PHP installed from the Alpine packages;
-- [Wolfi](https://github.com/wolfi-dev), with PHP installed from the Wolfi packages (see [Wolfi](#wolfi));
+- [Wolfi](https://github.com/wolfi-dev) and the Chainguard images based on it, with PHP installed from the Wolfi packages (see [Wolfi](#wolfi));
 - Enterprise Linux 8 or later (AlmaLinux, CentOS Stream, Oracle Linux, Red Hat Enterprise Linux, Rocky Linux), with PHP installed from the system packages (including their module streams) or from the [packages of Remi](https://rpms.remirepo.net/) (see [Optional repositories on Enterprise Linux](#optional-repositories-on-enterprise-linux));
 - Fedora, with PHP installed from the Fedora packages;
 - Amazon Linux 2023, with PHP installed from the Amazon Linux packages;

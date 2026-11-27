@@ -145,7 +145,7 @@ final class dba extends Extension implements
     private function usesBerkeleyDB()
     {
         // The Berkeley DB of Wolfi has a major version (2026) that configure rejects
-        return !$this->os instanceof OS\Wolfi;
+        return !$this->os instanceof OS\Posix\WolfiLike;
     }
 
     /**

@@ -32,7 +32,7 @@ final class libimagemagick extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['imagemagick-7'],
                 ['imagemagick-7-dev']

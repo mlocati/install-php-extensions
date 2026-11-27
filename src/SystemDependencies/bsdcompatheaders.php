@@ -38,7 +38,7 @@ final class bsdcompatheaders extends SystemDependency
                 ['bsd-compat-headers']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             // glibc includes the BSD headers
             return new Packages();
         }

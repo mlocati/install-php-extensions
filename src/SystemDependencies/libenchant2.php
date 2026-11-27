@@ -44,7 +44,7 @@ final class libenchant2 extends SystemDependency
         if ($os instanceof OS\Ubuntu) {
             return $os->getNumericVersion() >= OS\Ubuntu::FOCAL;
         }
-        if ($os instanceof OS\MacOS || $os instanceof OS\Wolfi) {
+        if ($os instanceof OS\MacOS || $os instanceof OS\Posix\WolfiLike) {
             return true;
         }
 

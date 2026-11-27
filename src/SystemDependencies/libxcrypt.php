@@ -47,7 +47,7 @@ final class libxcrypt extends CompiledLibrary
                 ['libxcrypt']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['libxcrypt'],
                 ['libxcrypt-dev']

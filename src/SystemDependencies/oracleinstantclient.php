@@ -134,7 +134,7 @@ final class oracleinstantclient extends SystemDependency
 
             return new Packages(['libaio1t64']);
         }
-        if ($this->os instanceof OS\Posix\RHELLike || $this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\RHELLike || $this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(['libaio']);
         }
         if ($this->os instanceof OS\MacOS) {

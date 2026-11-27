@@ -50,7 +50,7 @@ final class libzookeeper extends CompiledLibrary
                 ['maven', 'automake', 'libtool', 'openjdk8']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 [],
                 // configure.ac needs pkg.m4, which is in pkgconf-dev

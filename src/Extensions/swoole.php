@@ -406,7 +406,7 @@ final class swoole extends Extension implements
             // Alpine 3.19 fails with "invalid use of incomplete type 'const struct statx'"; swoole 6.2.0+ requires liburing 2.8+, available since Alpine 3.21
             return $this->os->getNumericVersion() >= (self::isVersionAtLeast($version, '6.2.0') ? 321 : 320);
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return true;
         }
         // swoole requires liburing 2.0+ (2.5+ for 6.0.0, 2.8+ for 6.2.0): we only use it where it's known to work

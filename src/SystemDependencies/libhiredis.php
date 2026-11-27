@@ -35,7 +35,7 @@ class libhiredis extends SystemDependency
         if ($this->os instanceof OS\Alpine) {
             return new Packages(['hiredis', 'hiredis-ssl']);
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['hiredis']
             );

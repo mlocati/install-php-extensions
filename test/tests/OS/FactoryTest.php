@@ -288,6 +288,7 @@ final class FactoryTest extends TestCase
             [OS\AmazonLinux::class, '0', null],
             [OS\Wolfi::class, '20230201', 20230201],
             [OS\Wolfi::class, '2023-02-01', null],
+            [OS\Chainguard::class, '20230214', 20230214],
         ];
     }
 
@@ -476,6 +477,10 @@ final class FactoryTest extends TestCase
                 'Invalid $version',
             ],
             [
+                'ID=chainguard',
+                'Invalid $version',
+            ],
+            [
                 "NAME=\"Amazon Linux\"\nID=amzn\nVERSION_ID=2",
                 'Amazon Linux 2 is not supported',
             ],
@@ -557,6 +562,19 @@ final class FactoryTest extends TestCase
                     'getNumericVersion' => 20230201,
                 ],
                 OS\Wolfi::class,
+            ],
+            [
+                [
+                    'ID=chainguard',
+                    'NAME="Chainguard"',
+                    'PRETTY_NAME="Chainguard"',
+                    'VERSION_ID="20230214"',
+                ],
+                [
+                    'getDisplayName' => 'Chainguard',
+                    'getNumericVersion' => 20230214,
+                ],
+                OS\Chainguard::class,
             ],
             [
                 [

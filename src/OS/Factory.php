@@ -38,6 +38,7 @@ class Factory
             Alpine::class,
             AmazonLinux::class,
             CentOS::class,
+            Chainguard::class,
             Debian::class,
             Fedora::class,
             MacOS::class,
@@ -77,6 +78,7 @@ class Factory
             'posix' => [Posix::class, false],
             'rhellike' => [Posix\RHELLike::class, false],
             'el' => [Posix\RHELLike\EnterpriseLinux::class, true],
+            'wolfilike' => [Posix\WolfiLike::class, false],
         ];
     }
 

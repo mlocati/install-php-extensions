@@ -35,7 +35,7 @@ class libck extends SystemDependency
         if ($this->os instanceof OS\Alpine) {
             return new Packages(['ck']);
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             throw $this->createNotProvidedException();
         }
         if ($this->os instanceof OS\Debian) {

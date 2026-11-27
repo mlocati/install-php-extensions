@@ -73,7 +73,7 @@ final class cassandra extends Extension implements
     {
         return [
             'debian8..9' => "the extension can't be compiled with the compiler or the libraries of this system",
-            'wolfi' => "this system doesn't provide the Cassandra driver",
+            'wolfilike' => "this system doesn't provide the Cassandra driver",
         ];
     }
 

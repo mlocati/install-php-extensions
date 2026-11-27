@@ -108,6 +108,6 @@ final class opcache extends Extension implements
     private function usesCapstone()
     {
         // Wolfi doesn't provide Capstone, so its PHP packages are built without it
-        return !$this->os instanceof OS\Wolfi;
+        return !$this->os instanceof OS\Posix\WolfiLike;
     }
 }

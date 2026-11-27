@@ -38,7 +38,7 @@ final class librecode extends SystemDependency
                 ['recode-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             throw $this->createNotProvidedException();
         }
         if ($this->os instanceof OS\Debian) {

@@ -38,7 +38,7 @@ final class libsasl extends SystemDependency
                 ['cyrus-sasl-dev']
             );
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             return new Packages(
                 ['cyrus-sasl-heimdal-libs'],
                 ['cyrus-sasl-dev']

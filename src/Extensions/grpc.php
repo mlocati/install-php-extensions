@@ -172,7 +172,7 @@ final class grpc extends Extension implements
             // EL 10 targets x86-64-v3, so __BMI2__ is defined and the bundled abseil includes <bmi2intrin.h>, which can't be included directly
             $cxxFlags .= ' -include x86gprintrin.h';
         }
-        if ($this->os instanceof OS\Wolfi) {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
             // The GCC of Wolfi enables -fno-delete-null-pointer-checks, so the bundled abseil can't compare function addresses in constant expressions
             $cxxFlags .= ' -fdelete-null-pointer-checks';
         }
