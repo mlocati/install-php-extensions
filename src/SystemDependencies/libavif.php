@@ -173,7 +173,7 @@ class libavif extends CompiledLibrary
         if ($os instanceof OS\Posix\RHELLike\EnterpriseLinux) {
             return $os->getNumericVersion() >= (self::requiresVersion1($php) ? 9 : 8);
         }
-        if ($os instanceof OS\Fedora || $os instanceof OS\MacOS) {
+        if ($os instanceof OS\Fedora || $os instanceof OS\MacOS || $os instanceof OS\Wolfi) {
             return true;
         }
 
