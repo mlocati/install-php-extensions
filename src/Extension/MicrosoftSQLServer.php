@@ -51,6 +51,10 @@ abstract class MicrosoftSQLServer extends Extension implements
         if ($this->os instanceof OS\MacOS && !msodbcsql::isInstalled($this->os)) {
             return [];
         }
+        // Wolfi has the packages of the extensions, but not the driver (see getUnsupportedEnvironments())
+        if ($this->os instanceof OS\Wolfi) {
+            return [];
+        }
 
         return null;
     }
