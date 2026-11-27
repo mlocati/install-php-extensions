@@ -33,9 +33,10 @@ final class liblapack extends SystemDependency
     public function getSystemPackages(State $state)
     {
         if ($this->os instanceof OS\Wolfi) {
+            // gfortran provides libgfortran.so, needed to link against libgfortran
             return new Packages(
-                ['openblas', 'liblapack'],
-                ['openblas-dev']
+                ['openblas', 'liblapack', 'libgfortran'],
+                ['openblas-dev', 'gfortran']
             );
         }
         if ($this->os instanceof OS\Alpine) {
