@@ -74,6 +74,8 @@ final class pdo_snowflake extends Extension implements
             'el8-php8.6' => 'the extension includes OpenSSL 3, which is not compatible with the OpenSSL 1.1 of this system',
             'fedora45-php8.5' => 'the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system',
             'fedora45-php8.6' => 'the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system',
+            'wolfi-php8.5' => 'the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system',
+            'wolfi-php8.6' => 'the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system',
         ];
     }
 
