@@ -308,6 +308,32 @@ class Local implements Filesystem
     /**
      * {@inheritdoc}
      *
+     * @see \IPE\Filesystem::writeFileFromStream()
+     */
+    public function writeFileFromStream($path, $stream)
+    {
+        if (!is_resource($stream)) {
+            throw new Exception\InvalidArgument('Invalid argument $stream');
+        }
+        $this->logger->debug('Writing file from stream', ['path' => $path]);
+        list($result, $errorDetails) = self::wrap(static function () use ($path, $stream) {
+            return file_put_contents($path, $stream);
+        }, 'file_put_contents');
+        if ($result === false) {
+            throw new Exception\IO(self::buildErrorMessage("Failed to write to file '{$path}'", $errorDetails));
+        }
+        // For example, when a connection drops: the truncated file would look like a complete one
+        if (!feof($stream)) {
+            self::wrap(static function () use ($path) {
+                return unlink($path);
+            });
+            throw new Exception\IO(self::buildErrorMessage("Failed to read the whole stream while writing to file '{$path}'", $errorDetails));
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \IPE\Filesystem::copyFile()
      */
     public function copyFile($from, $to)
