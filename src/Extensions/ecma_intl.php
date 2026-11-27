@@ -51,6 +51,7 @@ final class ecma_intl extends Extension implements
             'alpine3.22..3.24' => 'the extension is not compatible with the version of the ICU library of this system',
             'el8..9' => 'the extension is not compatible with the version of the ICU library of this system',
             'amzn2023' => 'the extension is not compatible with the version of the ICU library of this system',
+            'wolfi' => 'the extension is not compatible with the version of the ICU library of this system',
         ];
     }
 
