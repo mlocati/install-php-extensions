@@ -116,7 +116,7 @@ final class pdo_snowflake extends Extension implements
      */
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
-        return [SystemDependencies\cmake::HANDLE, SystemDependencies\libcurl::HANDLE, SystemDependencies\libopenssl::HANDLE];
+        return [SystemDependencies\bash::HANDLE, SystemDependencies\cmake::HANDLE, SystemDependencies\libcurl::HANDLE, SystemDependencies\libopenssl::HANDLE];
     }
 
     /**
