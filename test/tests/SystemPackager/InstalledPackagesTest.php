@@ -46,6 +46,7 @@ final class InstalledPackagesTest extends TestCase
             [APK::class, 'libstdc++', true],
             [APK::class, 'libjpeg-turbo-dev', true],
             [APK::class, 'libfoo>=1.2.3-r0', true],
+            [APK::class, 'libLLVM', true],
             [APK::class, '.persistent-deps', true],
             [APK::class, '..persistent-deps', false],
             [APK::class, '^libpng[0-9]+$', false],
