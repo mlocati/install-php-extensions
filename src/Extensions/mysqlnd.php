@@ -4,7 +4,9 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
 use IPE\SystemDependencies;
+use IPE\SystemPackager;
 
 final class mysqlnd extends Extension implements
     Extension\BundledInPHPSource,
@@ -12,6 +14,7 @@ final class mysqlnd extends Extension implements
     Extension\PatchesSourceCode,
     Extension\ProvidesConfigureArguments,
     Extension\ProvidesConfigureEnvironment,
+    Extension\ProvidesSystemPackageNames,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -81,6 +84,21 @@ final class mysqlnd extends Extension implements
     {
         // It must be loaded before the extensions that use it (mysqli and pdo_mysql)
         return 10;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        if ($this->os instanceof OS\Wolfi && $this->php->getMajorMinorVersion() < 804) {
+            // The module of the package isn't linked to OpenSSL (see patchSourceCode()), so it doesn't load
+            return [];
+        }
+
+        return null;
     }
 
     /**
