@@ -41,7 +41,7 @@ final class libgearman extends CompiledLibrary
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             if ($this->isInstalled()) {
                 return new Packages(['libstdc++', 'libuuid']);
             }
@@ -89,7 +89,7 @@ final class libgearman extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return ($this->os instanceof OS\Alpine || ($this->os instanceof OS\Posix\RHELLike && !$this->isInEPEL())) && parent::needsCompilation();
+        return ($this->os instanceof OS\Posix\AlpineLike || ($this->os instanceof OS\Posix\RHELLike && !$this->isInEPEL())) && parent::needsCompilation();
     }
 
     /**

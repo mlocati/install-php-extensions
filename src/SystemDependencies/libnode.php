@@ -39,6 +39,9 @@ final class libnode extends SystemDependency
                 ['nodejs-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Debian) {
             if ($this->os->getNumericVersion() <= OS\Debian::STRETCH) {
                 throw $this->createNotProvidedException();

@@ -14,6 +14,7 @@ It works on:
 - Debian 9 (Stretch) or later, with PHP installed from the Debian packages or from the [repository of Ondřej Surý](https://packages.sury.org/php/);
 - Ubuntu 16.04 or later, with PHP installed from the Ubuntu packages or from the packages of Ondřej Surý (his [PPA](https://launchpad.net/~ondrej/+archive/ubuntu/php) or his [repository](https://packages.sury.org/php/));
 - Alpine Linux 3.15 or later, with PHP installed from the Alpine packages;
+- [Wolfi](https://github.com/wolfi-dev), with PHP installed from the Wolfi packages (see [Wolfi](#wolfi));
 - Enterprise Linux 8 or later (AlmaLinux, CentOS Stream, Oracle Linux, Red Hat Enterprise Linux, Rocky Linux), with PHP installed from the system packages (including their module streams) or from the [packages of Remi](https://rpms.remirepo.net/) (see [Optional repositories on Enterprise Linux](#optional-repositories-on-enterprise-linux));
 - Fedora, with PHP installed from the Fedora packages;
 - Amazon Linux 2023, with PHP installed from the Amazon Linux packages;
@@ -838,6 +839,21 @@ The formulae needed only to compile the extensions are uninstalled at the end, u
 
 homebrew-core doesn't have formulae for single PHP extensions, but IPE can use the ones of the [`shivammathur/extensions`](https://github.com/shivammathur/homebrew-extensions) tap if you added and trusted it together with the [`shivammathur/php`](https://github.com/shivammathur/homebrew-php) tap, which its formulae depend on (`brew tap shivammathur/extensions && brew tap shivammathur/php && brew trust shivammathur/extensions && brew trust shivammathur/php`).
 Otherwise, or with `--system-packages=never`, IPE compiles the extensions.
+
+
+## Wolfi
+
+IPE works with the PHP packages of [Wolfi](https://github.com/wolfi-dev), like `php-8.4`.
+They provide the phar extension separately (`php-8.4-phar`), and IPE needs `curl`, `wget` or the openssl extension (`php-8.4-openssl`) to download the files, but the `cgr.dev/chainguard/wolfi-base` image doesn't include them:
+
+```Dockerfile
+FROM cgr.dev/chainguard/wolfi-base
+
+ADD --chmod=0755 https://github.com/mlocati/install-php-extensions/releases/latest/download/install-php-extensions /usr/local/bin/
+
+RUN apk add --no-cache php-8.4 php-8.4-phar php-8.4-openssl \
+    && install-php-extensions gd xdebug
+```
 
 
 ## System dependencies

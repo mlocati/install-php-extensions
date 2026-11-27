@@ -32,8 +32,8 @@ class unzip extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
-            if ($this->os->getNumericVersion() <= 307) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
+            if ($this->os instanceof OS\Alpine && $this->os->getNumericVersion() <= 307) {
                 // BusyBox provides it, but it can't extract symbolic links
                 return new Packages(
                     [],

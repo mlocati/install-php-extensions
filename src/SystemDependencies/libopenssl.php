@@ -59,6 +59,13 @@ class libopenssl extends SystemDependency
                 ['openssl-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            // The SSL library is never removed, since apk-tools requires it
+            return new Packages(
+                [],
+                ['openssl-dev']
+            );
+        }
         if ($this->os instanceof OS\Debian) {
             if (self::isPHPUsingOpenSSL10OnStretch($this->php, $this->os)) {
                 return new Packages(

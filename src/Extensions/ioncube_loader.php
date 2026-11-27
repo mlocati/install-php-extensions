@@ -123,7 +123,7 @@ final class ioncube_loader extends Extension\PrecompiledExtension implements
             // The builds for musl are available since version 14.4.0
             return self::isVersionAtLeast($version, '14.4.0') ? 'lin-musl' : 'lin';
         }
-        if ($os instanceof OS\Posix\DebianLike || $os instanceof OS\Posix\RHELLike) {
+        if ($os instanceof OS\Posix\DebianLike || $os instanceof OS\Posix\RHELLike || $os instanceof OS\Wolfi) {
             return 'lin';
         }
         if ($os instanceof OS\MacOS) {

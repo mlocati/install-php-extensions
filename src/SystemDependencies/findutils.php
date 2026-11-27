@@ -32,7 +32,7 @@ final class findutils extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             // BusyBox provides find
             return new Packages();
         }

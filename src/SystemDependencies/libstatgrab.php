@@ -47,6 +47,9 @@ final class libstatgrab extends CompiledLibrary
                 ['libstatgrab-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libstatgrab[0-9]*(t64)?$'],

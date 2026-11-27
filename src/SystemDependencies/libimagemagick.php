@@ -32,6 +32,12 @@ final class libimagemagick extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['imagemagick-7'],
+                ['imagemagick-7-dev']
+            );
+        }
         if ($this->os instanceof OS\Alpine) {
             $persistent = ['imagemagick', 'libgomp'];
             if ($this->os->getNumericVersion() >= 319) {

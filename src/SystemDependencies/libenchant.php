@@ -58,6 +58,9 @@ final class libenchant extends CompiledLibrary
                 ['glib-dev', 'aspell-dev', 'hunspell-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             if ($osProvidesEnchant1) {
                 return new Packages(

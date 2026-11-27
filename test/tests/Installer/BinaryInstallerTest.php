@@ -46,14 +46,16 @@ final class BinaryInstallerTest extends TestCase
 
     /**
      * @param string $strip the path of the strip command
+     * @param bool $extensionDirExists
      *
      * @return \IPE\Filesystem&\Mockery\MockInterface
      */
-    private static function createFilesystem($strip = '')
+    private static function createFilesystem($strip = '', $extensionDirExists = true)
     {
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
         $fs->shouldReceive('isFile')->andReturn(true);
+        $fs->shouldReceive('isDirectory')->with('/ext')->andReturn($extensionDirExists);
         $fs->shouldReceive('resolveCommand')->with('strip')->andReturn($strip);
 
         return $fs;
@@ -87,6 +89,17 @@ final class BinaryInstallerTest extends TestCase
         self::assertFalse($installed->isZendExtension());
         self::assertSame("fakebinary.setting=1\n", $installed->getIniSettings());
         self::assertSame($resolved, $installed->getResolved());
+    }
+
+    /**
+     * @return void
+     */
+    public function testInstallCreatesExtensionDirectory()
+    {
+        $fs = self::createFilesystem('', false);
+        $fs->shouldReceive('createDirectory')->once()->with('/ext', 0755)->ordered();
+        $fs->shouldReceive('copyFile')->once()->with('/src/module-file.so', '/ext/fakebinary.so')->ordered();
+        self::createInstaller($fs)->install(self::createResolved($fs));
     }
 
     /**

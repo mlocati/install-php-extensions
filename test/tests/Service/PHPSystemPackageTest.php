@@ -237,6 +237,8 @@ final class PHPSystemPackageTest extends TestCase
             ['php85-php-cli', 'php85'],
             ['php85-runtime', 'php85'],
             ['php85-php(api)', 'php85'],
+            ['php-8.5-redis', 'php-8.5'],
+            ['php-8.5', 'php-8.5'],
             ['php-common', ''],
             ['php(api)', ''],
             ['phpunit', ''],

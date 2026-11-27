@@ -38,6 +38,12 @@ final class libvips extends SystemDependency
                 ['vips-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['libvips'],
+                ['libvips-dev']
+            );
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libvips[0-9]*(t64)?$'],

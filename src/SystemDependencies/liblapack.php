@@ -32,6 +32,12 @@ final class liblapack extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['openblas', 'liblapack'],
+                ['openblas-dev']
+            );
+        }
         if ($this->os instanceof OS\Alpine) {
             $osVersion = $this->os->getNumericVersion();
             if ($osVersion <= 317) {

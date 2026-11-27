@@ -46,6 +46,7 @@ class Factory
             RockyLinux::class,
             Ubuntu::class,
             Windows::class,
+            Wolfi::class,
         ];
     }
 

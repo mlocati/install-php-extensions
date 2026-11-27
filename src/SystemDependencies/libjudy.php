@@ -38,6 +38,12 @@ final class libjudy extends SystemDependency
                 ['judy-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['libjudy'],
+                ['libjudy-dev']
+            );
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['libjudydebian1'],

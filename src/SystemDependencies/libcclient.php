@@ -78,6 +78,9 @@ final class libcclient extends SystemDependency
                 ['krb5-dev', 'imap-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Debian) {
             if (libopenssl::isPHPUsingOpenSSL10OnStretch($this->php, $this->os)) {
                 // The dependencies of libc-client2007e-dev, without libssl-dev (it conflicts with libssl1.0-dev)

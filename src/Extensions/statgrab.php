@@ -48,6 +48,7 @@ final class statgrab extends Extension implements
     {
         return [
             'alpine3.12..3.16' => 'the extension can\'t be compiled with the compiler or the libraries of this system',
+            'wolfi' => "this system doesn't provide the statgrab library",
         ];
     }
 

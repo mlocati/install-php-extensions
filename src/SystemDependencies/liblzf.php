@@ -47,7 +47,7 @@ class liblzf extends SystemDependency
             // Enterprise Linux provides it in EPEL
             return true;
         }
-        if ($os instanceof OS\MacOS) {
+        if ($os instanceof OS\MacOS || $os instanceof OS\Wolfi) {
             return true;
         }
 
@@ -64,7 +64,7 @@ class liblzf extends SystemDependency
         if (!self::isProvidedByOS($this->os)) {
             throw $this->createNotProvidedException();
         }
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return new Packages(
                 ['liblzf'],
                 ['liblzf-dev']

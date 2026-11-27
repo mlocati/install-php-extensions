@@ -38,6 +38,12 @@ class libzstd extends SystemDependency
                 ['zstd-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['libzstd1'],
+                ['zstd-dev']
+            );
+        }
         if ($this->os instanceof OS\Debian) {
             return new Packages(
                 ['libzstd1'],

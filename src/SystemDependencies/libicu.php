@@ -64,6 +64,13 @@ class libicu extends SystemDependency
                 ['icu-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            // The name of the library includes its version (like libicu79): the icu package (the ICU tools) depends on the current one
+            return new Packages(
+                ['icu'],
+                ['icu-dev']
+            );
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libicu[0-9]+$'],

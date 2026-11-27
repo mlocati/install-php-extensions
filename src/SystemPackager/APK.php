@@ -4,6 +4,7 @@ namespace IPE\SystemPackager;
 
 use IPE\Exception;
 use IPE\Filesystem\Command;
+use IPE\OS;
 use IPE\Service\Regex;
 use IPE\SystemPackager;
 
@@ -69,18 +70,26 @@ final class APK extends SystemPackager
      */
     public function getPhpizeRequirements()
     {
-        return [
+        $result = [
             'autoconf',
-            'dpkg-dev',
-            'dpkg',
             'file',
-            'g++',
             'gcc',
-            'libc-dev',
             'make',
             'pkgconf',
             're2c',
         ];
+        if ($this->os instanceof OS\Alpine) {
+            $result[] = 'dpkg-dev';
+            $result[] = 'dpkg';
+            $result[] = 'g++';
+            $result[] = 'libc-dev';
+        }
+        if ($this->os instanceof OS\Wolfi) {
+            // The gcc package includes g++
+            $result[] = 'glibc-dev';
+        }
+
+        return $result;
     }
 
     /**

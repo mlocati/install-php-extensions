@@ -113,7 +113,7 @@ final class tideways extends Extension\PrecompiledExtension implements
         }
         if ($this->os instanceof OS\Alpine) {
             $platform = 'linux-alpine';
-        } elseif ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
+        } elseif ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike || $this->os instanceof OS\Wolfi) {
             $platform = 'linux';
         } elseif ($this->os instanceof OS\MacOS) {
             $platform = 'mac';

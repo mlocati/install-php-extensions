@@ -52,6 +52,7 @@ final class imap extends Extension implements
             'amzn' => "this system doesn't provide the c-client library",
             'el9..10' => "this system doesn't provide the c-client library",
             'fedora' => "this system doesn't provide the c-client library",
+            'wolfi' => "this system doesn't provide the c-client library",
         ];
     }
 

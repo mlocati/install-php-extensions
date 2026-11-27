@@ -38,6 +38,10 @@ final class libgettext extends SystemDependency
                 ['gettext-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            // glibc includes libintl
+            return new Packages();
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages();
         }

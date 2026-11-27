@@ -8,7 +8,7 @@ use IPE\Service\Container;
 use IPE\SystemPackager;
 use IPE\Traits;
 
-class Debian implements Posix\DebianLike, Posix\WithOSRelease
+class Debian implements Posix\DebianLike
 {
     use Traits\OSArchitecture\Posix;
 

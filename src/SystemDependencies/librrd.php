@@ -38,6 +38,12 @@ final class librrd extends SystemDependency
                 ['rrdtool-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['rrdtool'],
+                ['rrdtool-dev']
+            );
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^librrd[0-9]*(t64)?$'],

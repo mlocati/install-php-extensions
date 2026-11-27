@@ -37,6 +37,12 @@ final class libtidy extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['tidy-html5'],
+                ['tidy-html5-dev']
+            );
+        }
         if ($this->os instanceof OS\Alpine) {
             if ($this->os->getNumericVersion() <= 314) {
                 return new Packages(

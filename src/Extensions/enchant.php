@@ -47,6 +47,8 @@ final class enchant extends Extension implements
         return [
             'macos-php5' => "Homebrew doesn't provide enchant 1",
             'macos-php7' => "Homebrew doesn't provide enchant 1",
+            'wolfi-php5' => "this system doesn't provide enchant 1",
+            'wolfi-php7' => "this system doesn't provide enchant 1",
         ];
     }
 

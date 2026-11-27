@@ -360,7 +360,7 @@ final class swoole extends Extension implements
             return false;
         }
 
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return true;
         }
         // swoole requires libzstd 1.4.0+, but Debian Buster provides 1.3.8 and Ubuntu 18.04 provides 1.3.3
@@ -406,6 +406,9 @@ final class swoole extends Extension implements
             // Alpine 3.19 fails with "invalid use of incomplete type 'const struct statx'"; swoole 6.2.0+ requires liburing 2.8+, available since Alpine 3.21
             return $this->os->getNumericVersion() >= (self::isVersionAtLeast($version, '6.2.0') ? 321 : 320);
         }
+        if ($this->os instanceof OS\Wolfi) {
+            return true;
+        }
         // swoole requires liburing 2.0+ (2.5+ for 6.0.0, 2.8+ for 6.2.0): we only use it where it's known to work
         if ($this->os instanceof OS\Debian) {
             return $this->os->getNumericVersion() >= OS\Debian::TRIXIE;
@@ -436,8 +439,8 @@ final class swoole extends Extension implements
         if (!self::isVersionAtLeast($version, '6.2.0')) {
             return false;
         }
-        if ($this->os instanceof OS\Alpine) {
-            // swoole requires Firebird 3+, but on Alpine with PHP < 8.4 we use Firebird 2.5 (see libfbclient)
+        if ($this->os instanceof OS\Posix\AlpineLike) {
+            // swoole requires Firebird 3+, but on Alpine and Wolfi with PHP < 8.4 we use Firebird 2.5 (see libfbclient)
             return $this->php->getMajorMinorVersion() >= 804;
         }
         if ($this->os instanceof OS\Posix\DebianLike) {

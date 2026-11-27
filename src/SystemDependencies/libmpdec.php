@@ -41,7 +41,7 @@ final class libmpdec extends CompiledLibrary
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return new Packages();
         }
         if ($this->os instanceof OS\Debian) {

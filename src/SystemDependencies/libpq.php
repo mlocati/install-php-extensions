@@ -38,6 +38,12 @@ final class libpq extends SystemDependency
                 ['postgresql-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['libpq'],
+                ['postgresql-dev']
+            );
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['libpq5'],

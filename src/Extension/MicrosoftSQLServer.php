@@ -32,6 +32,7 @@ abstract class MicrosoftSQLServer extends Extension implements
             'alpine3.7..3.8' => 'the Microsoft ODBC Driver requires unixODBC 2.3.6 or later',
             'amzn' => $noDriver,
             'fedora' => $noDriver,
+            'wolfi' => $noDriver,
         ];
     }
 

@@ -224,7 +224,7 @@ final class redis extends Extension implements
      */
     private function systemProvidesZstd()
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return true;
         }
         if ($this->os instanceof OS\Debian) {

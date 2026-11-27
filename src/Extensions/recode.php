@@ -49,6 +49,7 @@ final class recode extends Extension implements
     {
         return [
             'alpine3.11..3.15' => 'the recode 3.7 library provided by this system does not work',
+            'wolfi' => "this system doesn't provide the recode library",
         ];
     }
 

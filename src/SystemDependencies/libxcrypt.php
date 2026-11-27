@@ -47,6 +47,12 @@ final class libxcrypt extends CompiledLibrary
                 ['libxcrypt']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['libxcrypt'],
+                ['libxcrypt-dev']
+            );
+        }
 
         return new Packages();
     }

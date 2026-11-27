@@ -38,6 +38,9 @@ final class librecode extends SystemDependency
                 ['recode-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Debian) {
             return new Packages(
                 ['librecode0'],

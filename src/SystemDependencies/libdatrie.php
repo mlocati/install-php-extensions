@@ -57,7 +57,7 @@ final class libdatrie extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return $this->os instanceof OS\Alpine && parent::needsCompilation();
+        return $this->os instanceof OS\Posix\AlpineLike && parent::needsCompilation();
     }
 
     /**

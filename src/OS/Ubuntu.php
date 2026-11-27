@@ -8,7 +8,7 @@ use IPE\Service\Container;
 use IPE\SystemPackager;
 use IPE\Traits;
 
-class Ubuntu implements Posix\DebianLike, Posix\WithOSRelease
+class Ubuntu implements Posix\DebianLike
 {
     use Traits\OSArchitecture\Posix;
 

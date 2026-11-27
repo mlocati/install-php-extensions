@@ -38,6 +38,12 @@ final class libsasl extends SystemDependency
                 ['cyrus-sasl-dev']
             );
         }
+        if ($this->os instanceof OS\Wolfi) {
+            return new Packages(
+                ['cyrus-sasl-heimdal-libs'],
+                ['cyrus-sasl-dev']
+            );
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['libsasl2-2'],

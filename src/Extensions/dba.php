@@ -147,7 +147,7 @@ final class dba extends Extension implements
         if ($this->php->getMajorMinorVersion() < 704) {
             return false;
         }
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return false;
         }
         if ($this->os instanceof OS\Posix\DebianLike) {

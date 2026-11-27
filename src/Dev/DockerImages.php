@@ -40,6 +40,7 @@ final class DockerImages
             'bookworm',
             'trixie',
             'alpine3.24-apk',
+            'wolfi-apk',
             'bookworm-apt',
             'trixie-apt',
             'trixie-sury',
@@ -130,6 +131,11 @@ final class DockerImages
             $package = 'php' . str_replace('.', '', $phpVersion);
             // Unlike APT, APK doesn't include the phar extension in the main package
             $result[] = self::createSystemImage('alpine3.24-apk', $phpVersion, 'alpine:3.24', ["apk add --no-cache {$package} {$package}-phar"], $package);
+        }
+        foreach (['8.3', '8.4', '8.5'] as $phpVersion) {
+            $package = "php-{$phpVersion}";
+            // wolfi-base provides neither curl nor wget: IPE downloads with the openssl extension
+            $result[] = self::createSystemImage('wolfi-apk', $phpVersion, 'cgr.dev/chainguard/wolfi-base', ["apk add --no-cache {$package} {$package}-phar {$package}-openssl"]);
         }
         $aptImages = [
             'bookworm-apt' => ['debian:bookworm', '8.2'],
