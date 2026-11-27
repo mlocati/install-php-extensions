@@ -5,6 +5,7 @@ namespace IPE\Extensions;
 use IPE\Extension;
 use IPE\Option;
 use IPE\OS;
+use IPE\PHPInfo;
 use IPE\SystemDependencies;
 use IPE\SystemPackager;
 
@@ -93,12 +94,18 @@ final class mysqlnd extends Extension implements
      */
     public function getSystemPackageNames(SystemPackager\Package $phpPackage)
     {
-        if ($this->os instanceof OS\Wolfi && $this->php->getMajorMinorVersion() < 804) {
-            // The module of the package isn't linked to OpenSSL (see patchSourceCode()), so it doesn't load
-            return [];
-        }
+        return self::hasBrokenSystemPackage($this->php, $this->os) ? [] : null;
+    }
 
-        return null;
+    /**
+     * When mysqlnd must be compiled, the extensions that use it can't come from system packages either: they would be enabled before mysqlnd.
+     *
+     * @return bool
+     */
+    public static function hasBrokenSystemPackage(PHPInfo $php, OS $os)
+    {
+        // The module of the Wolfi package isn't linked to OpenSSL (see patchSourceCode()), so it doesn't load
+        return $os instanceof OS\Wolfi && $php->getMajorMinorVersion() < 804;
     }
 
     /**
