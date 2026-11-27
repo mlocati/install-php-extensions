@@ -59,28 +59,63 @@ final class WithStreamWrapper extends AbstractDownloader
             return file_get_contents($url, false, $this->context);
         }, 'file_get_contents');
         if ($content === false) {
-            if (function_exists('http_get_last_response_headers')) {
-                $http_response_header = http_get_last_response_headers();
-            }
-            $is404 = strpos($errorDetails, '404 Not Found') !== false;
-            if (!$is404) {
-                $is404 = isset($http_response_header[0]) && $http_response_header[0] !== '' && preg_match('/\b404\b/', $http_response_header[0]);
-            }
-            if ($is404) {
-                throw new Exception\IO\NotFound(self::buildErrorMessage("Failed to fetch {$url}", $errorDetails));
-            }
-            $is403 = strpos($errorDetails, '403 Forbidden') !== false;
-            if (!$is403) {
-                $is403 = isset($http_response_header[0]) && $http_response_header[0] !== '' && preg_match('/\b403\b/', $http_response_header[0]);
-            }
-            if ($is403) {
-                throw new Exception\IO\Forbidden(self::buildErrorMessage("Failed to fetch {$url}", $errorDetails));
-            }
-
-            throw new Exception\IO(self::buildErrorMessage("Failed to fetch {$url}", $errorDetails));
+            throw self::createFetchException($url, $errorDetails);
         }
 
         return $content;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Filesystem\Downloader::saveAs()
+     * @see \IPE\Filesystem\Downloader\AbstractDownloader::saveAs()
+     */
+    public function saveAs($url, $filename)
+    {
+        $url = Url::validate($url);
+        $this->logger->debug('Downloading with fopen()', ['url' => $url, 'filename' => $filename]);
+        if (function_exists('http_clear_last_response_headers')) {
+            http_clear_last_response_headers();
+        }
+        list($stream, $errorDetails) = self::wrap(function () use ($url) {
+            return fopen($url, 'rb', false, $this->context);
+        }, 'fopen');
+        if ($stream === false) {
+            throw self::createFetchException($url, $errorDetails);
+        }
+        try {
+            // Unlike getContent(), it doesn't load the whole file in memory (some archives exceed the default memory_limit)
+            $this->fs->writeFileFromStream($filename, $stream);
+        } finally {
+            fclose($stream);
+        }
+    }
+
+    /**
+     * @param non-empty-string $url
+     * @param string $errorDetails
+     *
+     * @return \IPE\Exception\IO
+     */
+    private static function createFetchException($url, $errorDetails)
+    {
+        $statusLine = '';
+        if (function_exists('http_get_last_response_headers')) {
+            $headers = http_get_last_response_headers();
+            if (isset($headers[0])) {
+                $statusLine = $headers[0];
+            }
+        }
+        $message = self::buildErrorMessage("Failed to fetch {$url}", $errorDetails);
+        if (strpos($errorDetails, '404 Not Found') !== false || preg_match('/\b404\b/', $statusLine)) {
+            return new Exception\IO\NotFound($message);
+        }
+        if (strpos($errorDetails, '403 Forbidden') !== false || preg_match('/\b403\b/', $statusLine)) {
+            return new Exception\IO\Forbidden($message);
+        }
+
+        return new Exception\IO($message);
     }
 
     /**
