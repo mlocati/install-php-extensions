@@ -87,6 +87,8 @@ final class APK extends SystemPackager
         if ($this->os instanceof OS\Wolfi) {
             // The gcc package includes g++
             $result[] = 'glibc-dev';
+            // php_pcre.h includes pcre2.h, but the php-X.Y-dev packages don't depend on pcre2-dev
+            $result[] = 'pcre2-dev';
         }
 
         return $result;
