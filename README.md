@@ -199,6 +199,7 @@ Below the handles there are the Composer package names that can be used to speci
 | excimer<br><sub>wikimedia/excimer</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
 | exif<br><sub>php/exif</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ffi<br><sub>php/ffi</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
+| fileinfo<br><sub>php/fileinfo</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | ftp<br><sub>php/ftp</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | gd[&#x24D8;](#gd)<br><sub>php/gd</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | gearman |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -211,6 +212,7 @@ Below the handles there are the Composer package names that can be used to speci
 | gnupg |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | grpc |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | http<br><sub>m6w6/ext-http</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| iconv<br><sub>php/iconv</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | igbinary<br><sub>igbinary/igbinary</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | imagick<br><sub>imagick/imagick</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | imap[&#x24D8;](#imap)<br><sub>php/imap</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -273,10 +275,11 @@ Below the handles there are the Composer package names that can be used to speci
 | php_trie[&#x24D8;](#php_trie) |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |
 | phpy[&#x24D8;](#phpy) |  | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |  |
 | pkcs11<br><sub>gamringer/pkcs11</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |
+| posix<br><sub>php/posix</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pq<br><sub>m6w6/ext-pq</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | propro |  |  |  |  |  |  |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | protobuf |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
-| pspell<br><sub>php/pspell</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| pspell[&#x24D8;](#pspell)<br><sub>php/pspell</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | psr | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | pthreads[&#x24D8;](#pthreads) |  |  |  |  |  |  |  |  |  |  |  | &check; | &check; | &check; |
 | raphf<br><sub>m6w6/ext-raphf</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -291,6 +294,7 @@ Below the handles there are the Composer package names that can be used to speci
 | session<br><sub>php/session</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | shmop<br><sub>php/shmop</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | simdjson[&#x24D8;](#simdjson) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |
+| simplexml<br><sub>php/simplexml</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | smbclient |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | snappy<br><sub>kjdev/snappy</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | snmp[&#x24D8;](#snmp)<br><sub>php/snmp</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
@@ -333,7 +337,9 @@ Below the handles there are the Composer package names that can be used to speci
 | xlswriter<br><sub>viest/xlswriter</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
 | xml<br><sub>php/xml</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xmldiff<br><sub>pecl/xml-xmldiff</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| xmlreader<br><sub>php/xmlreader</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xmlrpc<br><sub>php/xmlrpc</sub> |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
+| xmlwriter<br><sub>php/xmlwriter</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | xpass[&#x24D8;](#xpass)<br><sub>remi/xpass</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |  |  |  |  |  |
 | xsl<br><sub>php/xsl</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | yac<br><sub>laruence/yac</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |  |  |
@@ -346,7 +352,7 @@ Below the handles there are the Composer package names that can be used to speci
 | zookeeper[&#x24D8;](#zookeeper) |  | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 | zstd<br><sub>kjdev/zstd</sub> | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; | &check; |
 
-*Number of supported extensions: 172*
+*Number of supported extensions: 178*
 
 <!-- Generated by scripts/update-readme.php: do not edit -->
 <!-- END OF SUPPORTED PHP EXTENSIONS TABLE -->
@@ -456,7 +462,10 @@ Not available on:
 
 ### cassandra
 
-Not available on Debian 8 to 9 (the extension can't be compiled with the compiler or the libraries of this system)
+Not available on:
+
+- Debian 8 to 9 (the extension can't be compiled with the compiler or the libraries of this system)
+- Wolfi and Chainguard (this system doesn't provide the Cassandra driver)
 
 ### ddtrace
 
@@ -481,6 +490,7 @@ Not available on:
 - Alpine 3.22 to 3.24 (the extension is not compatible with the version of the ICU library of this system)
 - Enterprise Linux 8 to 9 (the extension is not compatible with the version of the ICU library of this system)
 - Amazon Linux 2023 (the extension is not compatible with the version of the ICU library of this system)
+- Wolfi and Chainguard (the extension is not compatible with the version of the ICU library of this system)
 
 ### enchant
 
@@ -488,6 +498,8 @@ Not available on:
 
 - macOS with PHP 5 (Homebrew doesn't provide enchant 1)
 - macOS with PHP 7 (Homebrew doesn't provide enchant 1)
+- Wolfi and Chainguard with PHP 5 (this system doesn't provide enchant 1)
+- Wolfi and Chainguard with PHP 7 (this system doesn't provide enchant 1)
 
 ### gd
 
@@ -515,6 +527,7 @@ Not available on:
 - Amazon Linux (this system doesn't provide the c-client library)
 - Enterprise Linux 9 to 10 (this system doesn't provide the c-client library)
 - Fedora (this system doesn't provide the c-client library)
+- Wolfi and Chainguard (this system doesn't provide the c-client library)
 
 ### inotify
 
@@ -537,6 +550,7 @@ Not available on:
 
 - Amazon Linux 2023 (this system doesn't provide Lua 5.1)
 - macOS (Homebrew doesn't provide Lua 5.1)
+- Wolfi and Chainguard (this system doesn't provide Lua 5.1)
 
 ### lz4
 
@@ -624,6 +638,8 @@ Not available on:
 - Enterprise Linux 8 with PHP 8.6 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 1.1 of this system)
 - Fedora 45 with PHP 8.5 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system)
 - Fedora 45 with PHP 8.6 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system)
+- Wolfi and Chainguard with PHP 8.5 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system)
+- Wolfi and Chainguard with PHP 8.6 (the extension includes OpenSSL 3, which is not compatible with the OpenSSL 4 of this system)
 
 ### pdo_sqlsrv
 
@@ -632,6 +648,7 @@ Not available on:
 - Alpine 3.7 to 3.8 (the Microsoft ODBC Driver requires unixODBC 2.3.6 or later)
 - Amazon Linux (Microsoft doesn't publish the ODBC Driver for this system)
 - Fedora (Microsoft doesn't publish the ODBC Driver for this system)
+- Wolfi and Chainguard (Microsoft doesn't publish the ODBC Driver for this system)
 
 ### php_trie
 
@@ -644,6 +661,10 @@ Not available on:
 - Debian 10 (the version of Python of this system is too old)
 - Ubuntu 14.04 to 18.04 (the version of Python of this system is too old)
 
+### pspell
+
+Not available on Wolfi and Chainguard (this system doesn't provide the Aspell library)
+
 ### pthreads
 
 Not available on non-thread-safe (NTS) builds of PHP
@@ -654,7 +675,10 @@ Not available on Amazon Linux 2023 (this system does not provide the librdkafka 
 
 ### recode
 
-Not available on Alpine 3.11 to 3.15 (the recode 3.7 library provided by this system does not work)
+Not available on:
+
+- Alpine 3.11 to 3.15 (the recode 3.7 library provided by this system does not work)
+- Wolfi and Chainguard (this system doesn't provide the recode library)
 
 ### relay
 
@@ -670,6 +694,7 @@ Not available on:
 - Enterprise Linux 9 with PHP ZTS (the ZTS build requires libhiredis 1.1.0, which is not available)
 - Fedora 45 to 46 (the vendor builds require OpenSSL 3, but this system uses OpenSSL 4)
 - macOS with PHP ZTS (the vendor doesn't publish ZTS builds for this system)
+- Wolfi and Chainguard (the vendor doesn't publish builds for this system)
 
 ### saxon
 
@@ -734,10 +759,14 @@ Not available on:
 - Alpine 3.7 to 3.8 (the Microsoft ODBC Driver requires unixODBC 2.3.6 or later)
 - Amazon Linux (Microsoft doesn't publish the ODBC Driver for this system)
 - Fedora (Microsoft doesn't publish the ODBC Driver for this system)
+- Wolfi and Chainguard (Microsoft doesn't publish the ODBC Driver for this system)
 
 ### statgrab
 
-Not available on Alpine 3.12 to 3.16 (the extension can't be compiled with the compiler or the libraries of this system)
+Not available on:
+
+- Alpine 3.12 to 3.16 (the extension can't be compiled with the compiler or the libraries of this system)
+- Wolfi and Chainguard (this system doesn't provide the statgrab library)
 
 ### swoole
 
@@ -772,6 +801,7 @@ Not available on:
 - Ubuntu 20.04 to 22.04 (the version of the V8 library of this system is too old)
 - Alpine 3.12 to 3.18 (the version of the V8 library of this system is too old)
 - macOS (the version of the V8 library of this system is too recent)
+- Wolfi and Chainguard (this system doesn't provide the V8 library)
 
 ### vips
 
