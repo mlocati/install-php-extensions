@@ -32,7 +32,7 @@ final class liblmdb extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return new Packages(
                 ['lmdb'],
                 ['lmdb-dev']

@@ -100,6 +100,7 @@ final class PHPInfoTest extends TestCase
     {
         $fs = M::mock(Filesystem::class);
         $fs->shouldReceive('getDirectorySeparator')->andReturn('\\');
+        $fs->shouldReceive('exists')->andReturn(true);
         $fs->shouldReceive('isFile')->andReturn(true);
         $fs->shouldReceive('getRealPath')->andReturnUsing(static function ($path) {
             return $path;
@@ -262,6 +263,27 @@ final class PHPInfoTest extends TestCase
         self::assertSame('/usr/bin/php8.4', $php->getPHPBin());
         self::assertNull($php->getSSLLibrary());
         self::assertSame(['Core'], $php->getInstalledExtensions());
+    }
+
+    /**
+     * @return void
+     */
+    public function testMissingExtensionDirectory()
+    {
+        $fs = M::mock(Filesystem::class);
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('isFile')->andReturn(true);
+        $fs->shouldReceive('exists')->andReturnUsing(static function ($path) {
+            return $path !== '/usr/lib/php/modules';
+        });
+        $fs->shouldReceive('getRealPath')->with('/usr/bin/php')->andReturn('/usr/bin/php');
+        $fs->shouldReceive('run')->with(M::type(Filesystem\Command::class))->andReturn(
+            [0, implode("\n", ['8.6.0', '8', '0', '/usr/lib/php/modules', '/etc/php/conf.d', 'Core', ''])],
+            [0, "PHP API => 20250926\n"],
+            [0, '']
+        );
+        $php = PHPInfo::fromPHPBin('/usr/bin/php', self::createOS($fs));
+        self::assertSame('/usr/lib/php/modules', $php->getExtensionDir());
     }
 
     /**

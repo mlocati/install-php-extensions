@@ -47,6 +47,7 @@ final class SlowExtensions
             ],
             Extensions\grpc::HANDLE => [
                 'alpine3.24-apk' => true,
+                'wolfi-apk' => true,
                 'trixie-sury' => true,
                 'ubuntu24.04-sury' => true,
                 'almalinux9-remi' => true,
@@ -76,6 +77,7 @@ final class SlowExtensions
             ],
             Extensions\swoole::HANDLE => [
                 'alpine3.24-apk' => true,
+                'wolfi-apk' => ['8.3', '8.4'],
                 'trixie-sury' => ['8.1', '8.2', '8.3', '8.4', '8.5'],
                 'ubuntu24.04-sury' => ['8.2', '8.3', '8.4', '8.5'],
                 'almalinux9-remi' => true,
@@ -161,7 +163,7 @@ final class SlowExtensions
             switch ($packager) {
                 case 'apk':
                     $osWithPackager = ExtensionFactory::createOSWithSystemPackager(OS\Alpine::class, SystemPackager\APK::class);
-                    $phpSourceFormat = 'php{major}{minor}';
+                    $phpSourceFormat = isset($packageIndexes[$os]['phpSource']) ? $packageIndexes[$os]['phpSource'] : 'php{major}{minor}';
                     break;
                 case 'apt':
                     $osWithPackager = ExtensionFactory::createOSWithSystemPackager(OS\Debian::class, SystemPackager\APT::class);
@@ -264,7 +266,8 @@ final class SlowExtensions
 
     /**
      * The package indexes used by the images with PHP installed by the system packager.
-     * For dnf, the URLs are the ones of the repositories, and phpSource is the source package of PHP ('php' if not specified).
+     * For dnf, the URLs are the ones of the repositories.
+     * For apk and dnf, phpSource is the source package of PHP (if not specified: 'php{major}{minor}' for apk, 'php' for dnf).
      *
      * @return array<non-empty-string, array{packager: 'apk'|'apt'|'dnf', urls: list<non-empty-string>, phpSource?: non-empty-string}>
      */
@@ -277,6 +280,13 @@ final class SlowExtensions
                     'https://dl-cdn.alpinelinux.org/alpine/v3.24/main/x86_64/APKINDEX.tar.gz',
                     'https://dl-cdn.alpinelinux.org/alpine/v3.24/community/x86_64/APKINDEX.tar.gz',
                 ],
+            ],
+            'wolfi-apk' => [
+                'packager' => 'apk',
+                'urls' => [
+                    'https://apk.cgr.dev/chainguard/x86_64/APKINDEX.tar.gz',
+                ],
+                'phpSource' => 'php-{major}.{minor}',
             ],
             'bookworm-apt' => [
                 'packager' => 'apt',
@@ -596,7 +606,7 @@ final class SlowExtensions
      *
      * @param array{packages: array<string, list<string>>, providers: array<string, list<string>>} $index
      * @param string $package
-     * @param string $phpSource like "php8.4" (APT), "php84" (APK), "php" or "php85-php" (Remi SCL)
+     * @param string $phpSource like "php8.4" (APT), "php84" (Alpine), "php-8.4" (Wolfi), "php" or "php85-php" (Remi SCL)
      * @param array<string, true> $visited
      *
      * @return bool

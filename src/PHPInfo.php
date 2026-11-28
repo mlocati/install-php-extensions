@@ -146,7 +146,7 @@ class PHPInfo
         if ($extensionDir === false || $extensionDir === '') {
             throw new Exception\IO('Unable to determine the PHP extension directory');
         }
-        $result->extensionDir = $fs->getRealPath($extensionDir);
+        $result->extensionDir = self::normalizeDirectory($extensionDir, $fs);
         ob_start();
         phpinfo(INFO_GENERAL);
         $info = ob_get_clean();
@@ -234,7 +234,7 @@ class PHPInfo
         if ($extensionDir === '') {
             throw $unexpectedOutput();
         }
-        $result->extensionDir = $fs->getRealPath($extensionDir);
+        $result->extensionDir = self::normalizeDirectory($extensionDir, $fs);
         $defaultIniScanDir = $shift();
         $result->setInstalledExtensions($lines);
         list($rc, $info) = $fs->run(Filesystem\Command::create($result->phpBin, array_merge($safeArguments, ['-i']))->withOutput(Filesystem\Command::OUTPUT_CAPTURE_STDOUT));

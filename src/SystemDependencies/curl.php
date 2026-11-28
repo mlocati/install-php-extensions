@@ -35,7 +35,7 @@ final class curl extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine || $this->os instanceof OS\Posix\DebianLike) {
+        if ($this->os instanceof OS\Posix\AlpineLike || $this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 [],
                 ['curl']

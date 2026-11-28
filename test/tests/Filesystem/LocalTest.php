@@ -219,6 +219,7 @@ final class LocalTest extends TestCase
             ['copyDirectory', ['/a', '/'], 'Invalid argument $newPath'],
             ['createDirectory', ['/foo', -1], 'Invalid argument $permissions'],
             ['createDirectory', ['/foo', 0777 + 1], 'Invalid argument $permissions'],
+            ['writeFileFromStream', ['/foo', 'not a stream'], 'Invalid argument $stream'],
         ];
     }
 
@@ -539,5 +540,24 @@ EOT
         $fs->rename($fileA, $fileB);
         self::assertFalse($fs->exists($fileA));
         self::assertSame('A', $fs->readFile($fileB));
+    }
+
+    /**
+     * @return void
+     */
+    public function testWriteFileFromStream()
+    {
+        $fs = self::$fs;
+        $tmp = $fs->createVolatileDirectory();
+        $file = $tmp->getPath() . '/file';
+        $stream = fopen('php://memory', 'w+b');
+        if ($stream === false) {
+            self::fail('fopen() failed');
+        }
+        fwrite($stream, 'Skipped|Written');
+        fseek($stream, strlen('Skipped|'));
+        $fs->writeFileFromStream($file, $stream);
+        fclose($stream);
+        self::assertSame('Written', $fs->readFile($file));
     }
 }

@@ -38,6 +38,12 @@ final class libmemcached extends SystemDependency
                 ['libmemcached-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            return new Packages(
+                ['libmemcached'],
+                ['libmemcached-dev']
+            );
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libmemcachedutil2(t64)?$'],

@@ -35,7 +35,7 @@ final class dtrace extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             throw $this->createNotProvidedException();
         }
         if ($this->os instanceof OS\Posix\DebianLike) {

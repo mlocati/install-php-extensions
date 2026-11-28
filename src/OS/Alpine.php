@@ -8,7 +8,7 @@ use IPE\Service\Container;
 use IPE\SystemPackager;
 use IPE\Traits;
 
-class Alpine implements Posix\WithOSRelease
+class Alpine implements Posix\AlpineLike
 {
     use Traits\OSArchitecture\Posix;
 

@@ -64,6 +64,7 @@ final class v8js extends Extension\GitHubExtension implements
             'alpine3.12..3.18' => $reason,
             // The code uses APIs that newer versions of V8 removed (like PropertyCallbackInfo::This())
             'macos' => 'the version of the V8 library of this system is too recent',
+            'wolfilike' => "this system doesn't provide the V8 library",
         ];
     }
 

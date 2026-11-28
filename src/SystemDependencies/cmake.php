@@ -32,7 +32,7 @@ final class cmake extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine || $this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
+        if ($this->os instanceof OS\Posix\AlpineLike || $this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
             return new Packages(
                 [],
                 ['cmake']

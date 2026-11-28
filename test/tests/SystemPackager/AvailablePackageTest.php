@@ -184,6 +184,29 @@ final class AvailablePackageTest extends TestCase
     /**
      * @return void
      */
+    public function testAPKOnWolfi()
+    {
+        $apk = self::createAPK([
+            ['apk', ['search', '--exact', 'php-8.4-redis'], 0, "php-8.4-redis-6.3.0-r7\n"],
+            ['apk', ['list', '--available', 'php-8.4-redis'], 0, "php-8.4-redis-6.3.0-r6 x86_64 {php-8.4-redis} (PHP-3.01)\nphp-8.4-redis-6.3.0-r7 x86_64 {php-8.4-redis} (PHP-3.01)\n"],
+            ['apk', ['search', '--exact', '--all', 'php-8.4-pdo_mysql'], 0, "php-8.4-pdo_mysql-8.4.27-r2\nphp-8.4-pdo_mysql-8.4.28-r0\n"],
+            ['apk', ['list', '--available', 'php-8.4-pdo_mysql'], 0, "php-8.4-pdo_mysql-8.4.27-r2 x86_64 {php-8.4} (PHP-3.01)\nphp-8.4-pdo_mysql-8.4.28-r0 x86_64 {php-8.4} (PHP-3.01)\n"],
+        ]);
+        $package = $apk->findAvailablePackage('php-8.4-redis');
+        self::assertNotNull($package);
+        self::assertSame('php-8.4-redis', $package->getName());
+        self::assertSame('6.3.0-r7', $package->getVersion());
+        self::assertSame('php-8.4-redis', $package->getSource());
+        $package = $apk->findAvailablePackage('php-8.4-pdo_mysql', '8.4.28-r0');
+        self::assertNotNull($package);
+        self::assertSame('php-8.4-pdo_mysql', $package->getName());
+        self::assertSame('8.4.28-r0', $package->getVersion());
+        self::assertSame('php-8.4', $package->getSource());
+    }
+
+    /**
+     * @return void
+     */
     public function testAPKNotAvailable()
     {
         $apk = self::createAPK([

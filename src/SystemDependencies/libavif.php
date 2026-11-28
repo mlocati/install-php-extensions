@@ -59,7 +59,7 @@ class libavif extends CompiledLibrary
         if (!self::isProvidedByOS($this->php, $this->os)) {
             return parent::getSystemPackages($state);
         }
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return new Packages(
                 ['libavif', 'aom-libs', 'libdav1d'],
                 ['libavif-dev', 'aom-dev', 'dav1d-dev']
@@ -173,7 +173,7 @@ class libavif extends CompiledLibrary
         if ($os instanceof OS\Posix\RHELLike\EnterpriseLinux) {
             return $os->getNumericVersion() >= (self::requiresVersion1($php) ? 9 : 8);
         }
-        if ($os instanceof OS\Fedora || $os instanceof OS\MacOS) {
+        if ($os instanceof OS\Fedora || $os instanceof OS\MacOS || $os instanceof OS\Posix\WolfiLike) {
             return true;
         }
 

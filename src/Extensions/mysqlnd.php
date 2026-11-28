@@ -4,7 +4,10 @@ namespace IPE\Extensions;
 
 use IPE\Extension;
 use IPE\Option;
+use IPE\OS;
+use IPE\PHPInfo;
 use IPE\SystemDependencies;
+use IPE\SystemPackager;
 
 final class mysqlnd extends Extension implements
     Extension\BundledInPHPSource,
@@ -12,6 +15,7 @@ final class mysqlnd extends Extension implements
     Extension\PatchesSourceCode,
     Extension\ProvidesConfigureArguments,
     Extension\ProvidesConfigureEnvironment,
+    Extension\ProvidesSystemPackageNames,
     Extension\RequiresSystemDependencies
 {
     /**
@@ -81,6 +85,27 @@ final class mysqlnd extends Extension implements
     {
         // It must be loaded before the extensions that use it (mysqli and pdo_mysql)
         return 10;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        return self::hasBrokenSystemPackage($this->php, $this->os) ? [] : null;
+    }
+
+    /**
+     * When mysqlnd must be compiled, the extensions that use it can't come from system packages either: they would be enabled before mysqlnd.
+     *
+     * @return bool
+     */
+    public static function hasBrokenSystemPackage(PHPInfo $php, OS $os)
+    {
+        // The module of the Wolfi package isn't linked to OpenSSL (see patchSourceCode()), so it doesn't load
+        return $os instanceof OS\Posix\WolfiLike && $php->getMajorMinorVersion() < 804;
     }
 
     /**

@@ -94,6 +94,8 @@ final class LibavifTest extends TestCase
             [OS\Ubuntu::class, OS\Ubuntu::JAMMY, 806, false],
             [OS\Ubuntu::class, OS\Ubuntu::NOBLE, 802, true],
             [OS\Ubuntu::class, OS\Ubuntu::NOBLE, 806, true],
+            [OS\Wolfi::class, 20230201, 806, true],
+            [OS\Chainguard::class, 20230214, 806, true],
             [OS\Posix::class, 1, 802, false],
         ];
     }

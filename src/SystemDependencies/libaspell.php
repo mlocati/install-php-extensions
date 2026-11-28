@@ -61,6 +61,9 @@ final class libaspell extends SystemDependency
                 ['aspell-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 array_merge(['libaspell15'], $dictionaries),

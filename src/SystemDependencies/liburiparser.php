@@ -38,6 +38,9 @@ final class liburiparser extends SystemDependency
                 ['uriparser-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['liburiparser1'],

@@ -47,6 +47,9 @@ final class libcassandra extends CompiledLibrary
                 ['cassandra-cpp-driver-dev', 'gmp-dev', 'bash', 'cmake']
             );
         }
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Debian) {
             if ($this->os->getNumericVersion() <= OS\Debian::JESSIE) {
                 // libuv1 is missing

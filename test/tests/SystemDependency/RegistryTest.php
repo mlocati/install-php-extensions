@@ -212,6 +212,53 @@ final class RegistryTest extends TestCase
     }
 
     /**
+     * @return list<array{0: class-string<\IPE\OS\Posix\WolfiLike>, 1: string}>
+     */
+    public static function provideWolfiLikeCases()
+    {
+        return [
+            [OS\Wolfi::class, '20230201'],
+            [OS\Chainguard::class, '20230214'],
+        ];
+    }
+
+    /**
+     * Extensions not supported directly may require any system dependency.
+     *
+     * @dataProvider provideWolfiLikeCases
+     *
+     * @param class-string<\IPE\OS\Posix\WolfiLike> $osClass
+     * @param string $osVersion
+     *
+     * @return void
+     */
+    public function testEveryDependencyHandlesWolfiLike($osClass, $osVersion)
+    {
+        $fs = M::mock(Filesystem::class)->shouldIgnoreMissing();
+        $fs->shouldReceive('getDirectorySeparator')->andReturn('/');
+        $fs->shouldReceive('run')->andReturn([0, '']);
+        $php = M::mock(PHPInfo::class)->shouldIgnoreMissing();
+        $php->shouldReceive('getMajorMinorVersion')->andReturn(805);
+        $php->shouldReceive('isThreadSafe')->andReturn(false);
+        $app = self::createApp();
+        $os = new $osClass($osVersion, $fs, $app);
+        $app = self::createContainer($os);
+        $app->instance(Filesystem::class, $fs);
+        $app->instance(PHPInfo::class, $php);
+        $registry = (new Registry($app, new Validator(new \IPE\Logger()), new \IPE\Logger()))->registerDefaultDependencies();
+        $state = M::mock(State::class)->shouldIgnoreMissing();
+        foreach ($registry->getDependencyClasses() as $class) {
+            $dependency = $registry->getDependencyByHandle($class::getHandle());
+            self::assertNotNull($dependency);
+            try {
+                $dependency->getSystemPackages($state);
+            } catch (Exception\UnsupportedOS $x) {
+                self::assertStringNotContainsString('are not known', $x->getMessage());
+            }
+        }
+    }
+
+    /**
      * @return void
      */
     public function testUnsupportedOS()

@@ -32,6 +32,13 @@ final class liblapack extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            // gfortran provides libgfortran.so, needed to link against libgfortran
+            return new Packages(
+                ['openblas', 'liblapack', 'libgfortran'],
+                ['openblas-dev', 'gfortran']
+            );
+        }
         if ($this->os instanceof OS\Alpine) {
             $osVersion = $this->os->getNumericVersion();
             if ($osVersion <= 317) {

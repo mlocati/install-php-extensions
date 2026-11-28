@@ -32,6 +32,9 @@ final class libcapstone extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Alpine) {
             if ($this->os->getNumericVersion() < 309) {
                 throw $this->createNotProvidedException();

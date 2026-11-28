@@ -32,7 +32,7 @@ final class libwebp extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             if ($this->php->getMajorMinorVersion() <= 805) {
                 return new Packages(
                     ['libwebp'],

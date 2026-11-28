@@ -118,6 +118,22 @@ final class InstalledPackageOwningFileTest extends TestCase
     /**
      * @return void
      */
+    public function testAPKOnWolfi()
+    {
+        $os = self::createOS([
+            ['apk', ['info', '--quiet', '--who-owns', '/usr/bin/php'], 0, "php-8.4\n"],
+            ['apk', ['list', '--installed', 'php-8.4'], 0, "php-8.4-8.4.28-r0 x86_64 {php-8.4} (PHP-3.01) [installed]\n"],
+        ]);
+        $package = (new APK($os))->getInstalledPackageOwningFile('/usr/bin/php');
+        self::assertNotNull($package);
+        self::assertSame('php-8.4', $package->getName());
+        self::assertSame('8.4.28-r0', $package->getVersion());
+        self::assertSame('php-8.4', $package->getSource());
+    }
+
+    /**
+     * @return void
+     */
     public function testAPKNotOwned()
     {
         $os = self::createOS([

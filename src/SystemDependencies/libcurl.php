@@ -44,6 +44,12 @@ class libcurl extends SystemDependency
                 ['curl-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            return new Packages(
+                ['libcurl-openssl4'],
+                ['curl-dev']
+            );
+        }
         if ($this->os instanceof OS\Debian) {
             $version = $this->os->getNumericVersion();
             if ($version <= OS\Debian::STRETCH) {

@@ -103,7 +103,7 @@ final class blackfire extends Extension\PrecompiledExtension implements
         $this->checkExactVersion($versionRequirements);
         if ($this->os instanceof OS\Alpine) {
             $distro = 'alpine';
-        } elseif ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike) {
+        } elseif ($this->os instanceof OS\Posix\DebianLike || $this->os instanceof OS\Posix\RHELLike || $this->os instanceof OS\Posix\WolfiLike) {
             $distro = 'linux';
         } elseif ($this->os instanceof OS\MacOS) {
             $distro = 'darwin';

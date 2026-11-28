@@ -3,10 +3,12 @@
 namespace IPE\Extensions;
 
 use IPE\Extension;
+use IPE\SystemPackager;
 
 final class pdo_mysql extends Extension implements
     Extension\BundledInPHPSource,
-    Extension\DependsOnExtensions
+    Extension\DependsOnExtensions,
+    Extension\ProvidesSystemPackageNames
 {
     /**
      * @public
@@ -85,5 +87,15 @@ final class pdo_mysql extends Extension implements
     public function getOptionalExtensions($version)
     {
         return [];
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \IPE\Extension\ProvidesSystemPackageNames::getSystemPackageNames()
+     */
+    public function getSystemPackageNames(SystemPackager\Package $phpPackage)
+    {
+        return mysqlnd::hasBrokenSystemPackage($this->php, $this->os) ? [] : null;
     }
 }

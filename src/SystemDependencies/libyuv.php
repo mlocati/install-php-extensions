@@ -42,7 +42,7 @@ class libyuv extends CompiledLibrary
     public function getSystemPackages(State $state)
     {
         // It's written in C++
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return new Packages(
                 ['libstdc++']
             );
@@ -114,7 +114,7 @@ class libyuv extends CompiledLibrary
     protected function build($sourceDirectory)
     {
         $buildDirectory = $this->createBuildDirectory($sourceDirectory);
-        $this->runBuildStep('cmake', ['-DCMAKE_BUILD_TYPE=' . ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? 'Debug' : 'Release'), '-DCMAKE_INSTALL_PREFIX:PATH=/usr', '..'], $buildDirectory);
+        $this->runBuildStep('cmake', ['-DCMAKE_BUILD_TYPE=' . ($this->buildOptions->getType() === BuildOptions::TYPE_DEBUG ? 'Debug' : 'Release'), '-DCMAKE_INSTALL_PREFIX:PATH=/usr', '-DCMAKE_POLICY_VERSION_MINIMUM=3.5', '..'], $buildDirectory);
         $this->runBuildStep($this->buildTools->getMake(), ['-j' . $this->getParallelJobs(), 'install'], $buildDirectory);
     }
 }

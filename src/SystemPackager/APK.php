@@ -4,6 +4,7 @@ namespace IPE\SystemPackager;
 
 use IPE\Exception;
 use IPE\Filesystem\Command;
+use IPE\OS;
 use IPE\Service\Regex;
 use IPE\SystemPackager;
 
@@ -69,18 +70,28 @@ final class APK extends SystemPackager
      */
     public function getPhpizeRequirements()
     {
-        return [
+        $result = [
             'autoconf',
-            'dpkg-dev',
-            'dpkg',
             'file',
-            'g++',
             'gcc',
-            'libc-dev',
             'make',
             'pkgconf',
             're2c',
         ];
+        if ($this->os instanceof OS\Alpine) {
+            $result[] = 'dpkg-dev';
+            $result[] = 'dpkg';
+            $result[] = 'g++';
+            $result[] = 'libc-dev';
+        }
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            // The gcc package includes g++
+            $result[] = 'glibc-dev';
+            // php_pcre.h includes pcre2.h, but the php-X.Y-dev packages don't depend on pcre2-dev
+            $result[] = 'pcre2-dev';
+        }
+
+        return $result;
     }
 
     /**
@@ -354,8 +365,8 @@ final class APK extends SystemPackager
      */
     protected function validatePackageName($name, $mayIncludeVersion)
     {
-        // The name of virtual packages starts with a dot (eg .persistent-deps in old docker images)
-        $rxName = '\.?[0-9]*[a-z][a-z0-9\+]*([._\-][a-z0-9+]+)*';
+        // The name of virtual packages starts with a dot (eg .persistent-deps in old docker images), Wolfi has uppercase names (eg libLLVM)
+        $rxName = '\.?[0-9]*[A-Za-z][A-Za-z0-9\+]*([._\-][A-Za-z0-9+]+)*';
         $rx = '#^(' . $rxName . ')';
         if ($mayIncludeVersion) {
             $rxVersion = '[0-9]+[a-z]?(\.[0-9]+[a-z]?|[\-_][a-z0-9]+)*?';

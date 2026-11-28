@@ -286,6 +286,9 @@ final class FactoryTest extends TestCase
             [OS\Fedora::class, 'rawhide', null],
             [OS\AmazonLinux::class, '2023', 2023],
             [OS\AmazonLinux::class, '0', null],
+            [OS\Wolfi::class, '20230201', 20230201],
+            [OS\Wolfi::class, '2023-02-01', null],
+            [OS\Chainguard::class, '20230214', 20230214],
         ];
     }
 
@@ -470,6 +473,14 @@ final class FactoryTest extends TestCase
                 'Invalid $version',
             ],
             [
+                'ID=wolfi',
+                'Invalid $version',
+            ],
+            [
+                'ID=chainguard',
+                'Invalid $version',
+            ],
+            [
                 "NAME=\"Amazon Linux\"\nID=amzn\nVERSION_ID=2",
                 'Amazon Linux 2 is not supported',
             ],
@@ -502,7 +513,7 @@ final class FactoryTest extends TestCase
     }
 
     /**
-     * @return list<array{0: list<string>, 1: array<string, mixed>, 2?: class-string<\IPE\OS\Posix\RHELLike>, 3?: string}> the lines of /etc/os-release, the expected results of the OS getters, and (for dnf) the expected class and the output of dnf --version
+     * @return list<array{0: list<string>, 1: array<string, mixed>, 2?: class-string<\IPE\OS\Posix>, 3?: string}> the lines of /etc/os-release, the expected results of the OS getters, the expected class, and (for dnf) the output of dnf --version
      */
     public static function provideSupportedOSReleaseFileCases()
     {
@@ -536,6 +547,34 @@ final class FactoryTest extends TestCase
                     'getNumericVersion' => 321,
                     'getVersion' => '3.21.4',
                 ],
+            ],
+            [
+                [
+                    'ID=wolfi',
+                    'NAME="Wolfi"',
+                    'PRETTY_NAME="Wolfi"',
+                    'VERSION_ID="20230201"',
+                    'HOME_URL="https://wolfi.dev"',
+                    'BUG_REPORT_URL="https://github.com/wolfi-dev/os/issues"',
+                ],
+                [
+                    'getDisplayName' => 'Wolfi',
+                    'getNumericVersion' => 20230201,
+                ],
+                OS\Wolfi::class,
+            ],
+            [
+                [
+                    'ID=chainguard',
+                    'NAME="Chainguard"',
+                    'PRETTY_NAME="Chainguard"',
+                    'VERSION_ID="20230214"',
+                ],
+                [
+                    'getDisplayName' => 'Chainguard',
+                    'getNumericVersion' => 20230214,
+                ],
+                OS\Chainguard::class,
             ],
             [
                 [
@@ -830,7 +869,7 @@ final class FactoryTest extends TestCase
      *
      * @param array<string> $osReleaseFileContents
      * @param array<string, mixed> $gettersAndExpectedValues
-     * @param class-string<\IPE\OS\Posix\RHELLike>|'' $expectedClass
+     * @param class-string<\IPE\OS\Posix>|'' $expectedClass
      * @param string $dnfVersion
      *
      * @return void
@@ -859,7 +898,7 @@ final class FactoryTest extends TestCase
         }
         $packager = $os->getSystemPackager();
         self::assertSame($os, $packager->getOS());
-        if ($os instanceof OS\Alpine) {
+        if ($os instanceof OS\Posix\AlpineLike) {
             self::assertInstanceOf(SystemPackager\APK::class, $packager);
         }
         if ($os instanceof OS\Debian) {

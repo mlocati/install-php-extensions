@@ -147,13 +147,14 @@ final class PHPSystemPackage
      *
      * @example 'php8.5' for 'php8.5-cli' (APT)
      * @example 'php85' for 'php85-common' (APK), and for 'php85-php-cli', 'php85-runtime' and 'php85-php(api)' (Remi SCL)
+     * @example 'php-8.5' for 'php-8.5-redis' (Wolfi)
      * @example '' for 'php-common'
      */
     public static function getPHPVersionPrefix($name)
     {
         $match = null;
 
-        return preg_match('/^(?<prefix>php\d+(?:\.\d+)?)(?:[\-(]|$)/', $name, $match) ? $match['prefix'] : '';
+        return preg_match('/^(?<prefix>php-?\d+(?:\.\d+)?)(?:[\-(]|$)/', $name, $match) ? $match['prefix'] : '';
     }
 
     /**

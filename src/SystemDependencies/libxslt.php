@@ -32,7 +32,7 @@ final class libxslt extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             // On some versions (for example 3.10) libexslt links to libgcrypt, but libxslt-dev doesn't depend on libgcrypt-dev
             return new Packages(
                 ['libxslt'],

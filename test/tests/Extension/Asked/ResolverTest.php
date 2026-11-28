@@ -968,15 +968,15 @@ final class ResolverTest extends TestCase
      */
     public function testAlreadyInstalledUnknownHandle()
     {
-        $php = self::createPHP('8.3.0', false, ['XMLWriter']);
+        $php = self::createPHP('8.3.0', false, ['Reflection']);
         $state = new State($php, self::$fs);
         $resolver = self::createResolver($php);
-        self::assertSame([], $resolver->resolveAskedExtensions([new Asked\FromHandle('xmlwriter', '')], $state));
-        self::assertSame(['xmlwriter: ' . Extension\Skipped::REASON_ALREADY_INSTALLED], self::describeSkipped($state));
+        self::assertSame([], $resolver->resolveAskedExtensions([new Asked\FromHandle('reflection', '')], $state));
+        self::assertSame(['reflection: ' . Extension\Skipped::REASON_ALREADY_INSTALLED], self::describeSkipped($state));
         // It's already installed, not unknown
         $resolver = self::createResolver($php, (new Options())->withIgnoreUnknownExtensions(true));
-        self::assertSame([], $resolver->resolveAskedExtensions([new Asked\FromHandle('xmlwriter', '')], $state));
-        self::assertSame(['xmlwriter: ' . Extension\Skipped::REASON_ALREADY_INSTALLED], self::describeSkipped($state));
+        self::assertSame([], $resolver->resolveAskedExtensions([new Asked\FromHandle('reflection', '')], $state));
+        self::assertSame(['reflection: ' . Extension\Skipped::REASON_ALREADY_INSTALLED], self::describeSkipped($state));
     }
 
     /**

@@ -140,7 +140,7 @@ final class http extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         $os = $this->os;
-        if (!$os instanceof OS\Alpine && !$os instanceof OS\Posix\DebianLike && !$os instanceof OS\Posix\RHELLike && !$os instanceof OS\MacOS) {
+        if (!$os instanceof OS\Posix\AlpineLike && !$os instanceof OS\Posix\DebianLike && !$os instanceof OS\Posix\RHELLike && !$os instanceof OS\MacOS) {
             throw $this->createUnknownOSException();
         }
         $result = [SystemDependencies\libcurl::HANDLE, SystemDependencies\libevent::HANDLE, SystemDependencies\libzlib::HANDLE];
@@ -161,8 +161,8 @@ final class http extends Extension implements
             $result[] = SystemDependencies\libgcrypt::HANDLE;
         }
         $result[] = !$v3 || $os instanceof OS\Alpine ? SystemDependencies\libidn::HANDLE : SystemDependencies\libidn2::HANDLE;
-        // On Alpine, curl-dev provides the SSL headers
-        if (!$os instanceof OS\Alpine) {
+        // On Alpine and Wolfi, curl-dev provides the SSL headers
+        if (!$os instanceof OS\Posix\AlpineLike) {
             $result[] = SystemDependencies\libopenssl::HANDLE;
         }
         sort($result);

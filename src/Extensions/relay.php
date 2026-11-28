@@ -67,6 +67,7 @@ final class relay extends Extension\PrecompiledExtension implements
             'el9-zts' => $noHiredis,
             'fedora45..46' => 'the vendor builds require OpenSSL 3, but this system uses OpenSSL 4',
             'macos-zts' => $noBuild,
+            'wolfilike' => "the vendor doesn't publish builds for this system",
         ];
     }
 

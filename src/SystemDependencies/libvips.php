@@ -38,6 +38,13 @@ final class libvips extends SystemDependency
                 ['vips-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            // Without libexif-libs, apk satisfies libexif.so.12 with an old libexif package, while libvips-dev pulls in libexif-libs (which would be removed after the installation)
+            return new Packages(
+                ['libvips', 'libexif-libs'],
+                ['libvips-dev']
+            );
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['^libvips[0-9]*(t64)?$'],

@@ -38,6 +38,9 @@ final class liblua extends SystemDependency
                 ['lua5.1-dev']
             );
         }
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            throw $this->createNotProvidedException();
+        }
         if ($this->os instanceof OS\Posix\DebianLike) {
             return new Packages(
                 ['liblua5.1-0'],

@@ -32,7 +32,7 @@ final class libgdlib extends SystemDependency
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return new Packages(
                 ['libgd'],
                 ['gd-dev']

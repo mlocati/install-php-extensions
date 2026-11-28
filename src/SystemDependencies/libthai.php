@@ -41,7 +41,7 @@ final class libthai extends CompiledLibrary
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return new Packages();
         }
         if ($this->os instanceof OS\Posix\DebianLike) {
@@ -72,7 +72,7 @@ final class libthai extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return $this->os instanceof OS\Alpine && parent::needsCompilation();
+        return $this->os instanceof OS\Posix\AlpineLike && parent::needsCompilation();
     }
 
     /**

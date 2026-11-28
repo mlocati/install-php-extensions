@@ -139,6 +139,19 @@ interface Filesystem
     public function writeFile($path, $content);
 
     /**
+     * Write the remaining content of a stream, without loading it all in memory.
+     *
+     * @param non-empty-string $path
+     * @param resource $stream
+     *
+     * @throws \IPE\Exception\InvalidArgument
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    public function writeFileFromStream($path, $stream);
+
+    /**
      * @param non-empty-string $from
      * @param non-empty-string $to
      *

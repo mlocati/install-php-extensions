@@ -41,14 +41,20 @@ final class libzookeeper extends CompiledLibrary
      */
     public function getSystemPackages(State $state)
     {
+        if ($this->os instanceof OS\Posix\AlpineLike && $this->isInstalled()) {
+            return new Packages();
+        }
         if ($this->os instanceof OS\Alpine) {
-            if ($this->isInstalled()) {
-                return new Packages();
-            }
-
             return new Packages(
                 [],
                 ['maven', 'automake', 'libtool', 'openjdk8']
+            );
+        }
+        if ($this->os instanceof OS\Posix\WolfiLike) {
+            return new Packages(
+                [],
+                // configure.ac needs pkg.m4, which is in pkgconf-dev
+                ['maven', 'automake', 'libtool', 'openjdk-8-default-jdk', 'pkgconf-dev']
             );
         }
         if ($this->os instanceof OS\Posix\DebianLike) {
@@ -83,7 +89,7 @@ final class libzookeeper extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return ($this->os instanceof OS\Alpine || $this->os instanceof OS\Posix\RHELLike) && parent::needsCompilation();
+        return ($this->os instanceof OS\Posix\AlpineLike || $this->os instanceof OS\Posix\RHELLike) && parent::needsCompilation();
     }
 
     /**

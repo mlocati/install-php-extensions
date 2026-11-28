@@ -64,7 +64,7 @@ final class libfbclient extends CompiledLibrary
      */
     public function getSystemPackages(State $state)
     {
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             if ($this->isInstalled()) {
                 return new Packages();
             }
@@ -121,7 +121,7 @@ final class libfbclient extends CompiledLibrary
      */
     protected function needsCompilation()
     {
-        return $this->os instanceof OS\Alpine && parent::needsCompilation();
+        return $this->os instanceof OS\Posix\AlpineLike && parent::needsCompilation();
     }
 
     /**
@@ -221,7 +221,7 @@ final class libfbclient extends CompiledLibrary
         $lines[193] = '#if 0';
         $fs->writeFile($rwlockFile, implode("\n", $lines));
         // Firebird 2.5 doesn't support recent ICU versions
-        $this->runBuildStep('./configure', $this->os->getNumericVersion() >= 322 ? [] : ['--with-system-icu'], $sourceDirectory);
+        $this->runBuildStep('./configure', $this->os instanceof OS\Alpine && $this->os->getNumericVersion() < 322 ? ['--with-system-icu'] : [], $sourceDirectory);
         // Don't enable parallel builds: Firebird forces -j1
         $this->runBuildStep($this->buildTools->getMake(), ['-s', 'btyacc_binary', 'gpre_boot', 'libfbstatic', 'libfbclient'], $sourceDirectory);
         $fs->copyFile("{$sourceDirectory}/gen/firebird/lib/libfbclient.so", '/usr/lib/libfbclient.so');

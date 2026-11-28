@@ -79,7 +79,10 @@ final class dba extends Extension implements
     public function getRequiredSystemDependencies($version, Option\Values $options)
     {
         // Besides being useful, these handlers are required when the php_config.h of the PHP packages enables them (like on Alpine and RHEL-like systems)
-        $result = [SystemDependencies\libdb::HANDLE];
+        $result = [];
+        if ($this->usesBerkeleyDB()) {
+            $result[] = SystemDependencies\libdb::HANDLE;
+        }
         if ($this->php->getMajorMinorVersion() >= 702) {
             $result[] = SystemDependencies\liblmdb::HANDLE;
         }
@@ -115,7 +118,9 @@ final class dba extends Extension implements
             $result[] = '--with-tcadb=' . $homebrew->getFormulaPrefix('tokyo-cabinet');
             $result[] = '--with-gdbm=' . $homebrew->getFormulaPrefix('gdbm');
         } else {
-            $result[] = '--with-db4';
+            if ($this->usesBerkeleyDB()) {
+                $result[] = '--with-db4';
+            }
             // Not every system provides every library (see getRequiredSystemDependencies())
             $fs = $this->os->getFilesystem();
             if ($this->php->getMajorMinorVersion() >= 702 && $fs->isFile('/usr/include/lmdb.h')) {
@@ -135,6 +140,15 @@ final class dba extends Extension implements
     }
 
     /**
+     * @return bool
+     */
+    private function usesBerkeleyDB()
+    {
+        // The Berkeley DB of Wolfi has a major version (2026) that configure rejects
+        return !$this->os instanceof OS\Posix\WolfiLike;
+    }
+
+    /**
      * @throws \IPE\Exception\IO
      * @throws \IPE\Exception\SystemPackager
      * @throws \IPE\Exception\UnsupportedOS
@@ -147,7 +161,7 @@ final class dba extends Extension implements
         if ($this->php->getMajorMinorVersion() < 704) {
             return false;
         }
-        if ($this->os instanceof OS\Alpine) {
+        if ($this->os instanceof OS\Posix\AlpineLike) {
             return false;
         }
         if ($this->os instanceof OS\Posix\DebianLike) {

@@ -66,7 +66,7 @@ final class BinaryInstaller
         if ($extension instanceof Extension\BuildsModule) {
             $source = $extension->buildModule($context, $this->buildTools);
             if ($source !== $modulePath) {
-                $this->fs->copyFile($source, $modulePath);
+                $this->copyModule($source, $modulePath);
             }
             $this->stripSymbols($modulePath, $resolved->getPath());
 
@@ -79,11 +79,30 @@ final class BinaryInstaller
         if ($source === '') {
             throw new Exception\IO("Failed to find the module of {$resolved}");
         }
-        $this->fs->copyFile($source, $modulePath);
+        $this->copyModule($source, $modulePath);
         $extension->postProcessBinaryModule($modulePath);
         $this->stripSymbols($modulePath, $resolved->getPath());
 
         return new CompiledExtension($resolved, $moduleName, $modulePath, $extension->isZendExtension(), $extension->getBinaryIniSettings($context));
+    }
+
+    /**
+     * The extension directory may not exist yet (for example on Wolfi, if no extension package is installed).
+     *
+     * @param non-empty-string $source
+     * @param non-empty-string $modulePath
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return void
+     */
+    private function copyModule($source, $modulePath)
+    {
+        $directory = $this->php->getExtensionDir();
+        if (!$this->fs->isDirectory($directory)) {
+            $this->fs->createDirectory($directory, 0755);
+        }
+        $this->fs->copyFile($source, $modulePath);
     }
 
     /**
