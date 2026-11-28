@@ -857,6 +857,15 @@ Some system dependencies can be customized with these command line options:
 <!-- END OF SYSTEM DEPENDENCY OPTIONS -->
 
 
+## Transition from docker-php-extension-installer
+
+To make it easier to switch from [docker-php-extension-installer](https://github.com/mlocati/docker-php-extension-installer), IPE temporarily understands its syntax: its `IPE_...` environment variables, `@composer`, `@fix_letsencrypt`, the old names of the extensions (like `pecl_http`), and versions like `xdebug-^3.2` and `org/repo@ref`.
+IPE prints a warning that shows the new syntax to be used: this compatibility layer will be removed in a future version.
+
+By default, the old syntax is understood only in the official Docker PHP images.
+You can change this with the `IPE_LEGACY_SYNTAX` environment variable: set it to `1` to always enable the old syntax, or to `0` to always disable it.
+
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).

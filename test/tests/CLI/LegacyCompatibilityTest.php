@@ -4,6 +4,7 @@ namespace IPE\Test\CLI;
 
 use IPE\CLI\Argv\InstallPHPExtensions;
 use IPE\CLI\LegacyCompatibility;
+use IPE\Exception;
 use IPE\Extension;
 use IPE\Extension\Registry;
 use IPE\Option\Validator;
@@ -46,6 +47,61 @@ final class LegacyCompatibilityTest extends TestCase
     private static function process(array $args, array $environment = [])
     {
         return (new LegacyCompatibility(self::createArgv(), self::getExtensions()))->process(array_merge(['ipe'], $args), $environment);
+    }
+
+    /**
+     * @return list<array{array<string, string>, bool, bool}> the environment variables, whether we are in an official Docker PHP image, and whether the compatibility layer is enabled
+     */
+    public static function provideIsEnabledCases()
+    {
+        return [
+            [[], true, true],
+            [[], false, false],
+            [['IPE_LEGACY_SYNTAX' => ''], true, true],
+            [['IPE_LEGACY_SYNTAX' => ''], false, false],
+            [['IPE_LEGACY_SYNTAX' => '1'], false, true],
+            [['IPE_LEGACY_SYNTAX' => 'yes'], false, true],
+            [['IPE_LEGACY_SYNTAX' => 'Y'], false, true],
+            [['IPE_LEGACY_SYNTAX' => 'TRUE'], false, true],
+            [['IPE_LEGACY_SYNTAX' => 'on'], false, true],
+            [['IPE_LEGACY_SYNTAX' => '0'], true, false],
+            [['IPE_LEGACY_SYNTAX' => 'no'], true, false],
+            [['IPE_LEGACY_SYNTAX' => 'N'], true, false],
+            [['IPE_LEGACY_SYNTAX' => 'False'], true, false],
+            [['IPE_LEGACY_SYNTAX' => 'off'], true, false],
+        ];
+    }
+
+    /**
+     * @dataProvider provideIsEnabledCases
+     *
+     * @param array<string, string> $environment
+     * @param bool $inDockerPHPImage
+     * @param bool $expected
+     *
+     * @return void
+     */
+    public function testIsEnabled(array $environment, $inDockerPHPImage, $expected)
+    {
+        self::assertSame($expected, LegacyCompatibility::isEnabled($environment, $inDockerPHPImage));
+    }
+
+    /**
+     * @return void
+     */
+    public function testIsEnabledWithInvalidValue()
+    {
+        $this->expectException(Exception\InvalidArgument::class);
+        $this->expectExceptionMessage('IPE_LEGACY_SYNTAX');
+        LegacyCompatibility::isEnabled(['IPE_LEGACY_SYNTAX' => 'ture'], true);
+    }
+
+    /**
+     * @return void
+     */
+    public function testEnableVariableIsIgnored()
+    {
+        self::assertSame([['ipe', 'xdebug'], []], self::process(['xdebug'], ['IPE_LEGACY_SYNTAX' => '1']));
     }
 
     /**

@@ -152,13 +152,15 @@ $options = $app->build(Argv\InstallPHPExtensions::class);
 try {
     // Not the Filesystem singleton, which must be created after reading the --temp-dir option
     $inDockerPHPImage = (new Service\DockerPHPImage(new Filesystem\Local($app->make(Logger::class))))->isInUse();
+    $legacyEnvironment = CLI\LegacyCompatibility::getEnvironment();
+    $legacySyntax = CLI\LegacyCompatibility::isEnabled($legacyEnvironment, $inDockerPHPImage);
 } catch (IPEException $x) {
     fwrite(STDERR, "{$x->getMessage()}\n");
     exit(1);
 }
 $legacyWarnings = [];
-if ($inDockerPHPImage) {
-    list($argv, $legacyWarnings) = $app->build(CLI\LegacyCompatibility::class, ['options' => $options])->process($argv, CLI\LegacyCompatibility::getEnvironment());
+if ($legacySyntax) {
+    list($argv, $legacyWarnings) = $app->build(CLI\LegacyCompatibility::class, ['options' => $options])->process($argv, $legacyEnvironment);
 }
 
 // Create the console logger
