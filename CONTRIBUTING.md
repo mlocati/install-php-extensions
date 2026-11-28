@@ -101,6 +101,7 @@ The distros whose names end with `-apk`, `-apt` or `-dnf` use the PHP packages o
 | `bookworm` | 8.1, 8.2, 8.3, 8.4, 8.5, 8.6 |
 | `trixie` | 8.1, 8.2, 8.3, 8.4, 8.5, 8.6 |
 | `alpine3.24-apk` | 8.3, 8.4, 8.5 |
+| `wolfi-apk` | 8.3, 8.4, 8.5 |
 | `bookworm-apt` | 8.2 |
 | `trixie-apt` | 8.4 |
 | `trixie-sury` | 5.6, 7.0, 7.1, 7.2, 7.3, 7.4, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6 |
