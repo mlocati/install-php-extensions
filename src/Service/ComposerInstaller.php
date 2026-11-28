@@ -78,15 +78,35 @@ final class ComposerInstaller
     {
         $this->logger->info('# Installing Composer');
         $fs = $this->os->getFilesystem();
-        $already = $fs->resolveCommand('composer');
-        if ($already !== '') {
-            $this->logger->notice('Composer is already installed to ' . $already);
-            $fs->run(Command::create($already, ['--version'])->withOutput(Command::OUTPUT_SHOW));
-
-            return;
+        if ($installPath === '') {
+            $already = $fs->resolveCommand('composer');
+            $dir = '';
+            $file = '';
+        } else {
+            list($dir, $file) = $this->resolveInstallPath($installPath);
+            $already = $fs->isFile($dir . $fs->getDirectorySeparator() . $file) ? $dir . $fs->getDirectorySeparator() . $file : '';
         }
+        if ($already !== '') {
+            if ($version === '' || $version === 'stable') {
+                $this->logger->notice('Composer is already installed to ' . $already);
+                $fs->run($this->createComposerCommand($already, $installPath !== '', ['--version'])->withOutput(Command::OUTPUT_SHOW));
 
-        list($dir, $file) = $this->resolveInstallPath($installPath);
+                return;
+            }
+            $alreadyVersion = $this->getInstalledVersion($already, $installPath !== '');
+            if ($alreadyVersion === '') {
+                $this->logger->warning("Failed to detect the version of the Composer installed to {$already}: installing Composer {$version}");
+            } elseif (self::isVersionCompatible($alreadyVersion, $version)) {
+                $this->logger->notice("Composer {$alreadyVersion} is already installed to {$already}");
+
+                return;
+            } else {
+                $this->logger->notice("Composer {$alreadyVersion} is installed to {$already}, but version {$version} has been requested");
+            }
+        }
+        if ($installPath === '') {
+            list($dir, $file) = $this->resolveInstallPath($installPath);
+        }
         $vol = $fs->createVolatileDirectory();
         $installer = $vol->getPath() . '/installer';
         $this->downloader->saveAs(self::INSTALLER_URL, $installer);
@@ -102,6 +122,66 @@ final class ComposerInstaller
         if ($this->os instanceof OS\Windows) {
             $this->createWindowsBat($dir, $file);
         }
+        if ($already !== '' && $installPath === '') {
+            $installed = $dir . $fs->getDirectorySeparator() . $file;
+            $resolved = $fs->resolveCommand('composer');
+            if ($resolved === '' || $fs->getRealPath($resolved) !== $installed) {
+                $this->logger->warning("Composer has been installed to {$installed}, but the composer command runs {$resolved} (check the PATH environment variable)");
+            }
+        }
+    }
+
+    /**
+     * @param non-empty-string $path
+     * @param bool $isScript true to run it with PHP (for example composer.phar on Windows)
+     * @param list<string> $arguments
+     *
+     * @return \IPE\Filesystem\Command
+     */
+    private function createComposerCommand($path, $isScript, array $arguments)
+    {
+        return $isScript ? $this->phpScript->createCommand($path, $arguments) : Command::create($path, $arguments);
+    }
+
+    /**
+     * @param non-empty-string $path
+     * @param bool $isScript true to run it with PHP (for example composer.phar on Windows)
+     *
+     * @throws \IPE\Exception\IO
+     *
+     * @return string empty string if it can't be detected
+     */
+    private function getInstalledVersion($path, $isScript)
+    {
+        $command = $this->createComposerCommand($path, $isScript, ['--no-ansi', '--no-interaction', '--version'])
+            ->withEnvironment(['COMPOSER_ALLOW_SUPERUSER' => '1'])
+            ->withOutput(Command::OUTPUT_CAPTURE_STDOUT)
+        ;
+        list($rc, $output) = $this->os->getFilesystem()->run($command);
+        $match = null;
+        if ($rc !== 0 || !preg_match('/^Composer (?:version )?(?<version>\d+\.\d+\.\d+\S*)/m', $output, $match)) {
+            return '';
+        }
+
+        return $match['version'];
+    }
+
+    /**
+     * @param string $installed like '2.11.3'
+     * @param non-empty-string $requested the value of the version option, except stable (see resolveVersionArgument())
+     *
+     * @return bool
+     */
+    private static function isVersionCompatible($installed, $requested)
+    {
+        if (preg_match('/^\d+\.\d+\.\d+.*/', $requested)) {
+            return $installed === $requested;
+        }
+        if (preg_match('/^\d+(\.\d+)?$/D', $requested)) {
+            return strpos($installed, "{$requested}.") === 0;
+        }
+
+        return false;
     }
 
     /**
@@ -117,7 +197,16 @@ final class ComposerInstaller
         $fs = $this->os->getFilesystem();
         if ($installPath === '') {
             if ($this->os instanceof OS\Posix) {
-                $dir = $fs->getRealPath('/usr/local/bin');
+                $dir = '/usr/local/bin';
+                if (!$fs->isDirectory($dir)) {
+                    // For example, the Chainguard images don't have it, but they have it in PATH
+                    $path = getenv('PATH');
+                    if (!is_string($path) || !preg_match('#(^|:)/usr/local/bin/?($|:)#D', $path)) {
+                        throw new Exception\InvalidArgument("The Composer install path must be specified, since {$dir} doesn't exist and it's not in the PATH environment variable");
+                    }
+                    $fs->createDirectory($dir, 0755);
+                }
+                $dir = $fs->getRealPath($dir);
                 $file = 'composer';
             } elseif ($this->os instanceof OS\Windows) {
                 throw new Exception\InvalidArgument('The Composer install path must be specified on Windows');
