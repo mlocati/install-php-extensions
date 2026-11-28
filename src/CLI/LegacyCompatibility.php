@@ -3,16 +3,24 @@
 namespace IPE\CLI;
 
 use IPE\CLI\Argv\Option\Definition;
+use IPE\Exception;
 use IPE\Extension;
 use IPE\GitHosts;
 
 /**
- * Translates the environment variables and the arguments of the shell version of install-php-extensions (used in the official Docker PHP images).
+ * Translates the environment variables and the arguments of the shell version of install-php-extensions (by default, only in the official Docker PHP images).
  *
  * @internal
  */
 final class LegacyCompatibility
 {
+    /**
+     * The environment variable that enables (or disables) this compatibility layer.
+     *
+     * @var non-empty-string
+     */
+    const ENABLE_VARIABLE = 'IPE_LEGACY_SYNTAX';
+
     /**
      * The environment variables that enable a flag (with an optional value).
      *
@@ -134,6 +142,29 @@ final class LegacyCompatibility
         }
 
         return $result;
+    }
+
+    /**
+     * @param array<string, string> $environment the environment variables
+     * @param bool $inDockerPHPImage
+     *
+     * @throws \IPE\Exception\InvalidArgument if the value of the IPE_LEGACY_SYNTAX environment variable is not valid
+     *
+     * @return bool
+     */
+    public static function isEnabled(array $environment, $inDockerPHPImage)
+    {
+        $value = isset($environment[self::ENABLE_VARIABLE]) ? strtolower($environment[self::ENABLE_VARIABLE]) : '';
+        if ($value === '') {
+            return $inDockerPHPImage;
+        }
+        if ($value === '1' || $value === 'true' || $value === 'on' || $value[0] === 'y') {
+            return true;
+        }
+        if ($value === '0' || $value === 'false' || $value === 'off' || $value[0] === 'n') {
+            return false;
+        }
+        throw new Exception\InvalidArgument('Invalid value of the ' . self::ENABLE_VARIABLE . " environment variable ('{$environment[self::ENABLE_VARIABLE]}'): use 1 or 0 (or yes/no, true/false, on/off)");
     }
 
     /**
